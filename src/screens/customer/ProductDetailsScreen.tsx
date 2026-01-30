@@ -45,7 +45,7 @@ export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
     };
 
     const handleAddToCart = () => {
-        addToCart(product);
+        addToCart(product, 'product');
         Alert.alert(
             'Added to Cart! 🛒',
             `${product.name} has been added to your cart`,
@@ -57,7 +57,7 @@ export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
     };
 
     const handleBuyNow = () => {
-        addToCart(product);
+        addToCart(product, 'product');
         navigation.navigate('Cart');
     };
 

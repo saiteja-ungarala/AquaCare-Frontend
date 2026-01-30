@@ -7,7 +7,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useWalletStore, useAuthStore, REFERRAL_CONSTANTS } from '../../store';
 
-export const WalletScreen: React.FC = () => {
+import { RootStackScreenProps } from '../../models/types';
+
+type WalletScreenProps = RootStackScreenProps<'Wallet'>;
+
+export const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
     const { balance, transactions } = useWalletStore();
     const user = useAuthStore((state) => state.user);
 
@@ -22,7 +26,12 @@ export const WalletScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}><Text style={styles.headerTitle}>Wallet</Text></View>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Wallet</Text>
+            </View>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.balanceCard}>
                     <Text style={styles.balanceLabel}>Available Balance</Text>
@@ -85,7 +94,8 @@ export const WalletScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    header: { padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
+    header: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
+    backButton: { marginRight: spacing.md },
     headerTitle: { ...typography.h3, color: colors.text },
     scrollView: { flex: 1, padding: spacing.md },
     balanceCard: { borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.md },

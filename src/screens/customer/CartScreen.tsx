@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { Button } from '../../components';
-import { useCartStore, useWalletStore } from '../../store';
+import { useCartStore, useWalletStore, useBookingsStore } from '../../store';
 
 type CartScreenProps = { navigation: NativeStackNavigationProp<any> };
 
@@ -21,12 +21,37 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
             case 'water_purifier': return 'water';
             case 'water_softener': return 'beaker';
             case 'water_ionizer': return 'flash';
+            case 'ro_plant': return 'construct';
+            case 'ionizer': return 'flash';
             default: return 'cube';
         }
     };
 
-    const handleCheckout = () => {
-        Alert.alert('Order Placed! 🎉', 'Your order has been placed successfully.', [{ text: 'OK', onPress: () => { clearCart(); navigation.navigate('Home'); } }]);
+    const { createBooking } = useBookingsStore();
+
+    const handleCheckout = async () => {
+        // Process services
+        const serviceItems = items.filter(i => i.type === 'service');
+
+        for (const item of serviceItems) {
+            if (item.service && item.bookingDate && item.bookingTime) {
+                await createBooking(
+                    item.service,
+                    item.bookingDate,
+                    item.bookingTime,
+                    {
+                        id: 'default',
+                        street: '123 Main Street',
+                        city: 'Mumbai',
+                        state: 'Maharashtra',
+                        pincode: '400001',
+                        isDefault: true,
+                    }
+                );
+            }
+        }
+
+        Alert.alert('Order Placed! 🎉', 'Your order and service bookings have been placed successfully.', [{ text: 'OK', onPress: () => { clearCart(); navigation.navigate('Home'); } }]);
     };
 
     if (items.length === 0) {
@@ -59,21 +84,47 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                 <TouchableOpacity onPress={clearCart}><Text style={styles.clearText}>Clear All</Text></TouchableOpacity>
             </View>
             <ScrollView style={styles.scrollView}>
-                {items.map((item) => (
-                    <View key={item.id} style={styles.cartItem}>
-                        <View style={styles.itemImage}><Ionicons name={getIcon(item.product.category)} size={40} color={colors.primary} /></View>
-                        <View style={styles.itemContent}>
-                            <Text style={styles.itemName} numberOfLines={2}>{item.product.name}</Text>
-                            <Text style={styles.itemPrice}>₹{item.product.price.toLocaleString()}</Text>
-                            <View style={styles.quantityRow}>
-                                <TouchableOpacity style={styles.quantityButton} onPress={() => updateQuantity(item.product.id, item.quantity - 1)}><Ionicons name="remove" size={18} color={colors.primary} /></TouchableOpacity>
-                                <Text style={styles.quantityText}>{item.quantity}</Text>
-                                <TouchableOpacity style={styles.quantityButton} onPress={() => updateQuantity(item.product.id, item.quantity + 1)}><Ionicons name="add" size={18} color={colors.primary} /></TouchableOpacity>
+                {items.map((item) => {
+                    const isService = item.type === 'service';
+                    const data = isService ? item.service! : item.product!;
+                    const itemId = data.id;
+
+                    return (
+                        <View key={item.id} style={styles.cartItem}>
+                            <View style={styles.itemImage}>
+                                <Ionicons name={getIcon(data.category)} size={40} color={colors.primary} />
                             </View>
+                            <View style={styles.itemContent}>
+                                <Text style={styles.itemName} numberOfLines={2}>{data.name}</Text>
+                                <Text style={styles.itemPrice}>₹{data.price.toLocaleString()}</Text>
+                                {isService && item.bookingDate && (
+                                    <View style={styles.bookingInfo}>
+                                        <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+                                        <Text style={styles.bookingText}>{item.bookingDate} at {item.bookingTime}</Text>
+                                    </View>
+                                )}
+                                <View style={styles.quantityRow}>
+                                    <TouchableOpacity
+                                        style={styles.quantityButton}
+                                        onPress={() => updateQuantity(itemId, item.quantity - 1)}
+                                    >
+                                        <Ionicons name="remove" size={18} color={colors.primary} />
+                                    </TouchableOpacity>
+                                    <Text style={styles.quantityText}>{item.quantity}</Text>
+                                    <TouchableOpacity
+                                        style={styles.quantityButton}
+                                        onPress={() => updateQuantity(itemId, item.quantity + 1)}
+                                    >
+                                        <Ionicons name="add" size={18} color={colors.primary} />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            <TouchableOpacity onPress={() => removeFromCart(itemId)}>
+                                <Ionicons name="trash-outline" size={20} color={colors.error} />
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity onPress={() => removeFromCart(item.product.id)}><Ionicons name="trash-outline" size={20} color={colors.error} /></TouchableOpacity>
-                    </View>
-                ))}
+                    );
+                })}
                 <View style={styles.summaryCard}>
                     <Text style={styles.summaryTitle}>Price Details</Text>
                     <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Subtotal</Text><Text>₹{totalAmount.toLocaleString()}</Text></View>
@@ -102,6 +153,8 @@ const styles = StyleSheet.create({
     itemContent: { flex: 1, marginLeft: spacing.md },
     itemName: { ...typography.body, fontWeight: '600', color: colors.text },
     itemPrice: { ...typography.body, color: colors.primary, fontWeight: '700' },
+    bookingInfo: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
+    bookingText: { ...typography.caption, color: colors.textSecondary },
     quantityRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: spacing.sm },
     quantityButton: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
     quantityText: { ...typography.body, fontWeight: '600', minWidth: 24, textAlign: 'center' },

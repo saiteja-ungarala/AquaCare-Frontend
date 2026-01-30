@@ -72,6 +72,31 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     <Text style={styles.searchPlaceholder}>Search services & products</Text>
                 </TouchableOpacity>
 
+                {/* Category Shortcuts */}
+                <View style={styles.categoriesContainer}>
+                    {['Water Purifier', 'Softener', 'Ionizer', 'Spares'].map((cat, index) => (
+                        <TouchableOpacity key={index} style={styles.catItem} onPress={() => navigation.navigate('Services')}>
+                            <View style={styles.catIcon}>
+                                <Ionicons
+                                    name={index === 0 ? 'water' : index === 1 ? 'beaker' : index === 2 ? 'flash' : 'construct'}
+                                    size={24}
+                                    color={colors.primary}
+                                />
+                            </View>
+                            <Text style={styles.catText}>{cat}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* Referral Banner */}
+                <TouchableOpacity style={styles.referralBanner}>
+                    <View>
+                        <Text style={styles.referralTitle}>Refer & Earn ₹500</Text>
+                        <Text style={styles.referralDesc}>Invite friends to AquaCare</Text>
+                    </View>
+                    <Ionicons name="gift-outline" size={40} color={colors.textOnPrimary} />
+                </TouchableOpacity>
+
                 {/* Banner Slider */}
                 <BannerSlider
                     banners={mockBanners}
@@ -82,7 +107,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Book Service</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('Services')}>
                             <Text style={styles.viewAll}>View All</Text>
                         </TouchableOpacity>
                     </View>
@@ -118,7 +143,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                                 onPress={() =>
                                     navigation.navigate('ProductDetails', { product })
                                 }
-                                onAddToCart={() => addToCart(product)}
+                                onAddToCart={() => addToCart(product, 'product')}
                             />
                         ))}
                     </View>
@@ -239,6 +264,50 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.lg,
         borderWidth: 1,
         borderColor: colors.border,
+    },
+    categoriesContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.md,
+        marginTop: spacing.md,
+    },
+    catItem: {
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    catIcon: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: colors.primary + '15',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    catText: {
+        ...typography.caption,
+        color: colors.text,
+        fontWeight: '500',
+    },
+    referralBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.primary,
+        marginHorizontal: spacing.md,
+        marginTop: spacing.lg,
+        padding: spacing.md,
+        borderRadius: borderRadius.lg,
+        ...shadows.sm,
+    },
+    referralTitle: {
+        ...typography.h3,
+        color: colors.textOnPrimary,
+        marginBottom: 4,
+    },
+    referralDesc: {
+        ...typography.bodySmall,
+        color: colors.textOnPrimary,
+        opacity: 0.9,
     },
     searchPlaceholder: {
         ...typography.body,

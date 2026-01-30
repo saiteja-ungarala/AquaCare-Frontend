@@ -62,7 +62,11 @@ export type ProductCategory =
 
 export interface CartItem {
     id: string;
-    product: Product;
+    type: 'product' | 'service';
+    product?: Product;
+    service?: Service;
+    bookingDate?: string;
+    bookingTime?: string;
     quantity: number;
 }
 

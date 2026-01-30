@@ -65,9 +65,33 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
+                {/* Referral Code Card */}
+                <View style={styles.referralCard}>
+                    <View>
+                        <Text style={styles.referralTitle}>Refer & Earn</Text>
+                        <Text style={styles.referralSubtitle}>Share your code</Text>
+                    </View>
+                    <View style={styles.codeContainer}>
+                        <Text style={styles.referralCode}>{user?.referralCode || 'WATER2024'}</Text>
+                        <Ionicons name="copy-outline" size={18} color={colors.primary} />
+                    </View>
+                </View>
+
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Account</Text>
                     <View style={styles.menuCard}>
+                        <MenuItem
+                            icon="wallet-outline"
+                            title="My Wallet"
+                            subtitle="Balance, Earnings, History"
+                            onPress={() => navigation.navigate('Wallet')}
+                        />
+                        <MenuItem
+                            icon="receipt-outline"
+                            title="Order History"
+                            subtitle="Product orders & past services"
+                            onPress={() => navigation.navigate('Bookings')}
+                        />
                         <MenuItem icon="location-outline" title="Addresses" subtitle="Manage delivery addresses" onPress={() => { }} />
                         <MenuItem icon="card-outline" title="Payment Methods" subtitle="Cards, UPI, Wallets" onPress={() => { }} />
                         <MenuItem icon="notifications-outline" title="Notifications" subtitle="Manage preferences" onPress={() => { }} />
@@ -101,7 +125,12 @@ const styles = StyleSheet.create({
     header: { padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
     headerTitle: { ...typography.h3, color: colors.text },
     scrollView: { flex: 1, padding: spacing.md },
-    profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.lg, ...shadows.sm },
+    profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, ...shadows.sm }, // reduced marginBottom
+    referralCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.primary + '30' },
+    referralTitle: { ...typography.body, fontWeight: '600', color: colors.primary },
+    referralSubtitle: { ...typography.caption, color: colors.textSecondary },
+    codeContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.md, gap: spacing.xs },
+    referralCode: { ...typography.bodySmall, fontWeight: '700', color: colors.text },
     avatar: { width: 70, height: 70, borderRadius: 35, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' },
     profileInfo: { flex: 1, marginLeft: spacing.md },
     profileName: { ...typography.h3, color: colors.text },

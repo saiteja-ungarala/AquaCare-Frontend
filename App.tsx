@@ -22,6 +22,7 @@ import {
   BookingsScreen,
   WalletScreen,
   ProfileScreen,
+  ServicesScreen,
 } from './src/screens/customer';
 
 // Agent Screens
@@ -41,8 +42,9 @@ const CustomerTabs = () => (
         let iconName: keyof typeof Ionicons.glyphMap = 'home';
 
         if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
+        else if (route.name === 'Services') iconName = focused ? 'construct' : 'construct-outline';
+        else if (route.name === 'Cart') iconName = focused ? 'cart' : 'cart-outline';
         else if (route.name === 'Bookings') iconName = focused ? 'calendar' : 'calendar-outline';
-        else if (route.name === 'Wallet') iconName = focused ? 'wallet' : 'wallet-outline';
         else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
 
         return <Ionicons name={iconName} size={size} color={color} />;
@@ -53,8 +55,9 @@ const CustomerTabs = () => (
     })}
   >
     <Tab.Screen name="Home" component={CustomerHomeScreen} />
+    <Tab.Screen name="Services" component={ServicesScreen} />
+    <Tab.Screen name="Cart" component={CartScreen} />
     <Tab.Screen name="Bookings" component={BookingsScreen} />
-    <Tab.Screen name="Wallet" component={WalletScreen} />
     <Tab.Screen name="Profile" component={ProfileScreen} />
   </Tab.Navigator>
 );
@@ -85,7 +88,7 @@ export default function App() {
                   <Stack.Screen name="CustomerTabs" component={CustomerTabs} />
                   <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
                   <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
-                  <Stack.Screen name="Cart" component={CartScreen} />
+                  <Stack.Screen name="Wallet" component={WalletScreen} />
                 </>
               )}
 

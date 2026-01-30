@@ -16,7 +16,7 @@ import { RootStackScreenProps } from '../../models/types';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { Button } from '../../components';
 import { Service } from '../../models/types';
-import { useBookingsStore } from '../../store';
+import { useCartStore } from '../../store';
 
 type ServiceDetailsScreenProps = RootStackScreenProps<'ServiceDetails'>;
 
@@ -27,7 +27,7 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
     const { service } = route.params;
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
-    const { createBooking, isLoading } = useBookingsStore();
+    const addToCart = useCartStore((state) => state.addToCart);
 
     // Generate next 5 days
     const dates = Array.from({ length: 5 }, (_, i) => {
@@ -61,40 +61,29 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
         }
     };
 
-    const handleBookService = async () => {
+
+    const handleBookService = () => {
         if (!selectedDate || !selectedTime) {
             Alert.alert('Select Slot', 'Please select a date and time for your service');
             return;
         }
 
-        try {
-            await createBooking(
-                service,
-                selectedDate,
-                selectedTime,
-                {
-                    id: 'default',
-                    street: '123 Main Street',
-                    city: 'Mumbai',
-                    state: 'Maharashtra',
-                    pincode: '400001',
-                    isDefault: true,
-                }
-            );
+        addToCart(service, 'service', { date: selectedDate, time: selectedTime });
 
-            Alert.alert(
-                'Booking Confirmed! 🎉',
-                `Your ${service.name} has been scheduled for ${selectedTime}`,
-                [
-                    {
-                        text: 'View Bookings',
-                        onPress: () => navigation.navigate('Bookings'),
-                    },
-                ]
-            );
-        } catch (error) {
-            Alert.alert('Error', 'Failed to create booking');
-        }
+        Alert.alert(
+            'Added to Cart! 🛒',
+            `Service scheduled for ${selectedTime} on ${selectedDate}`,
+            [
+                {
+                    text: 'View Cart',
+                    onPress: () => navigation.navigate('Cart'),
+                },
+                {
+                    text: 'Continue',
+                    style: 'cancel'
+                }
+            ]
+        );
     };
 
     return (
@@ -239,7 +228,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                 <Button
                     title="Book Now"
                     onPress={handleBookService}
-                    loading={isLoading}
                     style={styles.bookButton}
                 />
             </View>

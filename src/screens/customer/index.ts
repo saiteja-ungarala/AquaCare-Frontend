@@ -6,3 +6,4 @@ export { CartScreen } from './CartScreen';
 export { BookingsScreen } from './BookingsScreen';
 export { WalletScreen } from './WalletScreen';
 export { ProfileScreen } from './ProfileScreen';
+export { ServicesScreen } from './ServicesScreen';

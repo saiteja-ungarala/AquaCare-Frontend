@@ -34,6 +34,14 @@ const getStatusLabel = (status: BookingStatus) => {
 
 export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation }) => {
     const { bookings } = useBookingsStore();
+    const [activeTab, setActiveTab] = React.useState<'active' | 'completed' | 'cancelled'>('active');
+
+    const filteredBookings = bookings.filter(b => {
+        if (activeTab === 'active') return ['pending', 'confirmed', 'agent_assigned', 'on_the_way', 'in_progress'].includes(b.status);
+        if (activeTab === 'completed') return b.status === 'completed';
+        if (activeTab === 'cancelled') return b.status === 'cancelled';
+        return true;
+    });
 
     if (bookings.length === 0) {
         return (
@@ -51,8 +59,24 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation }) =>
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}><Text style={styles.headerTitle}>My Bookings</Text></View>
+
+            {/* Tabs */}
+            <View style={styles.tabContainer}>
+                {(['active', 'completed', 'cancelled'] as const).map((tab) => (
+                    <TouchableOpacity
+                        key={tab}
+                        style={[styles.tab, activeTab === tab && styles.activeTab]}
+                        onPress={() => setActiveTab(tab)}
+                    >
+                        <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                {bookings.map((booking) => (
+                {filteredBookings.map((booking) => (
                     <TouchableOpacity key={booking.id} style={styles.bookingCard}>
                         <View style={styles.bookingHeader}>
                             <Text style={styles.bookingId}>#{booking.id}</Text>
@@ -84,6 +108,11 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: { padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
     headerTitle: { ...typography.h3, color: colors.text },
+    tabContainer: { flexDirection: 'row', padding: spacing.sm, backgroundColor: colors.surface, marginBottom: 1 },
+    tab: { flex: 1, paddingVertical: spacing.sm, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    activeTab: { borderBottomColor: colors.primary },
+    tabText: { ...typography.body, color: colors.textSecondary, fontWeight: '600' },
+    activeTabText: { color: colors.primary },
     scrollView: { flex: 1, padding: spacing.md },
     bookingCard: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, ...shadows.sm },
     bookingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
