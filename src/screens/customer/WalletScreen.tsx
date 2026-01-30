@@ -1,0 +1,116 @@
+// Wallet Screen
+
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Share } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
+import { useWalletStore, useAuthStore, REFERRAL_CONSTANTS } from '../../store';
+
+export const WalletScreen: React.FC = () => {
+    const { balance, transactions } = useWalletStore();
+    const user = useAuthStore((state) => state.user);
+
+    const handleShare = async () => {
+        try {
+            await Share.share({
+                message: `Join AquaCare and get your first service FREE! Use my referral code: ${user?.referralCode || 'AQUA100'}`,
+                title: 'Refer & Earn',
+            });
+        } catch (error) { }
+    };
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}><Text style={styles.headerTitle}>Wallet</Text></View>
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.balanceCard}>
+                    <Text style={styles.balanceLabel}>Available Balance</Text>
+                    <Text style={styles.balanceAmount}>₹{balance}</Text>
+                    <View style={styles.balanceActions}>
+                        <TouchableOpacity style={styles.balanceAction}>
+                            <Ionicons name="add-circle-outline" size={20} color={colors.textOnPrimary} />
+                            <Text style={styles.balanceActionText}>Add Money</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.balanceAction}>
+                            <Ionicons name="arrow-down-circle-outline" size={20} color={colors.textOnPrimary} />
+                            <Text style={styles.balanceActionText}>Withdraw</Text>
+                        </TouchableOpacity>
+                    </View>
+                </LinearGradient>
+
+                <View style={styles.referralCard}>
+                    <View style={styles.referralHeader}>
+                        <Ionicons name="gift" size={32} color={colors.primary} />
+                        <View style={styles.referralContent}>
+                            <Text style={styles.referralTitle}>Refer & Earn</Text>
+                            <Text style={styles.referralDesc}>Get ₹{REFERRAL_CONSTANTS.REFERRER_JOINING_BONUS} for each friend who joins</Text>
+                        </View>
+                    </View>
+                    <View style={styles.referralCodeBox}>
+                        <Text style={styles.referralCodeLabel}>Your Referral Code</Text>
+                        <Text style={styles.referralCode}>{user?.referralCode || 'AQUA100'}</Text>
+                    </View>
+                    <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+                        <Ionicons name="share-social" size={20} color={colors.textOnPrimary} />
+                        <Text style={styles.shareButtonText}>Share with Friends</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Transaction History</Text>
+                    {transactions.length === 0 ? (
+                        <Text style={styles.emptyText}>No transactions yet</Text>
+                    ) : (
+                        transactions.map((txn) => (
+                            <View key={txn.id} style={styles.txnItem}>
+                                <View style={[styles.txnIcon, { backgroundColor: txn.type === 'credit' ? colors.success + '20' : colors.error + '20' }]}>
+                                    <Ionicons name={txn.type === 'credit' ? 'arrow-down' : 'arrow-up'} size={20} color={txn.type === 'credit' ? colors.success : colors.error} />
+                                </View>
+                                <View style={styles.txnContent}>
+                                    <Text style={styles.txnDesc}>{txn.description}</Text>
+                                    <Text style={styles.txnDate}>{txn.date}</Text>
+                                </View>
+                                <Text style={[styles.txnAmount, { color: txn.type === 'credit' ? colors.success : colors.error }]}>
+                                    {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
+                                </Text>
+                            </View>
+                        ))
+                    )}
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
+    headerTitle: { ...typography.h3, color: colors.text },
+    scrollView: { flex: 1, padding: spacing.md },
+    balanceCard: { borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.md },
+    balanceLabel: { ...typography.body, color: 'rgba(255,255,255,0.8)' },
+    balanceAmount: { ...typography.h1, color: colors.textOnPrimary, fontWeight: '700', marginVertical: spacing.sm },
+    balanceActions: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
+    balanceAction: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    balanceActionText: { ...typography.bodySmall, color: colors.textOnPrimary },
+    referralCard: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, ...shadows.sm },
+    referralHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+    referralContent: { flex: 1 },
+    referralTitle: { ...typography.body, fontWeight: '600', color: colors.text },
+    referralDesc: { ...typography.caption, color: colors.textSecondary },
+    referralCodeBox: { backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md, padding: spacing.md, alignItems: 'center', marginBottom: spacing.md },
+    referralCodeLabel: { ...typography.caption, color: colors.textSecondary },
+    referralCode: { ...typography.h2, color: colors.primary, fontWeight: '700', letterSpacing: 2 },
+    shareButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: borderRadius.md, padding: spacing.md, gap: spacing.sm },
+    shareButtonText: { ...typography.body, fontWeight: '600', color: colors.textOnPrimary },
+    section: { marginBottom: spacing.xl },
+    sectionTitle: { ...typography.h3, color: colors.text, marginBottom: spacing.md },
+    emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+    txnItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: borderRadius.md, padding: spacing.md, marginBottom: spacing.sm, ...shadows.sm },
+    txnIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+    txnContent: { flex: 1, marginLeft: spacing.md },
+    txnDesc: { ...typography.bodySmall, color: colors.text },
+    txnDate: { ...typography.caption, color: colors.textSecondary },
+    txnAmount: { ...typography.body, fontWeight: '700' },
+});

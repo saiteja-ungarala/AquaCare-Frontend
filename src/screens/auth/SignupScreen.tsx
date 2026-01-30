@@ -1,0 +1,303 @@
+// Signup Screen
+
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    SafeAreaView,
+    ScrollView,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
+    Alert,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { colors, spacing, typography, borderRadius } from '../../theme/theme';
+import { useAuthStore } from '../../store';
+import { Button, Input } from '../../components';
+
+type SignupScreenProps = {
+    navigation: NativeStackNavigationProp<any>;
+};
+
+export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [referralCode, setReferralCode] = useState('');
+
+    const { signup, isLoading, error, selectedRole, clearError } = useAuthStore();
+
+    const getRoleLabel = () => {
+        switch (selectedRole) {
+            case 'customer':
+                return 'Customer';
+            case 'agent':
+                return 'Service Agent';
+            case 'dealer':
+                return 'Dealer';
+            default:
+                return 'User';
+        }
+    };
+
+    const validateForm = () => {
+        if (!name.trim()) {
+            Alert.alert('Error', 'Please enter your name');
+            return false;
+        }
+        if (!email.trim()) {
+            Alert.alert('Error', 'Please enter your email');
+            return false;
+        }
+        if (!phone.trim()) {
+            Alert.alert('Error', 'Please enter your phone number');
+            return false;
+        }
+        if (!password) {
+            Alert.alert('Error', 'Please enter a password');
+            return false;
+        }
+        if (password.length < 6) {
+            Alert.alert('Error', 'Password must be at least 6 characters');
+            return false;
+        }
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
+            return false;
+        }
+        return true;
+    };
+
+    const handleSignup = async () => {
+        if (!validateForm()) return;
+
+        if (!selectedRole) {
+            Alert.alert('Error', 'Please select a role first');
+            navigation.navigate('RoleSelection');
+            return;
+        }
+
+        const success = await signup({
+            name,
+            email,
+            phone,
+            password,
+            role: selectedRole,
+            referralCode: referralCode.trim() || undefined,
+        });
+
+        if (!success && error) {
+            Alert.alert('Signup Failed', error);
+            clearError();
+        }
+    };
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <LinearGradient
+                        colors={[colors.gradientStart, colors.gradientEnd]}
+                        style={styles.header}
+                    >
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <Ionicons name="arrow-back" size={24} color={colors.textOnPrimary} />
+                        </TouchableOpacity>
+                        <View style={styles.headerContent}>
+                            <Ionicons name="water" size={48} color={colors.textOnPrimary} />
+                            <Text style={styles.headerTitle}>Create Account</Text>
+                            <View style={styles.roleBadge}>
+                                <Text style={styles.roleBadgeText}>{getRoleLabel()}</Text>
+                            </View>
+                        </View>
+                    </LinearGradient>
+
+                    <View style={styles.form}>
+                        <Text style={styles.formTitle}>Fill in your details</Text>
+
+                        <Input
+                            label="Full Name"
+                            placeholder="Enter your full name"
+                            value={name}
+                            onChangeText={setName}
+                            leftIcon="person-outline"
+                        />
+
+                        <Input
+                            label="Email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            leftIcon="mail-outline"
+                        />
+
+                        <Input
+                            label="Phone Number"
+                            placeholder="Enter your phone number"
+                            value={phone}
+                            onChangeText={setPhone}
+                            keyboardType="phone-pad"
+                            leftIcon="call-outline"
+                        />
+
+                        <Input
+                            label="Password"
+                            placeholder="Create a password"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                            leftIcon="lock-closed-outline"
+                        />
+
+                        <Input
+                            label="Confirm Password"
+                            placeholder="Confirm your password"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry
+                            leftIcon="lock-closed-outline"
+                        />
+
+                        <Input
+                            label="Referral Code (Optional)"
+                            placeholder="Enter referral code if you have one"
+                            value={referralCode}
+                            onChangeText={setReferralCode}
+                            autoCapitalize="characters"
+                            leftIcon="gift-outline"
+                        />
+
+                        {selectedRole === 'customer' && (
+                            <View style={styles.referralNote}>
+                                <Ionicons name="information-circle" size={20} color={colors.info} />
+                                <Text style={styles.referralNoteText}>
+                                    Use a referral code to get your first service free!
+                                </Text>
+                            </View>
+                        )}
+
+                        <Button
+                            title="Create Account"
+                            onPress={handleSignup}
+                            loading={isLoading}
+                            fullWidth
+                            style={styles.signupButton}
+                        />
+
+                        <View style={styles.loginRow}>
+                            <Text style={styles.loginText}>Already have an account? </Text>
+                            <TouchableOpacity onPress={() => navigation.goBack()}>
+                                <Text style={styles.loginLink}>Login</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    keyboardView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+    },
+    header: {
+        paddingTop: spacing.xl,
+        paddingBottom: spacing.xl,
+        borderBottomLeftRadius: borderRadius.xl,
+        borderBottomRightRadius: borderRadius.xl,
+    },
+    backButton: {
+        position: 'absolute',
+        top: spacing.md,
+        left: spacing.md,
+        zIndex: 1,
+        padding: spacing.sm,
+    },
+    headerContent: {
+        alignItems: 'center',
+        paddingTop: spacing.lg,
+    },
+    headerTitle: {
+        ...typography.h2,
+        color: colors.textOnPrimary,
+        marginTop: spacing.md,
+    },
+    roleBadge: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+        marginTop: spacing.sm,
+    },
+    roleBadgeText: {
+        ...typography.bodySmall,
+        color: colors.textOnPrimary,
+        fontWeight: '600',
+    },
+    form: {
+        flex: 1,
+        padding: spacing.lg,
+    },
+    formTitle: {
+        ...typography.h3,
+        color: colors.text,
+        marginBottom: spacing.lg,
+    },
+    referralNote: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.surfaceSecondary,
+        padding: spacing.md,
+        borderRadius: borderRadius.md,
+        marginBottom: spacing.md,
+        gap: spacing.sm,
+    },
+    referralNoteText: {
+        ...typography.bodySmall,
+        color: colors.info,
+        flex: 1,
+    },
+    signupButton: {
+        marginTop: spacing.md,
+    },
+    loginRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: spacing.lg,
+        marginBottom: spacing.xl,
+    },
+    loginText: {
+        ...typography.body,
+        color: colors.textSecondary,
+    },
+    loginLink: {
+        ...typography.body,
+        color: colors.primary,
+        fontWeight: '600',
+    },
+});

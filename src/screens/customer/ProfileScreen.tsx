@@ -1,0 +1,120 @@
+// Profile Screen
+
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
+import { useAuthStore } from '../../store';
+
+type ProfileScreenProps = { navigation: NativeStackNavigationProp<any> };
+
+interface MenuItemProps {
+    icon: keyof typeof Ionicons.glyphMap;
+    title: string;
+    subtitle?: string;
+    onPress: () => void;
+    danger?: boolean;
+}
+
+const MenuItem: React.FC<MenuItemProps> = ({ icon, title, subtitle, onPress, danger }) => (
+    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+        <View style={[styles.menuIcon, danger && { backgroundColor: colors.error + '20' }]}>
+            <Ionicons name={icon} size={22} color={danger ? colors.error : colors.primary} />
+        </View>
+        <View style={styles.menuContent}>
+            <Text style={[styles.menuTitle, danger && { color: colors.error }]}>{title}</Text>
+            {subtitle && <Text style={styles.menuSubtitle}>{subtitle}</Text>}
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+    </TouchableOpacity>
+);
+
+export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
+    const { user, logout } = useAuthStore();
+
+    const handleLogout = () => {
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm('Are you sure you want to logout?');
+            if (confirmed) {
+                logout();
+            }
+        } else {
+            Alert.alert('Logout', 'Are you sure you want to logout?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Logout', style: 'destructive', onPress: logout },
+            ]);
+        }
+    };
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}><Text style={styles.headerTitle}>Profile</Text></View>
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                <View style={styles.profileCard}>
+                    <View style={styles.avatar}>
+                        <Ionicons name="person" size={40} color={colors.primary} />
+                    </View>
+                    <View style={styles.profileInfo}>
+                        <Text style={styles.profileName}>{user?.name || 'User'}</Text>
+                        <Text style={styles.profileEmail}>{user?.email}</Text>
+                        <Text style={styles.profilePhone}>{user?.phone}</Text>
+                    </View>
+                    <TouchableOpacity style={styles.editButton}>
+                        <Ionicons name="pencil" size={18} color={colors.primary} />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Account</Text>
+                    <View style={styles.menuCard}>
+                        <MenuItem icon="location-outline" title="Addresses" subtitle="Manage delivery addresses" onPress={() => { }} />
+                        <MenuItem icon="card-outline" title="Payment Methods" subtitle="Cards, UPI, Wallets" onPress={() => { }} />
+                        <MenuItem icon="notifications-outline" title="Notifications" subtitle="Manage preferences" onPress={() => { }} />
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Support</Text>
+                    <View style={styles.menuCard}>
+                        <MenuItem icon="help-circle-outline" title="Help & FAQ" onPress={() => { }} />
+                        <MenuItem icon="chatbubble-outline" title="Contact Us" onPress={() => { }} />
+                        <MenuItem icon="document-text-outline" title="Terms & Conditions" onPress={() => { }} />
+                        <MenuItem icon="shield-outline" title="Privacy Policy" onPress={() => { }} />
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <View style={styles.menuCard}>
+                        <MenuItem icon="log-out-outline" title="Logout" onPress={handleLogout} danger />
+                    </View>
+                </View>
+
+                <Text style={styles.version}>Version 1.0.0</Text>
+            </ScrollView>
+        </SafeAreaView>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
+    headerTitle: { ...typography.h3, color: colors.text },
+    scrollView: { flex: 1, padding: spacing.md },
+    profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.lg, ...shadows.sm },
+    avatar: { width: 70, height: 70, borderRadius: 35, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' },
+    profileInfo: { flex: 1, marginLeft: spacing.md },
+    profileName: { ...typography.h3, color: colors.text },
+    profileEmail: { ...typography.bodySmall, color: colors.textSecondary },
+    profilePhone: { ...typography.bodySmall, color: colors.textSecondary },
+    editButton: { padding: spacing.sm },
+    section: { marginBottom: spacing.lg },
+    sectionTitle: { ...typography.bodySmall, fontWeight: '600', color: colors.textSecondary, marginBottom: spacing.sm, marginLeft: spacing.xs },
+    menuCard: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, ...shadows.sm },
+    menuItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+    menuIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' },
+    menuContent: { flex: 1, marginLeft: spacing.md },
+    menuTitle: { ...typography.body, color: colors.text },
+    menuSubtitle: { ...typography.caption, color: colors.textSecondary },
+    version: { ...typography.caption, color: colors.textLight, textAlign: 'center', marginTop: spacing.md, marginBottom: spacing.xl },
+});
