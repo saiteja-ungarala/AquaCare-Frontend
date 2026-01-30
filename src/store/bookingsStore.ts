@@ -13,6 +13,7 @@ interface BookingsActions {
     fetchBookings: () => Promise<void>;
     createBooking: (service: Service, date: string, time: string, address: Address) => Promise<Booking>;
     cancelBooking: (bookingId: string) => Promise<void>;
+    updateBookingStatus: (bookingId: string, status: Booking['status']) => Promise<void>;
 }
 
 type BookingsStore = BookingsState & BookingsActions;
@@ -54,14 +55,18 @@ export const useBookingsStore = create<BookingsStore>((set, get) => ({
         return newBooking;
     },
 
-    cancelBooking: async (bookingId: string) => {
+    cancelBooking: (bookingId: string) => {
+        return get().updateBookingStatus(bookingId, 'cancelled');
+    },
+
+    updateBookingStatus: async (bookingId: string, status: Booking['status']) => {
         set({ isLoading: true });
         // Simulate API call
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         set((state) => ({
             bookings: state.bookings.map((b) =>
-                b.id === bookingId ? { ...b, status: 'cancelled' as const } : b
+                b.id === bookingId ? { ...b, status } : b
             ),
             isLoading: false,
         }));

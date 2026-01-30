@@ -32,6 +32,29 @@ const getStatusLabel = (status: BookingStatus) => {
     }
 };
 
+const renderTimeline = (status: BookingStatus) => {
+    if (status === 'cancelled') return null;
+
+    const steps = ['pending', 'confirmed', 'on_the_way', 'in_progress', 'completed'];
+    const currentStepIndex = steps.indexOf(status);
+    const normalizedIndex = status === 'agent_assigned' ? 1 : currentStepIndex;
+
+    return (
+        <View style={styles.timelineContainer}>
+            {['Booked', 'Confirmed', 'On Way', 'Progress', 'Done'].map((step, index) => {
+                const isActive = index <= normalizedIndex && normalizedIndex !== -1;
+                return (
+                    <View key={step} style={styles.timelineStep}>
+                        <View style={[styles.timelineDot, isActive && styles.timelineDotActive]} />
+                        {index < 4 && <View style={[styles.timelineLine, index < normalizedIndex && normalizedIndex !== -1 && styles.timelineLineActive]} />}
+                        <Text style={[styles.timelineLabel, isActive && styles.timelineLabelActive]}>{step}</Text>
+                    </View>
+                );
+            })}
+        </View>
+    );
+};
+
 export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation }) => {
     const { bookings } = useBookingsStore();
     const [activeTab, setActiveTab] = React.useState<'active' | 'completed' | 'cancelled'>('active');
@@ -84,6 +107,9 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation }) =>
                                 <Text style={[styles.statusText, { color: getStatusColor(booking.status) }]}>{getStatusLabel(booking.status)}</Text>
                             </View>
                         </View>
+
+                        {renderTimeline(booking.status)}
+
                         <Text style={styles.serviceName}>{booking.service.name}</Text>
                         <View style={styles.bookingRow}>
                             <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
@@ -128,4 +154,12 @@ const styles = StyleSheet.create({
     emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
     emptyTitle: { ...typography.h3, color: colors.text, marginTop: spacing.lg },
     emptyDesc: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm },
+    timelineContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: spacing.md, paddingHorizontal: spacing.sm },
+    timelineStep: { alignItems: 'center', width: '20%' },
+    timelineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.border, marginBottom: 4, zIndex: 1 },
+    timelineDotActive: { backgroundColor: colors.success },
+    timelineLine: { position: 'absolute', top: 4, left: '50%', width: '100%', height: 2, backgroundColor: colors.border, zIndex: 0 },
+    timelineLineActive: { backgroundColor: colors.success },
+    timelineLabel: { ...typography.caption, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
+    timelineLabelActive: { color: colors.success, fontWeight: '700' },
 });
