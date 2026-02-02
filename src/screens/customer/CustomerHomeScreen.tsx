@@ -28,7 +28,12 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+            {/* Make StatusBar fully explicit for native safety */}
+            <StatusBar
+                barStyle="dark-content"
+                backgroundColor={colors.background}
+                translucent={false}
+            />
 
             {/* Header */}
             <View style={styles.header}>
@@ -42,10 +47,12 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                         </TouchableOpacity>
                     </View>
                 </View>
+
                 <View style={styles.headerRight}>
                     <TouchableOpacity style={styles.headerButton}>
                         <Ionicons name="notifications-outline" size={24} color={colors.text} />
                     </TouchableOpacity>
+
                     <TouchableOpacity
                         style={styles.headerButton}
                         onPress={() => navigation.navigate('Cart')}
@@ -69,16 +76,30 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                 {/* Search Bar */}
                 <TouchableOpacity style={styles.searchBar}>
                     <Ionicons name="search" size={20} color={colors.textSecondary} />
-                    <Text style={styles.searchPlaceholder}>Search services & products</Text>
+                    <Text style={styles.searchPlaceholder}>
+                        Search services & products
+                    </Text>
                 </TouchableOpacity>
 
                 {/* Category Shortcuts */}
                 <View style={styles.categoriesContainer}>
                     {['Water Purifier', 'Softener', 'Ionizer', 'Spares'].map((cat, index) => (
-                        <TouchableOpacity key={index} style={styles.catItem} onPress={() => navigation.navigate('Services')}>
+                        <TouchableOpacity
+                            key={index}
+                            style={styles.catItem}
+                            onPress={() => navigation.navigate('Services')}
+                        >
                             <View style={styles.catIcon}>
                                 <Ionicons
-                                    name={index === 0 ? 'water' : index === 1 ? 'beaker' : index === 2 ? 'flash' : 'construct'}
+                                    name={
+                                        index === 0
+                                            ? 'water'
+                                            : index === 1
+                                                ? 'beaker'
+                                                : index === 2
+                                                    ? 'flash'
+                                                    : 'construct'
+                                    }
                                     size={24}
                                     color={colors.primary}
                                 />
@@ -94,20 +115,28 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                         <Text style={styles.referralTitle}>Refer & Earn ₹500</Text>
                         <Text style={styles.referralDesc}>Invite friends to AquaCare</Text>
                     </View>
-                    <Ionicons name="gift-outline" size={40} color={colors.textOnPrimary} />
+                    <Ionicons
+                        name="gift-outline"
+                        size={40}
+                        color={colors.textOnPrimary}
+                    />
                 </TouchableOpacity>
 
                 {/* Banner Slider */}
                 <BannerSlider
                     banners={mockBanners}
-                    onBannerPress={(banner) => console.log('Banner pressed:', banner.title)}
+                    onBannerPress={(banner) =>
+                        console.log('Banner pressed:', banner.title)
+                    }
                 />
 
                 {/* Book Service Section */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Book Service</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Services')}>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Services')}
+                        >
                             <Text style={styles.viewAll}>View All</Text>
                         </TouchableOpacity>
                     </View>
@@ -152,34 +181,58 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                 {/* Why Choose Us Section */}
                 <View style={styles.whyChooseSection}>
                     <Text style={styles.sectionTitle}>Why Choose AquaCare?</Text>
+
                     <View style={styles.featuresGrid}>
                         <View style={styles.featureItem}>
                             <View style={styles.featureIcon}>
-                                <Ionicons name="shield-checkmark" size={24} color={colors.primary} />
+                                <Ionicons
+                                    name="shield-checkmark"
+                                    size={24}
+                                    color={colors.primary}
+                                />
                             </View>
                             <Text style={styles.featureTitle}>Verified Experts</Text>
-                            <Text style={styles.featureDesc}>Background checked technicians</Text>
+                            <Text style={styles.featureDesc}>
+                                Background checked technicians
+                            </Text>
                         </View>
+
                         <View style={styles.featureItem}>
                             <View style={styles.featureIcon}>
                                 <Ionicons name="time" size={24} color={colors.primary} />
                             </View>
                             <Text style={styles.featureTitle}>On-Time Service</Text>
-                            <Text style={styles.featureDesc}>30 mins or money back</Text>
+                            <Text style={styles.featureDesc}>
+                                30 mins or money back
+                            </Text>
                         </View>
+
                         <View style={styles.featureItem}>
                             <View style={styles.featureIcon}>
-                                <Ionicons name="pricetag" size={24} color={colors.primary} />
+                                <Ionicons
+                                    name="pricetag"
+                                    size={24}
+                                    color={colors.primary}
+                                />
                             </View>
                             <Text style={styles.featureTitle}>Best Prices</Text>
-                            <Text style={styles.featureDesc}>Transparent pricing</Text>
+                            <Text style={styles.featureDesc}>
+                                Transparent pricing
+                            </Text>
                         </View>
+
                         <View style={styles.featureItem}>
                             <View style={styles.featureIcon}>
-                                <Ionicons name="headset" size={24} color={colors.primary} />
+                                <Ionicons
+                                    name="headset"
+                                    size={24}
+                                    color={colors.primary}
+                                />
                             </View>
                             <Text style={styles.featureTitle}>24/7 Support</Text>
-                            <Text style={styles.featureDesc}>Always here to help</Text>
+                            <Text style={styles.featureDesc}>
+                                Always here to help
+                            </Text>
                         </View>
                     </View>
                 </View>
@@ -190,7 +243,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flex: 1, // <-- numeric (native-safe)
         backgroundColor: colors.background,
     },
     header: {

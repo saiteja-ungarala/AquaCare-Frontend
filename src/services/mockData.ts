@@ -203,6 +203,7 @@ export const mockOrders: Order[] = [
         items: [
             {
                 id: 'CI1',
+                type: 'product',
                 product: mockProducts[0],
                 quantity: 1,
             },

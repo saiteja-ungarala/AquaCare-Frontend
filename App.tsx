@@ -1,4 +1,5 @@
-// Main App component with Navigation
+// Full App.tsx - Fixed navigation structure
+// React Navigation doesn't handle fragments well, using proper screen arrays
 
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
@@ -6,110 +7,165 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from './src/theme/theme';
-import { useAuthStore } from './src/store';
-import { RootStackParamList } from './src/models/types';
 
-// Auth Screens
+// Auth screens
 import { RoleSelectionScreen, LoginScreen, SignupScreen } from './src/screens/auth';
 
-// Customer Screens
-import {
-  CustomerHomeScreen,
-  ServiceDetailsScreen,
-  ProductDetailsScreen,
-  CartScreen,
-  BookingsScreen,
-  WalletScreen,
-  ProfileScreen,
-  ServicesScreen,
-} from './src/screens/customer';
+// Customer screens
+import { CustomerHomeScreen, ServiceDetailsScreen, ProductDetailsScreen, WalletScreen, ServicesScreen } from './src/screens/customer';
+import { CartScreen } from './src/screens/customer/CartScreen';
+import { BookingsScreen } from './src/screens/customer/BookingsScreen';
+import { ProfileScreen } from './src/screens/customer/ProfileScreen';
 
-// Agent Screens
+// Agent screens
 import { AgentDashboardScreen, EarningsScreen } from './src/screens/agent';
 
-// Dealer Screens
+// Dealer screens
 import { DealerDashboardScreen, CommissionScreen } from './src/screens/dealer';
+
+// Store
+import { useAuthStore } from './src/store';
+
+// Types
+import { RootStackParamList } from './src/models/types';
+import { colors } from './src/theme/theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
-// Customer Tab Navigator
-const CustomerTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName: keyof typeof Ionicons.glyphMap = 'home';
+// Customer bottom tabs
+function CustomerTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap = 'home';
 
-        if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
-        else if (route.name === 'Services') iconName = focused ? 'construct' : 'construct-outline';
-        else if (route.name === 'Cart') iconName = focused ? 'cart' : 'cart-outline';
-        else if (route.name === 'Bookings') iconName = focused ? 'calendar' : 'calendar-outline';
-        else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Services') {
+            iconName = focused ? 'construct' : 'construct-outline';
+          } else if (route.name === 'Bookings') {
+            iconName = focused ? 'calendar' : 'calendar-outline';
+          } else if (route.name === 'Cart') {
+            iconName = focused ? 'cart' : 'cart-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
 
-        return <Ionicons name={iconName} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: colors.primary,
-      tabBarInactiveTintColor: colors.textLight,
-      headerShown: false,
-    })}
-  >
-    <Tab.Screen name="Home" component={CustomerHomeScreen} />
-    <Tab.Screen name="Services" component={ServicesScreen} />
-    <Tab.Screen name="Cart" component={CartScreen} />
-    <Tab.Screen name="Bookings" component={BookingsScreen} />
-    <Tab.Screen name="Profile" component={ProfileScreen} />
-  </Tab.Navigator>
-);
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        headerShown: false,
+        tabBarStyle: {
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={CustomerHomeScreen} />
+      <Tab.Screen name="Services" component={ServicesScreen} />
+      <Tab.Screen name="Bookings" component={BookingsScreen} />
+      <Tab.Screen name="Cart" component={CartScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}
+
+// Auth Stack Navigator
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Signup" component={SignupScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Customer Stack Navigator
+function CustomerStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="CustomerTabs" component={CustomerTabs} />
+      <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
+      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+      <Stack.Screen name="Wallet" component={WalletScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Agent Stack Navigator
+function AgentStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="AgentDashboard" component={AgentDashboardScreen} />
+      <Stack.Screen name="Earnings" component={EarningsScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Dealer Stack Navigator
+function DealerStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="DealerDashboard" component={DealerDashboardScreen} />
+      <Stack.Screen name="Commission" component={CommissionScreen} />
+      <Stack.Screen name="ProductOrders" component={CartScreen} />
+    </Stack.Navigator>
+  );
+}
 
 export default function App() {
   const { isAuthenticated, user, checkAuth } = useAuthStore();
+  const [isReady, setIsReady] = React.useState(false);
 
   React.useEffect(() => {
-    checkAuth();
+    const init = async () => {
+      try {
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Auth check timeout')), 3000)
+        );
+        await Promise.race([checkAuth(), timeoutPromise]);
+      } catch (error) {
+        console.log('Auth check error or timeout:', error);
+      } finally {
+        setIsReady(true);
+      }
+    };
+    init();
   }, []);
+
+  // Block navigation until auth is resolved
+  if (!isReady) {
+    return null;
+  }
+
+  // Determine which stack to render
+  const renderStack = () => {
+    if (!isAuthenticated) {
+      return <AuthStack />;
+    }
+
+    switch (user?.role) {
+      case 'customer':
+        return <CustomerStack />;
+      case 'agent':
+        return <AgentStack />;
+      case 'dealer':
+        return <DealerStack />;
+      default:
+        return <AuthStack />;
+    }
+  };
 
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!isAuthenticated ? (
-            // Auth Stack
-            <>
-              <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="Signup" component={SignupScreen} />
-            </>
-          ) : (
-            // App Stack based on Role
-            <>
-              {user?.role === 'customer' && (
-                <>
-                  <Stack.Screen name="CustomerTabs" component={CustomerTabs} />
-                  <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
-                  <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
-                  <Stack.Screen name="Wallet" component={WalletScreen} />
-                </>
-              )}
-
-              {user?.role === 'agent' && (
-                <>
-                  <Stack.Screen name="AgentDashboard" component={AgentDashboardScreen} />
-                  <Stack.Screen name="Earnings" component={EarningsScreen} />
-                </>
-              )}
-
-              {user?.role === 'dealer' && (
-                <>
-                  <Stack.Screen name="DealerDashboard" component={DealerDashboardScreen} />
-                  <Stack.Screen name="Commission" component={CommissionScreen} />
-                  <Stack.Screen name="ProductOrders" component={CartScreen} />
-                  {/* Reusing CartScreen just as placeholder for ProductOrders for now */}
-                </>
-              )}
-            </>
-          )}
-        </Stack.Navigator>
+        {renderStack()}
       </NavigationContainer>
     </SafeAreaProvider>
   );

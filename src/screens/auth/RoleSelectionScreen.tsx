@@ -53,7 +53,9 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
     const setSelectedRole = useAuthStore((state) => state.setSelectedRole);
 
     const handleRoleSelect = (role: UserRole) => {
+        console.log('Role selected:', role);
         setSelectedRole(role);
+        console.log('Navigating to Login...');
         navigation.navigate('Login');
     };
 
