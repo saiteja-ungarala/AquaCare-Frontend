@@ -57,7 +57,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             activeOpacity={0.7}
         >
             <View style={styles.iconContainer}>
-                <Ionicons name={getIcon()} size={32} color={colors.primary} />
+                <Ionicons name={getIcon()} size={32} color={colors.accent} />
             </View>
             <View style={styles.content}>
                 <Text style={styles.title}>{service.name}</Text>

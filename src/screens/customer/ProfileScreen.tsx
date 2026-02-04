@@ -20,7 +20,7 @@ interface MenuItemProps {
 const MenuItem: React.FC<MenuItemProps> = ({ icon, title, subtitle, onPress, danger }) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
         <View style={[styles.menuIcon, danger && { backgroundColor: colors.error + '20' }]}>
-            <Ionicons name={icon} size={22} color={danger ? colors.error : colors.primary} />
+            <Ionicons name={icon} size={22} color={danger ? colors.error : colors.accent} />
         </View>
         <View style={styles.menuContent}>
             <Text style={[styles.menuTitle, danger && { color: colors.error }]}>{title}</Text>
@@ -53,7 +53,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.profileCard}>
                     <View style={styles.avatar}>
-                        <Ionicons name="person" size={40} color={colors.primary} />
+                        <Ionicons name="person" size={40} color={colors.accent} />
                     </View>
                     <View style={styles.profileInfo}>
                         <Text style={styles.profileName}>{user?.name || 'User'}</Text>
@@ -61,7 +61,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                         <Text style={styles.profilePhone}>{user?.phone}</Text>
                     </View>
                     <TouchableOpacity style={styles.editButton}>
-                        <Ionicons name="pencil" size={18} color={colors.primary} />
+                        <Ionicons name="pencil" size={18} color={colors.accent} />
                     </TouchableOpacity>
                 </View>
 
@@ -73,7 +73,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     </View>
                     <View style={styles.codeContainer}>
                         <Text style={styles.referralCode}>{user?.referralCode || 'WATER2024'}</Text>
-                        <Ionicons name="copy-outline" size={18} color={colors.primary} />
+                        <Ionicons name="copy-outline" size={18} color={colors.accent} />
                     </View>
                 </View>
 

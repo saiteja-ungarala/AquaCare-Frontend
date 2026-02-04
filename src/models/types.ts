@@ -194,6 +194,9 @@ export type RootStackParamList = {
     DealerDashboard: undefined;
     Commission: undefined;
     ProductOrders: undefined;
+    // Store navigation
+    StoreHome: undefined;
+    ProductListing: { category?: string };
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

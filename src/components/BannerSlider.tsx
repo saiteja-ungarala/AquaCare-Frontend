@@ -94,7 +94,7 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({
                                 <Ionicons
                                     name={getIcon(index)}
                                     size={64}
-                                    color="rgba(255,255,255,0.3)"
+                                    color={colors.glowPink}
                                     style={styles.bannerIcon}
                                 />
                                 <Text style={styles.bannerTitle}>{banner.title}</Text>
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     },
     bannerSubtitle: {
         ...typography.body,
-        color: 'rgba(255,255,255,0.9)',
+        color: colors.secondaryLight,
     },
     pagination: {
         flexDirection: 'row',

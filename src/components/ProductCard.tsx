@@ -48,7 +48,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
 
             <View style={styles.imageContainer}>
-                <Ionicons name={getIcon()} size={48} color={colors.primary} />
+                <Ionicons name={getIcon()} size={48} color={colors.accent} />
             </View>
 
             <View style={styles.content}>

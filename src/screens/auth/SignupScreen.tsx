@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
         marginTop: spacing.md,
     },
     roleBadge: {
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: colors.glassSurface,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
         borderRadius: borderRadius.full,

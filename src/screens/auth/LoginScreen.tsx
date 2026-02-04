@@ -5,19 +5,18 @@ import {
     View,
     Text,
     StyleSheet,
-    SafeAreaView,
     ScrollView,
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
     Alert,
+    StatusBar,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius } from '../../theme/theme';
 import { useAuthStore } from '../../store';
-import { Button, Input } from '../../components';
+import { Button, Input, GradientBackground } from '../../components';
 
 type LoginScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -26,7 +25,7 @@ type LoginScreenProps = {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, isLoading, error, selectedRole, clearError } = useAuthStore();
+    const { login, isLoading, error, selectedRole, clearError, setShowLoginCelebration } = useAuthStore();
 
     const getRoleLabel = () => {
         switch (selectedRole) {
@@ -59,14 +58,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             role: selectedRole,
         });
 
-        if (!success && error) {
+        if (success) {
+            // Set celebration flag before navigation
+            setShowLoginCelebration(true);
+        } else if (error) {
             Alert.alert('Login Failed', error);
             clearError();
         }
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <GradientBackground>
+            <StatusBar barStyle="light-content" />
             <KeyboardAvoidingView
                 style={styles.keyboardView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -75,26 +78,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <LinearGradient
-                        colors={[colors.gradientStart, colors.gradientEnd]}
-                        style={styles.header}
-                    >
+                    {/* Header */}
+                    <View style={styles.header}>
                         <TouchableOpacity
                             style={styles.backButton}
                             onPress={() => navigation.goBack()}
                         >
-                            <Ionicons name="arrow-back" size={24} color={colors.textOnPrimary} />
+                            <Ionicons name="arrow-back" size={24} color={colors.glassText} />
                         </TouchableOpacity>
                         <View style={styles.headerContent}>
-                            <Ionicons name="water" size={48} color={colors.textOnPrimary} />
+                            <Ionicons name="water" size={48} color={colors.glassText} />
                             <Text style={styles.headerTitle}>Welcome Back</Text>
                             <View style={styles.roleBadge}>
                                 <Text style={styles.roleBadgeText}>{getRoleLabel()}</Text>
                             </View>
                         </View>
-                    </LinearGradient>
+                    </View>
 
-                    <View style={styles.form}>
+                    {/* Form Container with Glass Effect */}
+                    <View style={styles.formContainer}>
                         <Text style={styles.formTitle}>Login to your account</Text>
 
                         <Input
@@ -156,15 +158,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </GradientBackground>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
     keyboardView: {
         flex: 1,
     },
@@ -172,17 +170,19 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     header: {
-        paddingTop: spacing.xl,
+        paddingTop: spacing.xxl + 20,
         paddingBottom: spacing.xl,
-        borderBottomLeftRadius: borderRadius.xl,
-        borderBottomRightRadius: borderRadius.xl,
+        paddingHorizontal: spacing.md,
     },
     backButton: {
-        position: 'absolute',
-        top: spacing.md,
-        left: spacing.md,
-        zIndex: 1,
-        padding: spacing.sm,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.glassSurface,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.glassBorder,
     },
     headerContent: {
         alignItems: 'center',
@@ -190,24 +190,30 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         ...typography.h2,
-        color: colors.textOnPrimary,
+        color: colors.glassText,
         marginTop: spacing.md,
     },
     roleBadge: {
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: colors.glassSurface,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
         borderRadius: borderRadius.full,
         marginTop: spacing.sm,
+        borderWidth: 1,
+        borderColor: colors.glassBorder,
     },
     roleBadgeText: {
         ...typography.bodySmall,
-        color: colors.textOnPrimary,
+        color: colors.glassText,
         fontWeight: '600',
     },
-    form: {
+    formContainer: {
         flex: 1,
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
         padding: spacing.lg,
+        marginTop: spacing.md,
     },
     formTitle: {
         ...typography.h3,
@@ -269,3 +275,4 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
     },
 });
+

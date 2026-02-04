@@ -17,6 +17,9 @@ import { CartScreen } from './src/screens/customer/CartScreen';
 import { BookingsScreen } from './src/screens/customer/BookingsScreen';
 import { ProfileScreen } from './src/screens/customer/ProfileScreen';
 
+// Store screens
+import { StoreHomeScreen, ProductListingScreen } from './src/screens/store';
+
 // Agent screens
 import { AgentDashboardScreen, EarningsScreen } from './src/screens/agent';
 
@@ -33,6 +36,18 @@ import { colors } from './src/theme/theme';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
+// Store Stack Navigator
+function StoreStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="StoreHome" component={StoreHomeScreen} />
+      <Stack.Screen name="ProductListing" component={ProductListingScreen} />
+      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+      <Stack.Screen name="Cart" component={CartScreen} />
+    </Stack.Navigator>
+  );
+}
+
 // Customer bottom tabs
 function CustomerTabs() {
   return (
@@ -47,28 +62,35 @@ function CustomerTabs() {
             iconName = focused ? 'construct' : 'construct-outline';
           } else if (route.name === 'Bookings') {
             iconName = focused ? 'calendar' : 'calendar-outline';
-          } else if (route.name === 'Cart') {
-            iconName = focused ? 'cart' : 'cart-outline';
+          } else if (route.name === 'Store') {
+            iconName = focused ? 'storefront' : 'storefront-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return <Ionicons name={iconName} size={26} color={color} />;
         },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarActiveTintColor: colors.tabBarActive,
+        tabBarInactiveTintColor: colors.tabBarInactive,
         headerShown: false,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+        },
         tabBarStyle: {
+          backgroundColor: colors.tabBarBackground,
           paddingBottom: 8,
           paddingTop: 8,
-          height: 60,
+          height: 62,
+          borderTopWidth: 1,
+          borderTopColor: colors.tabBarBorder,
         },
       })}
     >
       <Tab.Screen name="Home" component={CustomerHomeScreen} />
       <Tab.Screen name="Services" component={ServicesScreen} />
       <Tab.Screen name="Bookings" component={BookingsScreen} />
-      <Tab.Screen name="Cart" component={CartScreen} />
+      <Tab.Screen name="Store" component={StoreStack} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

@@ -1,20 +1,23 @@
-// Role Selection Screen - First screen of the app
+// Role Selection Screen - First screen of the app with animations
 
 import React from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    SafeAreaView,
-    TouchableOpacity,
     StatusBar,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
+import { colors, spacing, typography, borderRadius } from '../../theme/theme';
 import { useAuthStore } from '../../store';
 import { UserRole } from '../../models/types';
+import {
+    GradientBackground,
+    AnimatedPressable,
+    FadeInView,
+    PulseIcon
+} from '../../components';
 
 type RoleSelectionScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -26,6 +29,7 @@ interface RoleCardProps {
     description: string;
     icon: keyof typeof Ionicons.glyphMap;
     onPress: () => void;
+    delay: number;
 }
 
 const RoleCard: React.FC<RoleCardProps> = ({
@@ -34,17 +38,22 @@ const RoleCard: React.FC<RoleCardProps> = ({
     description,
     icon,
     onPress,
+    delay,
 }) => (
-    <TouchableOpacity style={styles.roleCard} onPress={onPress} activeOpacity={0.8}>
-        <View style={styles.roleIconContainer}>
-            <Ionicons name={icon} size={32} color={colors.primary} />
-        </View>
-        <View style={styles.roleContent}>
-            <Text style={styles.roleTitle}>{title}</Text>
-            <Text style={styles.roleDescription}>{description}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={24} color={colors.textLight} />
-    </TouchableOpacity>
+    <FadeInView delay={delay} duration={500} direction="up" distance={30}>
+        <AnimatedPressable style={styles.roleCard} onPress={onPress} scaleValue={0.97}>
+            <View style={styles.roleIconContainer}>
+                <Ionicons name={icon} size={32} color={colors.glassText} />
+            </View>
+            <View style={styles.roleContent}>
+                <Text style={styles.roleTitle}>{title}</Text>
+                <Text style={styles.roleDescription}>{description}</Text>
+            </View>
+            <View style={styles.arrowContainer}>
+                <Ionicons name="chevron-forward" size={24} color={colors.glassTextSecondary} />
+            </View>
+        </AnimatedPressable>
+    </FadeInView>
 );
 
 export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
@@ -60,88 +69,104 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <GradientBackground>
             <StatusBar barStyle="light-content" />
+            <View style={styles.container}>
+                {/* Logo Section with Pulse Animation */}
+                <FadeInView delay={100} duration={600} direction="down" distance={20}>
+                    <View style={styles.header}>
+                        <View style={styles.logoContainer}>
+                            <PulseIcon
+                                name="water"
+                                size={64}
+                                color={colors.glassText}
+                                pulseColor={colors.glowTeal}
+                            />
+                        </View>
 
-            <LinearGradient
-                colors={[colors.gradientStart, colors.gradientEnd]}
-                style={styles.header}
-            >
-                <View style={styles.logoContainer}>
-                    <Ionicons name="water" size={64} color={colors.textOnPrimary} />
+                        <Text style={styles.appName}>AquaCare</Text>
+                        <Text style={styles.tagline}>Pure Water, Better Life</Text>
+                    </View>
+                </FadeInView>
+
+                {/* Role Selection Cards with Staggered Animation */}
+                <View style={styles.content}>
+                    <FadeInView delay={300} duration={400}>
+                        <Text style={styles.selectTitle}>Continue as</Text>
+                    </FadeInView>
+
+                    <RoleCard
+                        role="customer"
+                        title="Customer"
+                        description="Book services & buy products"
+                        icon="person-outline"
+                        onPress={() => handleRoleSelect('customer')}
+                        delay={400}
+                    />
+
+                    <RoleCard
+                        role="agent"
+                        title="Service Agent"
+                        description="Accept jobs & earn money"
+                        icon="construct-outline"
+                        onPress={() => handleRoleSelect('agent')}
+                        delay={550}
+                    />
+
+                    <RoleCard
+                        role="dealer"
+                        title="Dealer"
+                        description="Manage orders & commissions"
+                        icon="business-outline"
+                        onPress={() => handleRoleSelect('dealer')}
+                        delay={700}
+                    />
                 </View>
-                <Text style={styles.appName}>AquaCare</Text>
-                <Text style={styles.tagline}>Pure Water, Better Life</Text>
-            </LinearGradient>
 
-            <View style={styles.content}>
-                <Text style={styles.selectTitle}>Continue as</Text>
-
-                <RoleCard
-                    role="customer"
-                    title="Customer"
-                    description="Book services & buy products"
-                    icon="person-outline"
-                    onPress={() => handleRoleSelect('customer')}
-                />
-
-                <RoleCard
-                    role="agent"
-                    title="Service Agent"
-                    description="Accept jobs & earn money"
-                    icon="construct-outline"
-                    onPress={() => handleRoleSelect('agent')}
-                />
-
-                <RoleCard
-                    role="dealer"
-                    title="Dealer"
-                    description="Manage orders & commissions"
-                    icon="business-outline"
-                    onPress={() => handleRoleSelect('dealer')}
-                />
+                {/* Footer */}
+                <FadeInView delay={900} duration={400}>
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>
+                            By continuing, you agree to our{' '}
+                            <Text style={styles.link}>Terms of Service</Text> and{' '}
+                            <Text style={styles.link}>Privacy Policy</Text>
+                        </Text>
+                    </View>
+                </FadeInView>
             </View>
-
-            <View style={styles.footer}>
-                <Text style={styles.footerText}>
-                    By continuing, you agree to our{' '}
-                    <Text style={styles.link}>Terms of Service</Text> and{' '}
-                    <Text style={styles.link}>Privacy Policy</Text>
-                </Text>
-            </View>
-        </SafeAreaView>
+        </GradientBackground>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        paddingTop: spacing.xxl + 20,
     },
     header: {
-        paddingTop: spacing.xxl,
-        paddingBottom: spacing.xl,
         alignItems: 'center',
-        borderBottomLeftRadius: borderRadius.xl,
-        borderBottomRightRadius: borderRadius.xl,
+        paddingBottom: spacing.xl,
     },
     logoContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: colors.glassSurfaceStrong,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.md,
+        borderWidth: 2,
+        borderColor: colors.glassBorder,
     },
     appName: {
         ...typography.h1,
-        color: colors.textOnPrimary,
+        color: colors.glassText,
         fontWeight: '700',
+        letterSpacing: 1,
     },
     tagline: {
         ...typography.body,
-        color: 'rgba(255,255,255,0.8)',
+        color: colors.glassTextSecondary,
         marginTop: spacing.xs,
     },
     content: {
@@ -150,23 +175,24 @@ const styles = StyleSheet.create({
     },
     selectTitle: {
         ...typography.h3,
-        color: colors.text,
+        color: colors.glassText,
         marginBottom: spacing.lg,
     },
     roleCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.surface,
+        backgroundColor: colors.glassSurfaceStrong,
         borderRadius: borderRadius.lg,
         padding: spacing.md,
         marginBottom: spacing.md,
-        ...shadows.md,
+        borderWidth: 1.5,
+        borderColor: colors.glassBorder,
     },
     roleIconContainer: {
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: colors.surfaceSecondary,
+        backgroundColor: colors.glassSurfaceVibrant,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -176,13 +202,21 @@ const styles = StyleSheet.create({
     },
     roleTitle: {
         ...typography.body,
-        fontWeight: '600',
-        color: colors.text,
+        fontWeight: '700',
+        color: colors.glassText,
     },
     roleDescription: {
         ...typography.bodySmall,
-        color: colors.textSecondary,
+        color: colors.glassTextSecondary,
         marginTop: 2,
+    },
+    arrowContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.glassSurface,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     footer: {
         padding: spacing.lg,
@@ -190,11 +224,11 @@ const styles = StyleSheet.create({
     },
     footerText: {
         ...typography.caption,
-        color: colors.textSecondary,
+        color: colors.glassTextSecondary,
         textAlign: 'center',
     },
     link: {
-        color: colors.primary,
-        fontWeight: '500',
+        color: colors.glassText,
+        fontWeight: '600',
     },
 });

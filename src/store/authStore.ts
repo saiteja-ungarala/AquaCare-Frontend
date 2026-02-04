@@ -11,6 +11,7 @@ interface AuthState {
     isAuthenticated: boolean;
     selectedRole: UserRole | null;
     error: string | null;
+    showLoginCelebration: boolean;
 }
 
 interface AuthActions {
@@ -20,6 +21,7 @@ interface AuthActions {
     logout: () => Promise<void>;
     checkAuth: () => Promise<void>;
     clearError: () => void;
+    setShowLoginCelebration: (show: boolean) => void;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -32,6 +34,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     isAuthenticated: false,
     selectedRole: null,
     error: null,
+    showLoginCelebration: false,
 
     // Actions
     setSelectedRole: (role: UserRole) => {
@@ -91,6 +94,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 isAuthenticated: false,
                 isLoading: false,
                 selectedRole: null,
+                showLoginCelebration: false,
             });
         }
     },
@@ -116,5 +120,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     clearError: () => {
         set({ error: null });
+    },
+
+    setShowLoginCelebration: (show: boolean) => {
+        set({ showLoginCelebration: show });
     },
 }));

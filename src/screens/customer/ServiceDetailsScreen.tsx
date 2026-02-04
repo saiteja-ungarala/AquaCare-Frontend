@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     },
     serviceDuration: {
         ...typography.body,
-        color: 'rgba(255,255,255,0.8)',
+        color: colors.secondaryLight,
         marginTop: spacing.xs,
     },
     content: {

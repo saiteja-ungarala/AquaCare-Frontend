@@ -83,7 +83,7 @@ export const AgentDashboardScreen: React.FC<AgentDashboardScreenProps> = ({ navi
                         <View style={styles.headerActions}>
                             <View style={styles.onlineToggle}>
                                 <Text style={styles.onlineLabel}>{isOnline ? 'Online' : 'Offline'}</Text>
-                                <Switch trackColor={{ false: '#767577', true: colors.success }} thumbColor="white" onValueChange={setIsOnline} value={isOnline} />
+                                <Switch trackColor={{ false: '#767577', true: colors.success }} thumbColor={colors.secondary} onValueChange={setIsOnline} value={isOnline} />
                             </View>
                             <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
                                 <Ionicons name="log-out-outline" size={24} color={colors.textOnPrimary} />
@@ -190,15 +190,15 @@ const styles = StyleSheet.create({
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     greeting: { ...typography.h2, color: colors.textOnPrimary },
-    subGreeting: { ...typography.body, color: 'rgba(255,255,255,0.8)' },
+    subGreeting: { ...typography.body, color: colors.secondaryLight },
     onlineToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     logoutButton: { padding: spacing.xs },
     onlineLabel: { ...typography.bodySmall, color: colors.textOnPrimary },
-    statsRow: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: borderRadius.lg, padding: spacing.md },
+    statsRow: { flexDirection: 'row', backgroundColor: colors.glassSurface, borderRadius: borderRadius.lg, padding: spacing.md },
     statItem: { flex: 1, alignItems: 'center' },
     statValue: { ...typography.h3, color: colors.textOnPrimary, fontWeight: '700' },
-    statLabel: { ...typography.caption, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
-    statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.3)' },
+    statLabel: { ...typography.caption, color: colors.secondaryLight, marginTop: 2 },
+    statDivider: { width: 1, backgroundColor: colors.glassBorder },
     content: { padding: spacing.md },
     section: { marginBottom: spacing.xl },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },

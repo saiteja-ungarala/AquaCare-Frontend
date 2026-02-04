@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     headerTitle: { ...typography.h3, color: colors.text },
     scrollView: { flex: 1, padding: spacing.md },
     balanceCard: { borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.md },
-    balanceLabel: { ...typography.body, color: 'rgba(255,255,255,0.8)' },
+    balanceLabel: { ...typography.body, color: colors.secondaryLight },
     balanceAmount: { ...typography.h1, color: colors.textOnPrimary, fontWeight: '700', marginVertical: spacing.sm },
     balanceActions: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
     balanceAction: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
