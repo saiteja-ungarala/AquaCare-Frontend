@@ -9,7 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 // Auth screens
-import { RoleSelectionScreen, LoginScreen, SignupScreen } from './src/screens/auth';
+import { RoleSelectionScreen, LoginScreen, SignupScreen, ForgotPasswordScreen } from './src/screens/auth';
 
 // Customer screens
 import { CustomerHomeScreen, ServiceDetailsScreen, ProductDetailsScreen, WalletScreen, ServicesScreen } from './src/screens/customer';
@@ -103,6 +103,7 @@ function AuthStack() {
       <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   );
 }

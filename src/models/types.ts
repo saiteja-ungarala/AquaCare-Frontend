@@ -182,6 +182,7 @@ export type RootStackParamList = {
     RoleSelection: undefined;
     Login: undefined;
     Signup: undefined;
+    ForgotPassword: undefined;
     CustomerTabs: undefined;
     ServiceDetails: { service: Service };
     ProductDetails: { product: Product };

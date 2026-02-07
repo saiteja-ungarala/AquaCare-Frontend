@@ -7,6 +7,7 @@ import { authService } from '../services/authService';
 interface AuthState {
     user: User | null;
     token: string | null;
+    refreshToken: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     selectedRole: UserRole | null;
@@ -30,6 +31,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     // Initial state
     user: null,
     token: null,
+    refreshToken: null,
     isLoading: false,
     isAuthenticated: false,
     selectedRole: null,
@@ -44,10 +46,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     login: async (credentials: LoginCredentials) => {
         set({ isLoading: true, error: null });
         try {
-            const { user, token } = await authService.login(credentials);
+            const { user, token, refreshToken } = await authService.login(credentials);
             set({
                 user,
                 token,
+                refreshToken: refreshToken || null,
                 isAuthenticated: true,
                 isLoading: false,
                 selectedRole: user.role,
@@ -65,10 +68,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     signup: async (data: SignupData) => {
         set({ isLoading: true, error: null });
         try {
-            const { user, token } = await authService.signup(data);
+            const { user, token, refreshToken } = await authService.signup(data);
             set({
                 user,
                 token,
+                refreshToken: refreshToken || null,
                 isAuthenticated: true,
                 isLoading: false,
                 selectedRole: user.role,
@@ -91,6 +95,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             set({
                 user: null,
                 token: null,
+                refreshToken: null,
                 isAuthenticated: false,
                 isLoading: false,
                 selectedRole: null,

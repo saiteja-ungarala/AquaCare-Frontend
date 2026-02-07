@@ -18,6 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius } from '../../theme/theme';
 import { useAuthStore } from '../../store';
 import { Button, Input } from '../../components';
+import { mapAuthError, isValidEmail } from '../../utils/errorMapper';
 
 type SignupScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -77,24 +78,41 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
     const handleSignup = async () => {
         if (!validateForm()) return;
 
+        // Additional email format validation
+        if (!isValidEmail(email)) {
+            Alert.alert('Validation Error', 'Please enter a valid email address');
+            return;
+        }
+
         if (!selectedRole) {
             Alert.alert('Error', 'Please select a role first');
             navigation.navigate('RoleSelection');
             return;
         }
 
-        const success = await signup({
-            name,
-            email,
-            phone,
-            password,
-            role: selectedRole,
-            referralCode: referralCode.trim() || undefined,
-        });
+        try {
+            const success = await signup({
+                name,
+                email: email.trim(),
+                phone,
+                password,
+                role: selectedRole,
+                referralCode: referralCode.trim() || undefined,
+            });
 
-        if (!success && error) {
-            Alert.alert('Signup Failed', error);
-            clearError();
+            if (success) {
+                // Show success toast - auto-login happens via the store
+                Alert.alert('Success', 'Registration successful! Welcome to AquaCare.');
+            } else {
+                // Get fresh error from store and map it
+                const currentError = useAuthStore.getState().error;
+                const message = currentError || mapAuthError(null);
+                Alert.alert('Signup Failed', message);
+                clearError();
+            }
+        } catch (error) {
+            const message = mapAuthError(error);
+            Alert.alert('Signup Failed', message);
         }
     };
 

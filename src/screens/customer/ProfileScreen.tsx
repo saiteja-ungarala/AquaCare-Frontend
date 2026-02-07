@@ -110,7 +110,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
                 <View style={styles.section}>
                     <View style={styles.menuCard}>
-                        <MenuItem icon="log-out-outline" title="Logout" onPress={handleLogout} danger />
+                        <MenuItem icon="log-out-outline" title="Logout" onPress={handleLogout} />
                     </View>
                 </View>
 

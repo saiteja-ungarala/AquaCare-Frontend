@@ -1,6 +1,9 @@
+// Auth Service - Real API implementation
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import api from './api';
 import { User, LoginCredentials, SignupData, UserRole } from '../models/types';
+import { STORAGE_KEYS } from '../config/constants';
 
 // Storage helper functions
 const storage = {
@@ -26,150 +29,181 @@ const storage = {
     }
 };
 
-// Mock user data for demo
-const mockUsers: Record<string, User> = {
-    'customer@test.com': {
-        id: 'U001',
-        email: 'customer@test.com',
-        name: 'John Customer',
-        phone: '+91 98765 43210',
-        role: 'customer',
-        referralCode: 'JOHN100',
-        createdAt: '2026-01-01T00:00:00Z',
-    },
-    'agent@test.com': {
-        id: 'U002',
-        email: 'agent@test.com',
-        name: 'Rajesh Agent',
-        phone: '+91 98765 43211',
-        role: 'agent',
-        createdAt: '2026-01-01T00:00:00Z',
-    },
-    'dealer@test.com': {
-        id: 'U003',
-        email: 'dealer@test.com',
-        name: 'Suresh Dealer',
-        phone: '+91 98765 43212',
-        role: 'dealer',
-        referralCode: 'DEALER50',
-        createdAt: '2026-01-01T00:00:00Z',
-    },
+// Map backend user to frontend User type
+const mapBackendUser = (backendUser: any, role?: UserRole): User => {
+    return {
+        id: String(backendUser.id),
+        email: backendUser.email,
+        name: backendUser.full_name || backendUser.name || '',
+        phone: backendUser.phone || '',
+        role: role || backendUser.role || 'customer',
+        referralCode: backendUser.referral_code,
+        createdAt: backendUser.created_at || new Date().toISOString(),
+    };
 };
 
 export const authService = {
     // Login with email and password
-    async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    async login(credentials: LoginCredentials): Promise<{ user: User; token: string; refreshToken?: string }> {
+        try {
+            const response = await api.post('/auth/login', {
+                email: credentials.email,
+                password: credentials.password,
+            });
 
-        // For demo: accept any email with password "password123"
-        // In production, this would call your backend API
-        if (credentials.password !== 'password123') {
-            throw new Error('Invalid email or password');
+            const { data } = response.data;
+            const user = mapBackendUser(data.user, credentials.role);
+            const accessToken = data.accessToken;
+            const refreshToken = data.refreshToken;
+
+            // Store tokens and user in secure storage
+            await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
+            if (refreshToken) {
+                await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+            }
+            await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+
+            console.log('[Auth] Login successful, token stored');
+            return { user, token: accessToken, refreshToken };
+        } catch (error: any) {
+            console.error('[Auth] Login error full:', JSON.stringify(error.response?.data, null, 2));
+            console.error('[Auth] Login error status:', error.response?.status);
+
+            // Extract message from various possible locations in the error response
+            let message = 'Login failed. Please try again.';
+
+            if (error.response?.data) {
+                const data = error.response.data;
+                // Try different possible message locations
+                message = data.message || data.error || data.msg || message;
+            } else if (error.message) {
+                message = error.message;
+            }
+
+            console.error('[Auth] Final error message:', message);
+            throw new Error(message);
         }
-
-        const user = mockUsers[credentials.email] || {
-            id: `U${Date.now()}`,
-            email: credentials.email,
-            name: credentials.email.split('@')[0],
-            phone: '+91 00000 00000',
-            role: credentials.role,
-            referralCode: `REF${Date.now().toString(36).toUpperCase()}`,
-            createdAt: new Date().toISOString(),
-        };
-
-        // Override role with selected role
-        user.role = credentials.role;
-
-        const token = `mock_token_${Date.now()}`;
-
-        // Store token and user in secure storage
-        await storage.setItem('authToken', token);
-        await storage.setItem('user', JSON.stringify(user));
-
-        return { user, token };
     },
 
     // Signup new user
-    async signup(data: SignupData): Promise<{ user: User; token: string }> {
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+    async signup(data: SignupData): Promise<{ user: User; token: string; refreshToken?: string }> {
+        try {
+            const response = await api.post('/auth/signup', {
+                full_name: data.name, // Map frontend 'name' to backend 'full_name'
+                email: data.email,
+                password: data.password,
+                phone: data.phone,
+                role: data.role,
+            });
 
-        // For demo: create new user
-        const user: User = {
-            id: `U${Date.now()}`,
-            email: data.email,
-            name: data.name,
-            phone: data.phone,
-            role: data.role,
-            referralCode: `REF${Date.now().toString(36).toUpperCase()}`,
-            referredBy: data.referralCode,
-            createdAt: new Date().toISOString(),
-        };
+            const { data: responseData } = response.data;
+            const user = mapBackendUser(responseData.user, data.role);
+            const accessToken = responseData.accessToken;
+            const refreshToken = responseData.refreshToken;
 
-        const token = `mock_token_${Date.now()}`;
+            // Store tokens and user in secure storage
+            await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
+            if (refreshToken) {
+                await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+            }
+            await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
-        // Store token and user in secure storage
-        await storage.setItem('authToken', token);
-        await storage.setItem('user', JSON.stringify(user));
+            console.log('[Auth] Signup successful, token stored');
+            return { user, token: accessToken, refreshToken };
+        } catch (error: any) {
+            console.error('[Auth] Signup error full:', JSON.stringify(error.response?.data, null, 2));
+            console.error('[Auth] Signup error status:', error.response?.status);
 
-        return { user, token };
+            // Extract message from various possible locations in the error response
+            let message = 'Signup failed. Please try again.';
+
+            if (error.response?.data) {
+                const data = error.response.data;
+                // Try different possible message locations
+                message = data.message || data.error || data.msg || message;
+            } else if (error.message) {
+                message = error.message;
+            }
+
+            console.error('[Auth] Final error message:', message);
+            throw new Error(message);
+        }
     },
 
     // Logout
     async logout(): Promise<void> {
-        await storage.deleteItem('authToken');
-        await storage.deleteItem('user');
-    },
-
-    // Check if user is logged in
-    async checkAuth(): Promise<{ user: User; token: string } | null> {
         try {
-            const token = await storage.getItem('authToken');
-            const userJson = await storage.getItem('user');
-
-            if (token && userJson) {
-                const user = JSON.parse(userJson) as User;
-                return { user, token };
+            const refreshToken = await storage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+            if (refreshToken) {
+                // Call backend to revoke refresh token
+                await api.post('/auth/logout', { refreshToken });
             }
         } catch (error) {
-            console.error('Error checking auth:', error);
+            console.error('[Auth] Logout API error (continuing with local cleanup):', error);
+        } finally {
+            // Always clear local storage
+            await storage.deleteItem(STORAGE_KEYS.AUTH_TOKEN);
+            await storage.deleteItem(STORAGE_KEYS.REFRESH_TOKEN);
+            await storage.deleteItem(STORAGE_KEYS.USER);
+            console.log('[Auth] Logged out, tokens cleared');
         }
-        return null;
     },
 
-    // Request OTP (placeholder)
+    // Check if user is logged in and validate token
+    async checkAuth(): Promise<{ user: User; token: string } | null> {
+        try {
+            const token = await storage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+            const userJson = await storage.getItem(STORAGE_KEYS.USER);
+
+            if (!token) {
+                console.log('[Auth] No token found');
+                return null;
+            }
+
+            console.log('[Auth] Token found, validating with /auth/me');
+
+            // Validate token with backend
+            const response = await api.get('/auth/me');
+            const { data } = response.data;
+
+            // Get stored user role (backend might not return it from /me)
+            let storedUser: User | null = null;
+            if (userJson) {
+                try {
+                    storedUser = JSON.parse(userJson);
+                } catch (e) {
+                    // Ignore parse error
+                }
+            }
+
+            const user = mapBackendUser(data.user, storedUser?.role);
+
+            // Update stored user with fresh data
+            await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+
+            console.log('[Auth] Token validated, user:', user.email);
+            return { user, token };
+        } catch (error: any) {
+            console.error('[Auth] checkAuth error:', error.response?.data || error.message);
+            // Token is invalid, clear storage
+            await storage.deleteItem(STORAGE_KEYS.AUTH_TOKEN);
+            await storage.deleteItem(STORAGE_KEYS.REFRESH_TOKEN);
+            await storage.deleteItem(STORAGE_KEYS.USER);
+            return null;
+        }
+    },
+
+    // Request OTP (placeholder for future implementation)
     async requestOTP(phone: string): Promise<boolean> {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        console.log('OTP sent to:', phone);
-        return true;
+        console.log('[Auth] OTP request for:', phone);
+        // TODO: Implement when backend supports OTP
+        throw new Error('OTP login not yet implemented');
     },
 
-    // Verify OTP (placeholder)
+    // Verify OTP (placeholder for future implementation)
     async verifyOTP(phone: string, otp: string, role: UserRole): Promise<{ user: User; token: string }> {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        if (otp !== '123456') {
-            throw new Error('Invalid OTP');
-        }
-
-        const user: User = {
-            id: `U${Date.now()}`,
-            email: `${phone}@phone.local`,
-            name: 'Phone User',
-            phone: phone,
-            role: role,
-            referralCode: `REF${Date.now().toString(36).toUpperCase()}`,
-            createdAt: new Date().toISOString(),
-        };
-
-        const token = `mock_token_${Date.now()}`;
-
-        await storage.setItem('authToken', token);
-        await storage.setItem('user', JSON.stringify(user));
-
-        return { user, token };
+        console.log('[Auth] OTP verify for:', phone);
+        // TODO: Implement when backend supports OTP
+        throw new Error('OTP login not yet implemented');
     },
 };

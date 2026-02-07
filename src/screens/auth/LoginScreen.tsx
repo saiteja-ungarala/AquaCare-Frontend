@@ -1,4 +1,4 @@
-// Login Screen
+// Login Screen with validation and proper error handling
 
 import React, { useState } from 'react';
 import {
@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius } from '../../theme/theme';
 import { useAuthStore } from '../../store';
 import { Button, Input, GradientBackground } from '../../components';
+import { validateLoginForm, mapAuthError } from '../../utils/errorMapper';
 
 type LoginScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -25,7 +26,7 @@ type LoginScreenProps = {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, isLoading, error, selectedRole, clearError, setShowLoginCelebration } = useAuthStore();
+    const { login, isLoading, selectedRole, setShowLoginCelebration } = useAuthStore();
 
     const getRoleLabel = () => {
         switch (selectedRole) {
@@ -41,8 +42,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     };
 
     const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter email and password');
+        // Client-side validation first
+        const validation = validateLoginForm(email, password);
+        if (!validation.isValid) {
+            Alert.alert('Validation Error', validation.error!);
             return;
         }
 
@@ -52,19 +55,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             return;
         }
 
-        const success = await login({
-            email,
-            password,
-            role: selectedRole,
-        });
+        try {
+            const success = await login({
+                email: email.trim(),
+                password,
+                role: selectedRole,
+            });
 
-        if (success) {
-            // Set celebration flag before navigation
-            setShowLoginCelebration(true);
-        } else if (error) {
-            Alert.alert('Login Failed', error);
-            clearError();
+            if (success) {
+                // Show success toast and navigate
+                Alert.alert('Success', 'Login successful!', [
+                    { text: 'OK', onPress: () => setShowLoginCelebration(true) }
+                ]);
+            } else {
+                // Get error from store
+                const currentError = useAuthStore.getState().error;
+                const message = currentError || 'Login failed. Please try again.';
+                Alert.alert('Login Failed', message);
+            }
+        } catch (error) {
+            const message = mapAuthError(error);
+            Alert.alert('Login Failed', message);
         }
+    };
+
+    const handleForgotPassword = () => {
+        navigation.navigate('ForgotPassword');
     };
 
     return (
@@ -118,7 +134,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                             leftIcon="lock-closed-outline"
                         />
 
-                        <TouchableOpacity style={styles.forgotPassword}>
+                        <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                         </TouchableOpacity>
 
@@ -148,12 +164,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                             <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
                                 <Text style={styles.signupLink}>Sign Up</Text>
                             </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.demoCredentials}>
-                            <Text style={styles.demoTitle}>Demo Credentials:</Text>
-                            <Text style={styles.demoText}>Email: any email</Text>
-                            <Text style={styles.demoText}>Password: password123</Text>
                         </View>
                     </View>
                 </ScrollView>
@@ -226,7 +236,7 @@ const styles = StyleSheet.create({
     },
     forgotPasswordText: {
         ...typography.bodySmall,
-        color: colors.primary,
+        color: colors.accent,
         fontWeight: '500',
     },
     divider: {
@@ -255,24 +265,7 @@ const styles = StyleSheet.create({
     },
     signupLink: {
         ...typography.body,
-        color: colors.primary,
+        color: colors.accent,
         fontWeight: '600',
-    },
-    demoCredentials: {
-        marginTop: spacing.xl,
-        padding: spacing.md,
-        backgroundColor: colors.surfaceSecondary,
-        borderRadius: borderRadius.md,
-    },
-    demoTitle: {
-        ...typography.bodySmall,
-        fontWeight: '600',
-        color: colors.text,
-        marginBottom: spacing.xs,
-    },
-    demoText: {
-        ...typography.caption,
-        color: colors.textSecondary,
     },
 });
-
