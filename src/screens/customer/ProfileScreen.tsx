@@ -20,13 +20,13 @@ interface MenuItemProps {
 const MenuItem: React.FC<MenuItemProps> = ({ icon, title, subtitle, onPress, danger }) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
         <View style={[styles.menuIcon, danger && { backgroundColor: colors.error + '20' }]}>
-            <Ionicons name={icon} size={22} color={danger ? colors.error : colors.accent} />
+            <Ionicons name={icon} size={22} color={danger ? colors.error : colors.primary} />
         </View>
         <View style={styles.menuContent}>
             <Text style={[styles.menuTitle, danger && { color: colors.error }]}>{title}</Text>
             {subtitle && <Text style={styles.menuSubtitle}>{subtitle}</Text>}
         </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
 );
 
@@ -123,27 +123,27 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: { padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
-    headerTitle: { ...typography.h3, color: colors.text },
+    headerTitle: { ...typography.h2, fontSize: 20, color: colors.text },
     scrollView: { flex: 1, padding: spacing.md },
-    profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, ...shadows.sm }, // reduced marginBottom
-    referralCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.primary + '30' },
-    referralTitle: { ...typography.body, fontWeight: '600', color: colors.primary },
-    referralSubtitle: { ...typography.caption, color: colors.textSecondary },
-    codeContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.md, gap: spacing.xs },
-    referralCode: { ...typography.bodySmall, fontWeight: '700', color: colors.text },
-    avatar: { width: 70, height: 70, borderRadius: 35, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' },
-    profileInfo: { flex: 1, marginLeft: spacing.md },
-    profileName: { ...typography.h3, color: colors.text },
-    profileEmail: { ...typography.bodySmall, color: colors.textSecondary },
+    profileCard: { flexDirection: 'row', backgroundColor: colors.surface2, borderRadius: borderRadius.lg, padding: spacing.md, ...shadows.sm, marginBottom: spacing.md },
+    avatar: { width: 70, height: 70, borderRadius: 35, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md },
+    profileInfo: { flex: 1, justifyContent: 'center' },
+    profileName: { ...typography.h2, fontSize: 18, color: colors.text, marginBottom: 2 },
+    profileEmail: { ...typography.bodySmall, color: colors.textSecondary, marginBottom: 2 },
     profilePhone: { ...typography.bodySmall, color: colors.textSecondary },
-    editButton: { padding: spacing.sm },
-    section: { marginBottom: spacing.lg },
-    sectionTitle: { ...typography.bodySmall, fontWeight: '600', color: colors.textSecondary, marginBottom: spacing.sm, marginLeft: spacing.xs },
-    menuCard: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, ...shadows.sm },
-    menuItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
-    menuIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' },
-    menuContent: { flex: 1, marginLeft: spacing.md },
-    menuTitle: { ...typography.body, color: colors.text },
+    editButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
+    referralCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.primaryLight, padding: spacing.md, borderRadius: borderRadius.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
+    referralTitle: { ...typography.h2, fontSize: 16, color: colors.primary, marginBottom: 2 },
+    referralSubtitle: { ...typography.caption, color: colors.textSecondary },
+    codeContainer: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.surface, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: borderRadius.sm },
+    referralCode: { ...typography.body, fontWeight: '700', color: colors.text },
+    section: { marginTop: spacing.md },
+    sectionTitle: { ...typography.bodySmall, color: colors.textSecondary, marginBottom: spacing.sm, paddingHorizontal: spacing.xs, textTransform: 'uppercase', fontWeight: '700' },
+    menuCard: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, ...shadows.sm, overflow: 'hidden' },
+    menuItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+    menuIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md },
+    menuContent: { flex: 1 },
+    menuTitle: { ...typography.body, fontWeight: '600', color: colors.text, marginBottom: 2 },
     menuSubtitle: { ...typography.caption, color: colors.textSecondary },
-    version: { ...typography.caption, color: colors.textLight, textAlign: 'center', marginTop: spacing.md, marginBottom: spacing.xl },
+    version: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xl, marginBottom: spacing.lg },
 });

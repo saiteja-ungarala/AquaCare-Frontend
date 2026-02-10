@@ -1,24 +1,103 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { storeTheme, spacing, borderRadius } from '../../theme/theme';
+import storeService, { StoreCategory, StoreProduct } from '../../services/storeService';
+import { useCartStore } from '../../store/cartStore';
 
-interface Category {
-    id: string;
-    name: string;
-    icon: keyof typeof Ionicons.glyphMap;
-}
+// Icon mapping from backend iconKey to Ionicons
+const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
+    water_drop: 'water',
+    droplet: 'water',
+    box: 'cube',
+    filter: 'filter',
+    tools: 'construct',
+    pump: 'hardware-chip',
+    snow: 'snow',
+};
 
-const categories: Category[] = [
-    { id: '1', name: 'Water Cans', icon: 'water' },
-    { id: '2', name: 'Dispensers', icon: 'cube' },
-    { id: '3', name: 'Filters', icon: 'filter' },
-    { id: '4', name: 'Accessories', icon: 'construct' },
-    { id: '5', name: 'Pumps', icon: 'hardware-chip' },
-    { id: '6', name: 'Coolers', icon: 'snow' },
-];
+const getIconName = (iconKey: string): keyof typeof Ionicons.glyphMap => {
+    return ICON_MAP[iconKey] || 'cube';
+};
 
 export function StoreHomeScreen({ navigation }: any) {
+    const [categories, setCategories] = useState<StoreCategory[]>([]);
+    const [newArrivals, setNewArrivals] = useState<StoreProduct[]>([]);
+    const [popularProducts, setPopularProducts] = useState<StoreProduct[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [error, setError] = useState<string | null>(null);
+
+    const { totalItems, fetchCart } = useCartStore();
+
+    // Fetch data on mount
+    useEffect(() => {
+        loadStoreData();
+    }, []);
+
+    // Refresh cart on screen focus for badge update
+    useFocusEffect(
+        useCallback(() => {
+            fetchCart();
+        }, [])
+    );
+
+    const loadStoreData = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const [cats, newProds, popularProds] = await Promise.all([
+                storeService.getCategories(),
+                storeService.getProducts({ sort: 'new', limit: 4 }),
+                storeService.getProducts({ sort: 'popular', limit: 4 }),
+            ]);
+            setCategories(cats);
+            setNewArrivals(newProds.items);
+            setPopularProducts(popularProds.items);
+        } catch (err: any) {
+            console.error('[StoreHome] Error loading data:', err);
+            setError(err.message || 'Failed to load store data');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSearch = () => {
+        if (searchQuery.trim()) {
+            navigation.navigate('ProductListing', { searchQuery: searchQuery.trim() });
+        }
+    };
+
+    const handleCategoryPress = (category: StoreCategory) => {
+        navigation.navigate('ProductListing', { category: category.slug, categoryName: category.name });
+    };
+
+    const handleProductPress = (product: StoreProduct) => {
+        navigation.navigate('ProductDetails', { productId: product.id });
+    };
+
+    if (isLoading) {
+        return (
+            <View style={[styles.container, styles.centered]}>
+                <ActivityIndicator size="large" color={storeTheme.primary} />
+                <Text style={styles.loadingText}>Loading store...</Text>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={[styles.container, styles.centered]}>
+                <Ionicons name="alert-circle" size={48} color={storeTheme.error || '#ff6b6b'} />
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={loadStoreData}>
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             {/* Header */}
@@ -27,8 +106,16 @@ export function StoreHomeScreen({ navigation }: any) {
                     <Ionicons name="menu" size={24} color={storeTheme.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Store</Text>
-                <TouchableOpacity style={styles.headerButton}>
+                <TouchableOpacity
+                    style={styles.headerButton}
+                    onPress={() => navigation.navigate('Cart')}
+                >
                     <Ionicons name="cart-outline" size={24} color={storeTheme.text} />
+                    {totalItems > 0 && (
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>{totalItems > 99 ? '99+' : totalItems}</Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -36,7 +123,15 @@ export function StoreHomeScreen({ navigation }: any) {
                 {/* Search Bar */}
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={20} color={storeTheme.textSecondary} />
-                    <Text style={styles.searchText}>Search products...</Text>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search products..."
+                        placeholderTextColor={storeTheme.textSecondary}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        onSubmitEditing={handleSearch}
+                        returnKeyType="search"
+                    />
                 </View>
 
                 {/* Categories */}
@@ -47,10 +142,10 @@ export function StoreHomeScreen({ navigation }: any) {
                             <TouchableOpacity
                                 key={category.id}
                                 style={styles.categoryItem}
-                                onPress={() => navigation.navigate('ProductListing', { category: category.name })}
+                                onPress={() => handleCategoryPress(category)}
                             >
                                 <View style={styles.categoryIcon}>
-                                    <Ionicons name={category.icon} size={28} color={storeTheme.primary} />
+                                    <Ionicons name={getIconName(category.iconKey)} size={28} color={storeTheme.primary} />
                                 </View>
                                 <Text style={styles.categoryName}>{category.name}</Text>
                             </TouchableOpacity>
@@ -60,10 +155,10 @@ export function StoreHomeScreen({ navigation }: any) {
 
                 {/* Featured Banner */}
                 <View style={styles.section}>
-                    <TouchableOpacity style={styles.banner}>
+                    <TouchableOpacity style={styles.banner} onPress={() => navigation.navigate('ProductListing', { sort: 'new' })}>
                         <View style={styles.bannerContent}>
                             <Text style={styles.bannerTitle}>New Arrivals</Text>
-                            <Text style={styles.bannerSubtitle}>Premium Water Dispensers</Text>
+                            <Text style={styles.bannerSubtitle}>Premium Water Products</Text>
                             <View style={styles.bannerButton}>
                                 <Text style={styles.bannerButtonText}>Shop Now</Text>
                             </View>
@@ -74,30 +169,65 @@ export function StoreHomeScreen({ navigation }: any) {
                     </TouchableOpacity>
                 </View>
 
-                {/* Popular Products */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Popular Products</Text>
-                        <TouchableOpacity>
-                            <Text style={styles.seeAllText}>See All</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productsScroll}>
-                        {[1, 2, 3, 4].map((item) => (
-                            <TouchableOpacity
-                                key={item}
-                                style={styles.productCard}
-                                onPress={() => navigation.navigate('ProductDetails', { productId: item })}
-                            >
-                                <View style={styles.productImage}>
-                                    <Ionicons name="water" size={40} color={storeTheme.primary} />
-                                </View>
-                                <Text style={styles.productName}>20L Water Can</Text>
-                                <Text style={styles.productPrice}>₹50</Text>
+                {/* New Arrivals */}
+                {newArrivals.length > 0 && (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>New Arrivals</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('ProductListing', { sort: 'new' })}>
+                                <Text style={styles.seeAllText}>See All</Text>
                             </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productsScroll}>
+                            {newArrivals.map((product) => (
+                                <TouchableOpacity
+                                    key={product.id}
+                                    style={styles.productCard}
+                                    onPress={() => handleProductPress(product)}
+                                >
+                                    <View style={styles.productImage}>
+                                        <Ionicons name={getIconName(product.category?.slug || '')} size={40} color={storeTheme.primary} />
+                                    </View>
+                                    <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+                                    <Text style={styles.productPrice}>₹{product.price}</Text>
+                                    {product.mrp > product.price && (
+                                        <Text style={styles.productMrp}>₹{product.mrp}</Text>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Popular Products */}
+                {popularProducts.length > 0 && (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Popular Products</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('ProductListing', { sort: 'popular' })}>
+                                <Text style={styles.seeAllText}>See All</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productsScroll}>
+                            {popularProducts.map((product) => (
+                                <TouchableOpacity
+                                    key={product.id}
+                                    style={styles.productCard}
+                                    onPress={() => handleProductPress(product)}
+                                >
+                                    <View style={styles.productImage}>
+                                        <Ionicons name={getIconName(product.category?.slug || '')} size={40} color={storeTheme.primary} />
+                                    </View>
+                                    <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+                                    <Text style={styles.productPrice}>₹{product.price}</Text>
+                                    {product.mrp > product.price && (
+                                        <Text style={styles.productMrp}>₹{product.mrp}</Text>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
 
                 {/* Special Offer */}
                 <View style={styles.section}>
@@ -120,6 +250,33 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: storeTheme.background,
     },
+    centered: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: spacing.md,
+        fontSize: 16,
+        color: storeTheme.textSecondary,
+    },
+    errorText: {
+        marginTop: spacing.md,
+        fontSize: 16,
+        color: storeTheme.error || '#ff6b6b',
+        textAlign: 'center',
+        paddingHorizontal: spacing.lg,
+    },
+    retryButton: {
+        marginTop: spacing.md,
+        backgroundColor: storeTheme.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+    },
+    retryButtonText: {
+        color: storeTheme.textOnPrimary,
+        fontWeight: '600',
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -141,6 +298,23 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: storeTheme.text,
     },
+    badge: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        backgroundColor: storeTheme.primary,
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 4,
+    },
+    badgeText: {
+        color: storeTheme.textOnPrimary,
+        fontSize: 10,
+        fontWeight: '700',
+    },
     scrollView: {
         flex: 1,
     },
@@ -153,10 +327,11 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.sm + 4,
         margin: spacing.md,
     },
-    searchText: {
+    searchInput: {
+        flex: 1,
         marginLeft: spacing.sm,
         fontSize: 16,
-        color: storeTheme.textSecondary,
+        color: storeTheme.text,
     },
     section: {
         marginBottom: spacing.lg,
@@ -276,6 +451,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         color: storeTheme.primary,
+    },
+    productMrp: {
+        fontSize: 12,
+        color: storeTheme.textSecondary,
+        textDecorationLine: 'line-through',
     },
     offerBanner: {
         flexDirection: 'row',

@@ -12,10 +12,9 @@ import {
     Platform,
     Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, spacing, typography, borderRadius } from '../../theme/theme';
+import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
 import { Button, Input } from '../../components';
 import { mapAuthError, isValidEmail } from '../../utils/errorMapper';
@@ -126,24 +125,23 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <LinearGradient
-                        colors={[colors.gradientStart, colors.gradientEnd]}
-                        style={styles.header}
-                    >
+                    <View style={styles.header}>
                         <TouchableOpacity
                             style={styles.backButton}
                             onPress={() => navigation.goBack()}
                         >
-                            <Ionicons name="arrow-back" size={24} color={colors.textOnPrimary} />
+                            <Ionicons name="arrow-back" size={22} color={colors.text} />
                         </TouchableOpacity>
                         <View style={styles.headerContent}>
-                            <Ionicons name="water" size={48} color={colors.textOnPrimary} />
+                            <View style={styles.iconContainer}>
+                                <Ionicons name="water" size={48} color={colors.primary} />
+                            </View>
                             <Text style={styles.headerTitle}>Create Account</Text>
                             <View style={styles.roleBadge}>
                                 <Text style={styles.roleBadgeText}>{getRoleLabel()}</Text>
                             </View>
                         </View>
-                    </LinearGradient>
+                    </View>
 
                     <View style={styles.form}>
                         <Text style={styles.formTitle}>Fill in your details</Text>
@@ -244,52 +242,66 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     header: {
+        backgroundColor: colors.background,
         paddingTop: spacing.xl,
-        paddingBottom: spacing.xl,
-        borderBottomLeftRadius: borderRadius.xl,
-        borderBottomRightRadius: borderRadius.xl,
+        paddingBottom: spacing.lg,
     },
     backButton: {
         position: 'absolute',
         top: spacing.md,
         left: spacing.md,
         zIndex: 1,
-        padding: spacing.sm,
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: colors.surface,
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...shadows.sm,
     },
     headerContent: {
         alignItems: 'center',
         paddingTop: spacing.lg,
     },
+    iconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 20,
+        backgroundColor: colors.primaryLight,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: spacing.md,
+    },
     headerTitle: {
-        ...typography.h2,
-        color: colors.textOnPrimary,
-        marginTop: spacing.md,
+        ...typography.title,
+        color: colors.text,
+        marginBottom: spacing.sm,
     },
     roleBadge: {
-        backgroundColor: colors.glassSurface,
+        backgroundColor: colors.surface2,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
         borderRadius: borderRadius.full,
-        marginTop: spacing.sm,
     },
     roleBadgeText: {
         ...typography.bodySmall,
-        color: colors.textOnPrimary,
-        fontWeight: '600',
+        color: colors.primary,
+        fontWeight: '700',
     },
     form: {
         flex: 1,
         padding: spacing.lg,
     },
     formTitle: {
-        ...typography.h3,
+        ...typography.h2,
+        fontSize: 20,
         color: colors.text,
         marginBottom: spacing.lg,
     },
     referralNote: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.surfaceSecondary,
+        backgroundColor: colors.surface2,
         padding: spacing.md,
         borderRadius: borderRadius.md,
         marginBottom: spacing.md,

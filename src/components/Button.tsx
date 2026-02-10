@@ -1,15 +1,19 @@
-// Button component
+// Modern Button Component - Viral India Aesthetic
+// Flat surfaces, high contrast, consistent radius
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
-    TouchableOpacity,
+    TouchableWithoutFeedback,
     Text,
     StyleSheet,
     ActivityIndicator,
     ViewStyle,
     TextStyle,
+    View,
+    Animated,
+    Platform,
 } from 'react-native';
-import { colors, borderRadius, spacing, typography } from '../theme/theme';
+import { colors, borderRadius, spacing, typography, shadows } from '../theme/theme';
 
 interface ButtonProps {
     title: string;
@@ -36,155 +40,146 @@ export const Button: React.FC<ButtonProps> = ({
     style,
     textStyle,
 }) => {
-    const getButtonStyle = (): ViewStyle[] => {
-        const baseStyle: ViewStyle[] = [styles.base];
+    const scaleAnim = useRef(new Animated.Value(1)).current;
 
-        // Size styles
-        switch (size) {
-            case 'small':
-                baseStyle.push(styles.small);
-                break;
-            case 'large':
-                baseStyle.push(styles.large);
-                break;
-            default:
-                baseStyle.push(styles.medium);
-        }
-
-        // Variant styles
-        switch (variant) {
-            case 'secondary':
-                baseStyle.push(styles.secondary);
-                break;
-            case 'outline':
-                baseStyle.push(styles.outline);
-                break;
-            case 'ghost':
-                baseStyle.push(styles.ghost);
-                break;
-            default:
-                baseStyle.push(styles.primary);
-        }
-
-        if (fullWidth) {
-            baseStyle.push(styles.fullWidth);
-        }
-
-        if (disabled) {
-            baseStyle.push(styles.disabled);
-        }
-
-        return baseStyle;
+    const handlePressIn = () => {
+        if (disabled || loading) return;
+        Animated.spring(scaleAnim, {
+            toValue: 0.96,
+            useNativeDriver: true,
+            speed: 50,
+            bounciness: 4,
+        }).start();
     };
 
-    const getTextStyle = (): TextStyle[] => {
-        const baseTextStyle: TextStyle[] = [styles.text];
+    const handlePressOut = () => {
+        if (disabled || loading) return;
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+            speed: 50,
+            bounciness: 4,
+        }).start();
+    };
 
-        switch (size) {
-            case 'small':
-                baseTextStyle.push(styles.textSmall);
-                break;
-            case 'large':
-                baseTextStyle.push(styles.textLarge);
-                break;
-        }
+    const getContainerStyle = (): ViewStyle => {
+        const base: ViewStyle = {
+            ...styles.container,
+            ...(fullWidth ? styles.fullWidth : {}),
+        };
 
         switch (variant) {
-            case 'outline':
-            case 'ghost':
-                baseTextStyle.push(styles.textOutline);
-                break;
+            case 'primary':
+                return { ...base, backgroundColor: colors.primary, ...shadows.md, shadowColor: colors.primary };
             case 'secondary':
-                baseTextStyle.push(styles.textSecondary);
-                break;
+                return { ...base, backgroundColor: colors.primaryLight };
+            case 'outline':
+                return { ...base, backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.primary };
+            case 'ghost':
+                return { ...base, backgroundColor: 'transparent' };
+            default:
+                return { ...base, backgroundColor: colors.primary };
         }
-
-        if (disabled) {
-            baseTextStyle.push(styles.textDisabled);
-        }
-
-        return baseTextStyle;
     };
+
+    const getSizeStyle = (): ViewStyle => {
+        switch (size) {
+            case 'small': return styles.small;
+            case 'large': return styles.large;
+            default: return styles.medium;
+        }
+    };
+
+    const getTextStyle = (): TextStyle => {
+        const base: TextStyle = { ...styles.text };
+
+        if (size === 'small') base.fontSize = 14;
+        if (size === 'large') base.fontSize = 18;
+
+        switch (variant) {
+            case 'primary':
+                return { ...base, color: colors.textOnPrimary };
+            case 'secondary':
+                return { ...base, color: colors.primaryDark };
+            case 'outline':
+                return { ...base, color: colors.primary };
+            case 'ghost':
+                return { ...base, color: colors.primary };
+            default:
+                return { ...base, color: colors.textOnPrimary };
+        }
+    };
+
+    const contentStyle = [
+        getContainerStyle(),
+        getSizeStyle(),
+        disabled && styles.disabled,
+        style,
+    ];
 
     return (
-        <TouchableOpacity
-            style={[...getButtonStyle(), style]}
+        <TouchableWithoutFeedback
             onPress={onPress}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
             disabled={disabled || loading}
-            activeOpacity={0.7}
         >
-            {loading ? (
-                <ActivityIndicator
-                    color={variant === 'outline' || variant === 'ghost' ? colors.primary : colors.textOnPrimary}
-                    size="small"
-                />
-            ) : (
-                <>
-                    {icon}
-                    <Text style={[...getTextStyle(), textStyle]}>{title}</Text>
-                </>
-            )}
-        </TouchableOpacity>
+            <Animated.View style={[contentStyle, { transform: [{ scale: scaleAnim }] }]}>
+                {loading ? (
+                    <ActivityIndicator
+                        color={variant === 'primary' ? colors.textOnPrimary : colors.primary}
+                        size="small"
+                    />
+                ) : (
+                    <View style={styles.content}>
+                        {icon}
+                        <Text style={[getTextStyle(), textStyle]}>{title}</Text>
+                    </View>
+                )}
+            </Animated.View>
+        </TouchableWithoutFeedback>
     );
 };
 
 const styles = StyleSheet.create({
-    base: {
-        flexDirection: 'row',
+    container: {
+        borderRadius: borderRadius.md,
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: borderRadius.md,
-        gap: spacing.sm,
-    },
-    small: {
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-    },
-    medium: {
-        paddingVertical: spacing.md - 2,
-        paddingHorizontal: spacing.lg,
-    },
-    large: {
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.xl,
-    },
-    primary: {
-        backgroundColor: colors.primary,
-    },
-    secondary: {
-        backgroundColor: colors.secondary,
-    },
-    outline: {
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderColor: colors.primary,
-    },
-    ghost: {
-        backgroundColor: 'transparent',
+        flexDirection: 'row',
     },
     fullWidth: {
         width: '100%',
     },
-    disabled: {
-        opacity: 0.5,
+    content: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+    },
+    small: {
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.md,
+        minHeight: 36,
+    },
+    medium: {
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        minHeight: 48,
+    },
+    large: {
+        paddingVertical: spacing.md + 4,
+        paddingHorizontal: spacing.xxl,
+        minHeight: 56,
     },
     text: {
         ...typography.button,
-        color: colors.textOnPrimary,
+        textAlign: 'center',
     },
-    textSmall: {
-        fontSize: 14,
-    },
-    textLarge: {
-        fontSize: 18,
-    },
-    textOutline: {
-        color: colors.primary,
-    },
-    textSecondary: {
-        color: colors.textOnPrimary,
-    },
-    textDisabled: {
-        color: colors.textLight,
+    disabled: {
+        opacity: 0.5,
+        // Remove shadow for disabled state
+        elevation: 0,
+        shadowOpacity: 0,
     },
 });

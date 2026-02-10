@@ -1,30 +1,87 @@
-import { create } from 'zustand';
-import { CartItem, Product, Service } from '../models/types';
+// Cart Store - Backend-authoritative cart state using Zustand
 
-interface CartState {
-    items: CartItem[];
-    totalItems: number;
-    totalAmount: number;
+import { create } from 'zustand';
+import api from '../services/api';
+
+// Raw backend cart item (snake_case from MySQL)
+interface RawBackendCartItem {
+    id: number;
+    cart_id: number;
+    item_type: 'product' | 'service';
+    product_id?: number;
+    service_id?: number;
+    qty: number;
+    unit_price?: number;
+    booking_date?: string;
+    booking_time?: string;
+    // Joined fields
+    product_name?: string;
+    product_price?: number;
+    product_image?: string;
+    service_name?: string;
+    service_price?: number;
+    service_image?: string;
 }
 
-interface CartActions {
-    addToCart: (item: Product | Service, type: 'product' | 'service', bookingDetails?: { date: string, time: string }) => void;
-    removeFromCart: (itemId: string) => void;
-    updateQuantity: (itemId: string, quantity: number) => void;
-    clearCart: () => void;
+// Normalized cart item for frontend use (camelCase)
+export interface BackendCartItem {
+    id: number;           // cart item ID from backend
+    itemType: 'product' | 'service';
+    productId?: number;
+    serviceId?: number;
+    productName?: string;
+    serviceName?: string;
+    qty: number;
+    unitPrice: number;
+    totalPrice: number;
+    bookingDate?: string;
+    bookingTime?: string;
+}
+
+// Convert snake_case backend response to camelCase frontend format
+const normalizeCartItem = (raw: RawBackendCartItem): BackendCartItem => {
+    const isProduct = raw.item_type === 'product';
+    const unitPrice = raw.unit_price ?? (isProduct ? raw.product_price : raw.service_price) ?? 0;
+
+    return {
+        id: raw.id,
+        itemType: raw.item_type,
+        productId: raw.product_id,
+        serviceId: raw.service_id,
+        productName: raw.product_name,
+        serviceName: raw.service_name,
+        qty: raw.qty,
+        unitPrice: Number(unitPrice),
+        totalPrice: Number(unitPrice) * raw.qty,
+        bookingDate: raw.booking_date,
+        bookingTime: raw.booking_time,
+    };
+};
+
+export interface CartState {
+    items: BackendCartItem[];
+    totalItems: number;
+    totalAmount: number;
+    isLoading: boolean;
+    error: string | null;
+}
+
+export interface CartActions {
+    fetchCart: () => Promise<void>;
+    addProductToCart: (productId: number, qty?: number) => Promise<void>;
+    updateCartItemQty: (cartItemId: number, qty: number) => Promise<void>;
+    removeCartItem: (cartItemId: number) => Promise<void>;
+    clearLocalCart: () => void;
 }
 
 type CartStore = CartState & CartActions;
 
-const calculateTotals = (items: CartItem[]) => {
+const calculateTotals = (items: BackendCartItem[]) => {
     return items.reduce(
-        (acc, item) => {
-            const price = item.type === 'product' ? (item.product?.price || 0) : (item.service?.price || 0);
-            return {
-                totalItems: acc.totalItems + item.quantity,
-                totalAmount: acc.totalAmount + price * item.quantity,
-            };
-        },
+        (acc, item) => ({
+            totalItems: acc.totalItems + item.qty,
+            totalAmount: acc.totalAmount + item.totalPrice,
+        }),
         { totalItems: 0, totalAmount: 0 }
     );
 };
@@ -34,76 +91,91 @@ export const useCartStore = create<CartStore>((set, get) => ({
     items: [],
     totalItems: 0,
     totalAmount: 0,
+    isLoading: false,
+    error: null,
 
-    // Actions
-    addToCart: (itemData: Product | Service, type: 'product' | 'service', bookingDetails) => {
-        set((state) => {
-            const itemId = itemData.id;
+    // Fetch cart from backend
+    fetchCart: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.get('/cart');
+            console.log('[CartStore] fetchCart response:', response.data);
+            const cartData = response.data.data;
+            const rawItems: RawBackendCartItem[] = cartData?.items || [];
+            const items = rawItems.map(normalizeCartItem);
+            const totals = calculateTotals(items);
+            console.log('[CartStore] Normalized items:', items);
+            set({ items, ...totals, isLoading: false });
+        } catch (error: any) {
+            console.error('[CartStore] fetchCart error:', error);
+            set({ isLoading: false, error: error.message, items: [] });
+        }
+    },
 
-            // For services, might want to allow multiple of same service? Or just one?
-            // Assuming products merge quantity, services might not if different dates.
-            // For simplicity, unique by ID for now.
+    // Add product to cart
+    addProductToCart: async (productId: number, qty: number = 1) => {
+        set({ isLoading: true, error: null });
+        try {
+            console.log('[CartStore] addProductToCart:', { productId, qty });
+            const response = await api.post('/cart/items', {
+                item_type: 'product',  // Backend expects snake_case
+                product_id: productId,
+                qty,
+            });
+            console.log('[CartStore] addProductToCart response:', response.data);
+            // Response includes updated cart
+            const cartData = response.data.data;
+            const rawItems: RawBackendCartItem[] = cartData?.items || [];
+            const items = rawItems.map(normalizeCartItem);
+            const totals = calculateTotals(items);
+            set({ items, ...totals, isLoading: false });
+        } catch (error: any) {
+            console.error('[CartStore] addProductToCart error:', error.response?.data || error);
+            set({ isLoading: false, error: error.response?.data?.message || error.message });
+            throw error;
+        }
+    },
 
-            const existingItem = state.items.find(
-                (item) => (item.type === type && (type === 'product' ? item.product?.id === itemId : item.service?.id === itemId))
-            );
-
-            let newItems: CartItem[];
-            if (existingItem) {
-                newItems = state.items.map((item) =>
-                    (item.id === existingItem.id)
-                        ? { ...item, quantity: item.quantity + 1 }
-                        : item
-                );
-            } else {
-                newItems = [
-                    ...state.items,
-                    {
-                        id: `cart_${type}_${itemId}`,
-                        type,
-                        product: type === 'product' ? (itemData as Product) : undefined,
-                        service: type === 'service' ? (itemData as Service) : undefined,
-                        bookingDate: bookingDetails?.date,
-                        bookingTime: bookingDetails?.time,
-                        quantity: 1
-                    },
-                ];
+    // Update cart item quantity
+    updateCartItemQty: async (cartItemId: number, qty: number) => {
+        set({ isLoading: true, error: null });
+        try {
+            if (qty <= 0) {
+                await get().removeCartItem(cartItemId);
+                return;
             }
-
-            const totals = calculateTotals(newItems);
-            return { items: newItems, ...totals };
-        });
+            const response = await api.patch(`/cart/items/${cartItemId}`, { qty });
+            const cartData = response.data.data;
+            const rawItems: RawBackendCartItem[] = cartData?.items || [];
+            const items = rawItems.map(normalizeCartItem);
+            const totals = calculateTotals(items);
+            set({ items, ...totals, isLoading: false });
+        } catch (error: any) {
+            console.error('[CartStore] updateCartItemQty error:', error);
+            set({ isLoading: false, error: error.response?.data?.message || error.message });
+            throw error;
+        }
     },
 
-    removeFromCart: (itemId: string) => {
-        set((state) => {
-            const newItems = state.items.filter(
-                (item) => (item.type === 'product' ? item.product?.id : item.service?.id) !== itemId
-            );
-            const totals = calculateTotals(newItems);
-            return { items: newItems, ...totals };
-        });
+    // Remove cart item
+    removeCartItem: async (cartItemId: number) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.delete(`/cart/items/${cartItemId}`);
+            const cartData = response.data.data;
+            const rawItems: RawBackendCartItem[] = cartData?.items || [];
+            const items = rawItems.map(normalizeCartItem);
+            const totals = calculateTotals(items);
+            set({ items, ...totals, isLoading: false });
+        } catch (error: any) {
+            console.error('[CartStore] removeCartItem error:', error);
+            set({ isLoading: false, error: error.response?.data?.message || error.message });
+            throw error;
+        }
     },
 
-    updateQuantity: (itemId: string, quantity: number) => {
-        set((state) => {
-            if (quantity <= 0) {
-                const newItems = state.items.filter(
-                    (item) => (item.type === 'product' ? item.product?.id : item.service?.id) !== itemId
-                );
-                const totals = calculateTotals(newItems);
-                return { items: newItems, ...totals };
-            }
-
-            const newItems = state.items.map((item) =>
-                (item.type === 'product' ? item.product?.id === itemId : item.service?.id === itemId) ? { ...item, quantity } : item
-            );
-            const totals = calculateTotals(newItems);
-            return { items: newItems, ...totals };
-        });
-    },
-
-    clearCart: () => {
+    // Clear local cart state (used after checkout)
+    clearLocalCart: () => {
         set({ items: [], totalItems: 0, totalAmount: 0 });
     },
 }));

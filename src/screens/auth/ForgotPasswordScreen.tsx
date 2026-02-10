@@ -1,4 +1,5 @@
-// Forgot Password Screen
+// Forgot Password Screen - Modern Viral India Aesthetic
+// Clean, minimal, high contrast
 
 import React, { useState } from 'react';
 import {
@@ -10,12 +11,12 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
-    StatusBar,
+    SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, spacing, typography, borderRadius } from '../../theme/theme';
-import { Button, Input, GradientBackground } from '../../components';
+import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
+import { Button, Input } from '../../components';
 import { isValidEmail } from '../../utils/errorMapper';
 import api from '../../services/api';
 
@@ -62,8 +63,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
     };
 
     return (
-        <GradientBackground>
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
                 style={styles.keyboardView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -71,6 +71,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                 >
                     {/* Header */}
                     <View style={styles.header}>
@@ -78,55 +79,61 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
                             style={styles.backButton}
                             onPress={() => navigation.goBack()}
                         >
-                            <Ionicons name="arrow-back" size={24} color={colors.glassText} />
+                            <Ionicons name="arrow-back" size={22} color={colors.text} />
                         </TouchableOpacity>
-                        <View style={styles.headerContent}>
-                            <Ionicons name="key-outline" size={48} color={colors.glassText} />
-                            <Text style={styles.headerTitle}>Forgot Password</Text>
-                            <Text style={styles.headerSubtitle}>
-                                Enter your email to receive reset instructions
-                            </Text>
-                        </View>
                     </View>
 
-                    {/* Form Container */}
-                    <View style={styles.formContainer}>
-                        <Text style={styles.formTitle}>Reset your password</Text>
+                    {/* Main Content */}
+                    <View style={styles.content}>
+                        <View style={styles.iconContainer}>
+                            <Ionicons name="key-outline" size={48} color={colors.primary} />
+                        </View>
+                        <Text style={styles.title}>Forgot Password?</Text>
+                        <Text style={styles.subtitle}>
+                            No worries! Enter your email and we'll send you reset instructions
+                        </Text>
 
-                        <Input
-                            label="Email"
-                            placeholder="Enter your registered email"
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            leftIcon="mail-outline"
-                            editable={!isSubmitted}
-                        />
+                        {/* Form */}
+                        <View style={styles.form}>
+                            <Input
+                                label="Email"
+                                placeholder="Enter your registered email"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                leftIcon="mail-outline"
+                                editable={!isSubmitted}
+                            />
 
-                        <Button
-                            title={isSubmitted ? 'Request Sent' : 'Send Reset Link'}
-                            onPress={handleSubmit}
-                            loading={isLoading}
-                            fullWidth
-                            disabled={isSubmitted}
-                        />
+                            <Button
+                                title={isSubmitted ? 'Request Sent' : 'Send Reset Link'}
+                                onPress={handleSubmit}
+                                loading={isLoading}
+                                fullWidth
+                                disabled={isSubmitted}
+                            />
 
-                        <TouchableOpacity
-                            style={styles.backToLogin}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <Ionicons name="arrow-back" size={16} color={colors.accent} />
-                            <Text style={styles.backToLoginText}>Back to Login</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.backToLogin}
+                                onPress={() => navigation.goBack()}
+                            >
+                                <Ionicons name="arrow-back" size={16} color={colors.primary} />
+                                <Text style={styles.backToLoginText}>Back to Login</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </GradientBackground>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
     keyboardView: {
         flex: 1,
     },
@@ -134,47 +141,47 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     header: {
-        paddingTop: spacing.xxl + 20,
-        paddingBottom: spacing.xl,
-        paddingHorizontal: spacing.md,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
+        paddingBottom: spacing.lg,
     },
     backButton: {
         width: 40,
         height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.glassSurface,
+        borderRadius: 12,
+        backgroundColor: colors.surface,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: colors.glassBorder,
+        ...shadows.sm,
     },
-    headerContent: {
-        alignItems: 'center',
-        paddingTop: spacing.lg,
-    },
-    headerTitle: {
-        ...typography.h2,
-        color: colors.glassText,
-        marginTop: spacing.md,
-    },
-    headerSubtitle: {
-        ...typography.body,
-        color: colors.glassTextSecondary,
-        marginTop: spacing.sm,
-        textAlign: 'center',
-    },
-    formContainer: {
+    content: {
         flex: 1,
-        backgroundColor: colors.surface,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
-        padding: spacing.lg,
-        marginTop: spacing.md,
+        paddingHorizontal: spacing.lg,
     },
-    formTitle: {
-        ...typography.h3,
-        color: colors.text,
+    iconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 20,
+        backgroundColor: colors.primaryLight,
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignSelf: 'center',
         marginBottom: spacing.lg,
+    },
+    title: {
+        ...typography.title,
+        color: colors.text,
+        textAlign: 'center',
+        marginBottom: spacing.xs,
+    },
+    subtitle: {
+        ...typography.body,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.xl,
+    },
+    form: {
+        marginTop: spacing.lg,
     },
     backToLogin: {
         flexDirection: 'row',
@@ -185,7 +192,7 @@ const styles = StyleSheet.create({
     },
     backToLoginText: {
         ...typography.body,
-        color: colors.accent,
-        fontWeight: '500',
+        color: colors.primary,
+        fontWeight: '600',
     },
 });

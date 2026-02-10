@@ -1,258 +1,173 @@
-// Customer Home Screen - Main dashboard for customers with animations
+// Customer Home Screen - Modern Viral India Dashboard
+// Clean, flat, high contrast
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    StatusBar,
+    SafeAreaView,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import {
-    BannerSlider,
+    AppBar,
+    CategoryChip,
     ServiceCard,
     ProductCard,
-    GradientBackground,
     FadeInView,
-    AnimatedPressable,
     BubbleCelebration,
 } from '../../components';
+import type { CategoryItem } from '../../components';
 import { useCartStore, useAuthStore } from '../../store';
-import { mockServices, mockProducts, mockBanners } from '../../services/mockData';
-
-// Category data with icons and vibrant colors for visibility
-const categories = [
-    { name: 'Water Purifier', icon: 'water' as const, color: colors.accent, bgColor: 'rgba(25, 195, 192, 0.2)' },
-    { name: 'Softener', icon: 'beaker' as const, color: '#FFFFFF', bgColor: 'rgba(255, 255, 255, 0.15)' },
-    { name: 'Ionizer', icon: 'flash' as const, color: colors.accent, bgColor: 'rgba(25, 195, 192, 0.2)' },
-    { name: 'Spares', icon: 'construct' as const, color: '#FFFFFF', bgColor: 'rgba(255, 255, 255, 0.15)' },
-];
+import { mockServices, mockProducts } from '../../services/mockData';
 
 type CustomerHomeScreenProps = {
     navigation: NativeStackNavigationProp<any>;
 };
 
+// Category data for horizontal scroll
+const categories: CategoryItem[] = [
+    { id: 'all', name: 'All', icon: 'apps' },
+    { id: 'purifier', name: 'Purifiers', icon: 'water' },
+    { id: 'softener', name: 'Softeners', icon: 'beaker' },
+    { id: 'ionizer', name: 'Ionizers', icon: 'flash' },
+    { id: 'spares', name: 'Spares', icon: 'construct' },
+];
+
 export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
     navigation,
 }) => {
-    const addToCart = useCartStore((state) => state.addToCart);
+    const [selectedCategory, setSelectedCategory] = useState('all');
     const { showLoginCelebration, setShowLoginCelebration } = useAuthStore();
+    const { items: cartItems } = useCartStore();
 
     return (
-        <GradientBackground>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
-            {/* Header with Glass Effect */}
-            <View style={styles.header}>
-                <View style={styles.locationContainer}>
-                    <Ionicons name="location" size={20} color={colors.glassText} />
-                    <View style={styles.locationText}>
-                        <Text style={styles.locationLabel}>Deliver to</Text>
-                        <TouchableOpacity style={styles.locationSelector}>
-                            <Text style={styles.locationValue}>Select Location</Text>
-                            <Ionicons name="chevron-down" size={16} color={colors.glassText} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={styles.headerRight}>
-                    <AnimatedPressable style={styles.headerButton} scaleValue={0.9}>
-                        <Ionicons name="notifications-outline" size={24} color={colors.glassText} />
-                    </AnimatedPressable>
-
-                    <AnimatedPressable
-                        style={styles.headerButton}
-                        onPress={() => navigation.navigate('Cart')}
-                        scaleValue={0.9}
-                    >
-                        <Ionicons name="cart-outline" size={24} color={colors.glassText} />
-                    </AnimatedPressable>
-                </View>
-            </View>
-
-            {/* Partner reach info */}
-            <View style={styles.reachBanner}>
-                <Ionicons name="time-outline" size={18} color={colors.glassText} />
-                <Text style={styles.reachText}>Reach partner in 30 minutes</Text>
-            </View>
+        <SafeAreaView style={styles.container}>
+            {/* AppBar */}
+            <AppBar
+                location="Select Location"
+                onLocationPress={() => Alert.alert('Location', 'Location selector coming soon!')}
+                onNotificationPress={() => Alert.alert('Notifications', 'No new notifications')}
+                onCartPress={() => navigation.navigate('Cart')}
+                cartCount={cartItems.length}
+            />
 
             <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
             >
-                {/* Search Bar with Glass Effect and Animation */}
-                <FadeInView delay={100} duration={400}>
-                    <AnimatedPressable style={styles.searchBar} scaleValue={0.98}>
-                        <Ionicons name="search" size={20} color={colors.glassTextSecondary} />
-                        <Text style={styles.searchPlaceholder}>
-                            Search services & products
-                        </Text>
-                    </AnimatedPressable>
-                </FadeInView>
+                {/* Search Bar */}
+                <TouchableOpacity style={styles.searchBar} activeOpacity={0.7}>
+                    <Ionicons name="search" size={20} color={colors.textMuted} />
+                    <Text style={styles.searchPlaceholder}>Search services & products</Text>
+                </TouchableOpacity>
 
-                {/* Category Shortcuts with Staggered Animation */}
-                <View style={styles.categoriesContainer}>
-                    {categories.map((cat, index) => (
-                        <FadeInView
-                            key={index}
-                            delay={200 + (index * 100)}
-                            duration={400}
-                            direction="up"
-                            distance={20}
-                        >
-                            <AnimatedPressable
-                                style={styles.catItem}
-                                onPress={() => navigation.navigate('Services')}
-                                scaleValue={0.92}
-                            >
-                                <View style={[styles.catIcon, { backgroundColor: cat.bgColor, borderColor: cat.color }]}>
-                                    <Ionicons
-                                        name={cat.icon}
-                                        size={32}
-                                        color={cat.color}
-                                    />
-                                </View>
-                                <Text style={styles.catText}>{cat.name}</Text>
-                            </AnimatedPressable>
-                        </FadeInView>
-                    ))}
-                </View>
-
-                {/* Referral Banner with Glass Effect and Animation */}
-                <FadeInView delay={600} duration={500}>
-                    <AnimatedPressable style={styles.referralBanner} scaleValue={0.98}>
-                        <View>
-                            <Text style={styles.referralTitle}>Refer & Earn ₹500</Text>
-                            <Text style={styles.referralDesc}>Invite friends to AquaCare</Text>
-                        </View>
-                        <Ionicons
-                            name="gift-outline"
-                            size={40}
-                            color={colors.glassText}
-                        />
-                    </AnimatedPressable>
-                </FadeInView>
-
-                {/* Banner Slider */}
-                <BannerSlider
-                    banners={mockBanners}
-                    onBannerPress={(banner) =>
-                        console.log('Banner pressed:', banner.title)
-                    }
+                {/* Category Chips */}
+                <CategoryChip
+                    categories={categories}
+                    selectedId={selectedCategory}
+                    onSelect={setSelectedCategory}
                 />
 
-                {/* Content Card with White Background */}
-                <View style={styles.contentCard}>
-                    {/* Book Service Section */}
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Book Service</Text>
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('Services')}
-                            >
-                                <Text style={styles.viewAll}>View All</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.serviceGrid}>
-                            {mockServices.map((service) => (
-                                <ServiceCard
-                                    key={service.id}
-                                    service={service}
-                                    onPress={() =>
-                                        navigation.navigate('ServiceDetails', { service })
-                                    }
-                                    compact
-                                />
-                            ))}
-                        </View>
+                {/* Book Service Section */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Popular Services</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Services')}>
+                            <Text style={styles.viewAll}>View All →</Text>
+                        </TouchableOpacity>
                     </View>
 
-                    {/* Water Products Section */}
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Water Products</Text>
-                            <TouchableOpacity>
-                                <Text style={styles.viewAll}>View All</Text>
-                            </TouchableOpacity>
-                        </View>
+                    <View style={styles.serviceGrid}>
+                        {mockServices.slice(0, 4).map((service) => (
+                            <ServiceCard
+                                key={service.id}
+                                service={service}
+                                onPress={() =>
+                                    navigation.navigate('ServiceDetails', { service })
+                                }
+                                compact
+                            />
+                        ))}
+                    </View>
+                </View>
 
-                        <View style={styles.productGrid}>
-                            {mockProducts.map((product) => (
-                                <ProductCard
-                                    key={product.id}
-                                    product={product}
-                                    onPress={() =>
-                                        navigation.navigate('ProductDetails', { product })
-                                    }
-                                    onAddToCart={() => addToCart(product, 'product')}
-                                />
-                            ))}
-                        </View>
+                {/* Referral Banner */}
+                <TouchableOpacity style={styles.referralBanner} activeOpacity={0.8}>
+                    <Ionicons name="gift" size={28} color={colors.accent} />
+                    <View style={styles.referralContent}>
+                        <Text style={styles.referralTitle}>Refer & Earn ₹500</Text>
+                        <Text style={styles.referralDesc}>Invite friends to AquaCare</Text>
+                    </View>
+                    <Ionicons name="arrow-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+
+                {/* Water Products Section */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Water Products</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Store')}>
+                            <Text style={styles.viewAll}>View All →</Text>
+                        </TouchableOpacity>
                     </View>
 
-                    {/* Why Choose Us Section */}
-                    <View style={styles.whyChooseSection}>
-                        <Text style={styles.sectionTitle}>Why Choose AquaCare?</Text>
+                    <View style={styles.productGrid}>
+                        {mockProducts.slice(0, 4).map((product) => (
+                            <ProductCard
+                                key={product.id}
+                                product={product}
+                                onPress={() => navigation.navigate('Store')}
+                                onAddToCart={() => navigation.navigate('Store')}
+                            />
+                        ))}
+                    </View>
+                </View>
 
-                        <View style={styles.featuresGrid}>
-                            <View style={styles.featureItem}>
+                {/* Why Choose Us Section */}
+                <View style={styles.whyChooseSection}>
+                    <Text style={styles.sectionTitle}>Why Choose AquaCare?</Text>
+
+                    <View style={styles.featuresGrid}>
+                        {[
+                            {
+                                icon: 'shield-checkmark',
+                                title: 'Verified Experts',
+                                desc: 'Background checked',
+                            },
+                            {
+                                icon: 'time',
+                                title: 'On-Time Service',
+                                desc: '30 mins or refund',
+                            },
+                            {
+                                icon: 'pricetag',
+                                title: 'Best Prices',
+                                desc: 'Transparent pricing',
+                            },
+                            {
+                                icon: 'headset',
+                                title: '24/7 Support',
+                                desc: 'Always here to help',
+                            },
+                        ].map((feature, index) => (
+                            <View key={index} style={styles.featureItem}>
                                 <View style={styles.featureIcon}>
                                     <Ionicons
-                                        name="shield-checkmark"
-                                        size={24}
+                                        name={feature.icon as any}
+                                        size={22}
                                         color={colors.primary}
                                     />
                                 </View>
-                                <Text style={styles.featureTitle}>Verified Experts</Text>
-                                <Text style={styles.featureDesc}>
-                                    Background checked technicians
-                                </Text>
+                                <Text style={styles.featureTitle}>{feature.title}</Text>
+                                <Text style={styles.featureDesc}>{feature.desc}</Text>
                             </View>
-
-                            <View style={styles.featureItem}>
-                                <View style={styles.featureIcon}>
-                                    <Ionicons name="time" size={24} color={colors.primary} />
-                                </View>
-                                <Text style={styles.featureTitle}>On-Time Service</Text>
-                                <Text style={styles.featureDesc}>
-                                    30 mins or money back
-                                </Text>
-                            </View>
-
-                            <View style={styles.featureItem}>
-                                <View style={styles.featureIcon}>
-                                    <Ionicons
-                                        name="pricetag"
-                                        size={24}
-                                        color={colors.primary}
-                                    />
-                                </View>
-                                <Text style={styles.featureTitle}>Best Prices</Text>
-                                <Text style={styles.featureDesc}>
-                                    Transparent pricing
-                                </Text>
-                            </View>
-
-                            <View style={styles.featureItem}>
-                                <View style={styles.featureIcon}>
-                                    <Ionicons
-                                        name="headset"
-                                        size={24}
-                                        color={colors.primary}
-                                    />
-                                </View>
-                                <Text style={styles.featureTitle}>24/7 Support</Text>
-                                <Text style={styles.featureDesc}>
-                                    Always here to help
-                                </Text>
-                            </View>
-                        </View>
+                        ))}
                     </View>
                 </View>
             </ScrollView>
@@ -263,70 +178,14 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     onComplete={() => setShowLoginCelebration(false)}
                 />
             )}
-        </GradientBackground>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.md,
-        paddingTop: spacing.xxl + 20, // Account for status bar
-        paddingBottom: spacing.sm,
-    },
-    locationContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    locationText: {
-        marginLeft: spacing.sm,
-    },
-    locationLabel: {
-        ...typography.caption,
-        color: colors.glassTextSecondary,
-    },
-    locationSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    locationValue: {
-        ...typography.body,
-        fontWeight: '600',
-        color: colors.glassText,
-    },
-    headerRight: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-    },
-    headerButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.glassSurface,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: colors.glassBorder,
-    },
-    reachBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: spacing.sm,
-        backgroundColor: colors.glassSurface,
-        gap: spacing.xs,
-        marginHorizontal: spacing.md,
-        borderRadius: borderRadius.lg,
-        marginTop: spacing.sm,
-        borderWidth: 1,
-        borderColor: colors.glassBorder,
-    },
-    reachText: {
-        ...typography.bodySmall,
-        color: colors.glassText,
-        fontWeight: '500',
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
     },
     scrollView: {
         flex: 1,
@@ -337,87 +196,32 @@ const styles = StyleSheet.create({
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginHorizontal: spacing.md,
+        marginHorizontal: spacing.lg,
         marginTop: spacing.md,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.md,
-        backgroundColor: colors.glassSurface,
-        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.md,
         borderWidth: 1,
-        borderColor: colors.glassBorder,
-    },
-    categoriesContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.md,
-        marginTop: spacing.md,
-    },
-    catItem: {
-        alignItems: 'center',
-        gap: spacing.xs,
-    },
-    catIcon: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        backgroundColor: colors.glassSurfaceStrong,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 2,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-    },
-    catText: {
-        ...typography.caption,
-        color: colors.glassText,
-        fontWeight: '500',
-    },
-    referralBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: colors.surfaceGold,
-        marginHorizontal: spacing.md,
-        marginTop: spacing.lg,
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
-        borderWidth: 1,
-        borderColor: colors.gold,
-    },
-    referralTitle: {
-        ...typography.h3,
-        color: colors.gold,
-        marginBottom: 4,
-    },
-    referralDesc: {
-        ...typography.bodySmall,
-        color: colors.goldLight,
+        borderColor: colors.border,
+        gap: spacing.sm,
     },
     searchPlaceholder: {
         ...typography.body,
-        color: colors.glassTextSecondary,
-        marginLeft: spacing.sm,
-    },
-    contentCard: {
-        backgroundColor: colors.surface,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
-        marginTop: spacing.lg,
-        paddingTop: spacing.lg,
-        // Subtle shadow for depth
-        ...shadows.md,
+        color: colors.textMuted,
     },
     section: {
-        paddingHorizontal: spacing.md,
-        marginBottom: spacing.lg,
+        marginTop: spacing.lg,
     },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: spacing.md,
+        paddingHorizontal: spacing.lg,
     },
     sectionTitle: {
-        ...typography.h3,
+        ...typography.h2,
         color: colors.text,
     },
     viewAll: {
@@ -428,52 +232,79 @@ const styles = StyleSheet.create({
     serviceGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
+        gap: spacing.md,
+        paddingHorizontal: spacing.lg,
     },
     productGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
+        gap: spacing.md,
+        paddingHorizontal: spacing.lg,
+    },
+    referralBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: spacing.lg,
+        marginTop: spacing.lg,
+        padding: spacing.md,
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        borderWidth: 2,
+        borderColor: colors.accent + '30',
+        ...shadows.sm,
+        gap: spacing.md,
+    },
+    referralContent: {
+        flex: 1,
+    },
+    referralTitle: {
+        ...typography.h2,
+        fontSize: 17,
+        color: colors.text,
+        marginBottom: 2,
+    },
+    referralDesc: {
+        ...typography.caption,
+        color: colors.textSecondary,
     },
     whyChooseSection: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.lg,
-        backgroundColor: colors.surfaceSecondary,
+        marginTop: spacing.lg,
+        marginHorizontal: spacing.lg,
+        padding: spacing.lg,
+        backgroundColor: colors.surface,
         borderRadius: borderRadius.lg,
-        marginHorizontal: spacing.sm,
+        ...shadows.sm,
     },
     featuresGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         marginTop: spacing.md,
+        gap: spacing.md,
     },
     featureItem: {
-        width: '50%',
-        padding: spacing.sm,
+        width: '47%',
         alignItems: 'center',
-        marginBottom: spacing.md,
+        padding: spacing.sm,
     },
     featureIcon: {
         width: 48,
         height: 48,
-        borderRadius: 24,
-        backgroundColor: colors.surface,
+        borderRadius: 16,
+        backgroundColor: colors.primaryLight,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.sm,
-        ...shadows.sm,
     },
     featureTitle: {
         ...typography.bodySmall,
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text,
         textAlign: 'center',
+        marginBottom: 2,
     },
     featureDesc: {
         ...typography.caption,
         color: colors.textSecondary,
         textAlign: 'center',
-        marginTop: 2,
     },
 });
-

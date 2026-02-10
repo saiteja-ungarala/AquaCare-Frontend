@@ -32,7 +32,7 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}>
-                <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.header}>
+                <View style={styles.header}>
                     <View style={styles.headerContent}>
                         <View><Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0] || 'Dealer'}!</Text><Text style={styles.subGreeting}>Dealer Dashboard</Text></View>
                         <View style={styles.headerActions}>
@@ -42,7 +42,7 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
                             </TouchableOpacity>
                         </View>
                     </View>
-                </LinearGradient>
+                </View>
 
                 <View style={styles.statsGrid}>
                     <View style={styles.statCard}>
@@ -61,7 +61,7 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
                         <Text style={styles.statLabel}>Commission</Text>
                     </View>
                     <View style={styles.statCard}>
-                        <Ionicons name="people" size={28} color={colors.secondary} />
+                        <Ionicons name="people" size={28} color={colors.accent} />
                         <Text style={styles.statValue}>12</Text>
                         <Text style={styles.statLabel}>Referrals</Text>
                     </View>
@@ -92,17 +92,17 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
                         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Commission')}>
                             <Ionicons name="wallet-outline" size={24} color={colors.primary} />
                             <Text style={styles.menuText}>Commission & Earnings</Text>
-                            <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.menuItem}>
                             <Ionicons name="cube-outline" size={24} color={colors.primary} />
                             <Text style={styles.menuText}>Inventory</Text>
-                            <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.menuItem}>
                             <Ionicons name="map-outline" size={24} color={colors.primary} />
                             <Text style={styles.menuText}>Service Area</Text>
-                            <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -113,19 +113,19 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    header: { paddingTop: spacing.lg, paddingBottom: spacing.xl, paddingHorizontal: spacing.md },
+    header: { paddingTop: spacing.lg, paddingBottom: spacing.xl, paddingHorizontal: spacing.md, backgroundColor: colors.primary },
     headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     headerActions: { flexDirection: 'row', gap: spacing.sm },
     greeting: { ...typography.h2, color: colors.textOnPrimary },
-    subGreeting: { ...typography.body, color: colors.secondaryLight },
-    notifButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.glassSurface, alignItems: 'center', justifyContent: 'center' },
+    subGreeting: { ...typography.body, color: colors.textOnPrimary },
+    notifButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, marginTop: -spacing.lg },
     statCard: { width: '48%', backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, alignItems: 'center', marginBottom: spacing.sm, marginRight: '2%', ...shadows.sm },
     statValue: { ...typography.h2, color: colors.text, fontWeight: '700', marginTop: spacing.sm },
     statLabel: { ...typography.caption, color: colors.textSecondary },
     content: { padding: spacing.md },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-    sectionTitle: { ...typography.h3, color: colors.text },
+    sectionTitle: { ...typography.h2, fontSize: 18, color: colors.text },
     viewAll: { ...typography.bodySmall, color: colors.primary, fontWeight: '600' },
     orderCard: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm, ...shadows.sm },
     orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -135,8 +135,8 @@ const styles = StyleSheet.create({
     orderItems: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 4 },
     orderFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
     orderAmount: { ...typography.body, fontWeight: '700', color: colors.primary },
-    orderDate: { ...typography.caption, color: colors.textLight },
+    orderDate: { ...typography.caption, color: colors.textSecondary },
     menuSection: { marginTop: spacing.lg, backgroundColor: colors.surface, borderRadius: borderRadius.lg, ...shadows.sm },
-    menuItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+    menuItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
     menuText: { ...typography.body, color: colors.text, flex: 1, marginLeft: spacing.md },
 });

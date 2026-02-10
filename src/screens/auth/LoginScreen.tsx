@@ -1,4 +1,5 @@
-// Login Screen with validation and proper error handling
+// Login Screen - Modern Viral India Aesthetic
+// Clean, minimal, high contrast
 
 import React, { useState } from 'react';
 import {
@@ -10,13 +11,13 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
-    StatusBar,
+    SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, spacing, typography, borderRadius } from '../../theme/theme';
+import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
-import { Button, Input, GradientBackground } from '../../components';
+import { Button, Input } from '../../components';
 import { validateLoginForm, mapAuthError } from '../../utils/errorMapper';
 
 type LoginScreenProps = {
@@ -63,12 +64,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             });
 
             if (success) {
-                // Show success toast and navigate
-                Alert.alert('Success', 'Login successful!', [
-                    { text: 'OK', onPress: () => setShowLoginCelebration(true) }
-                ]);
+                setShowLoginCelebration(true);
             } else {
-                // Get error from store
                 const currentError = useAuthStore.getState().error;
                 const message = currentError || 'Login failed. Please try again.';
                 Alert.alert('Login Failed', message);
@@ -79,13 +76,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         }
     };
 
-    const handleForgotPassword = () => {
-        navigation.navigate('ForgotPassword');
-    };
-
     return (
-        <GradientBackground>
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
                 style={styles.keyboardView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -93,6 +85,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                 >
                     {/* Header */}
                     <View style={styles.header}>
@@ -100,79 +93,88 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                             style={styles.backButton}
                             onPress={() => navigation.goBack()}
                         >
-                            <Ionicons name="arrow-back" size={24} color={colors.glassText} />
+                            <Ionicons name="arrow-back" size={22} color={colors.text} />
                         </TouchableOpacity>
-                        <View style={styles.headerContent}>
-                            <Ionicons name="water" size={48} color={colors.glassText} />
-                            <Text style={styles.headerTitle}>Welcome Back</Text>
-                            <View style={styles.roleBadge}>
-                                <Text style={styles.roleBadgeText}>{getRoleLabel()}</Text>
-                            </View>
-                        </View>
                     </View>
 
-                    {/* Form Container with Glass Effect */}
-                    <View style={styles.formContainer}>
-                        <Text style={styles.formTitle}>Login to your account</Text>
+                    {/* Main Content */}
+                    <View style={styles.content}>
+                        <Text style={styles.title}>Welcome Back</Text>
+                        <Text style={styles.subtitle}>
+                            Login as <Text style={styles.roleText}>{getRoleLabel()}</Text>
+                        </Text>
 
-                        <Input
-                            label="Email"
-                            placeholder="Enter your email"
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            leftIcon="mail-outline"
-                        />
+                        {/* Form */}
+                        <View style={styles.form}>
+                            <Input
+                                label="Email"
+                                placeholder="Enter your email"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                leftIcon="mail-outline"
+                            />
 
-                        <Input
-                            label="Password"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            leftIcon="lock-closed-outline"
-                        />
+                            <Input
+                                label="Password"
+                                placeholder="Enter your password"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                                leftIcon="lock-closed-outline"
+                            />
 
-                        <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
-                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.forgotPassword}
+                                onPress={() => navigation.navigate('ForgotPassword')}
+                            >
+                                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                            </TouchableOpacity>
 
-                        <Button
-                            title="Login"
-                            onPress={handleLogin}
-                            loading={isLoading}
-                            fullWidth
-                        />
+                            <Button
+                                title="Login"
+                                onPress={handleLogin}
+                                loading={isLoading}
+                                fullWidth
+                            />
 
-                        <View style={styles.divider}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>or</Text>
-                            <View style={styles.dividerLine} />
+                            <View style={styles.divider}>
+                                <View style={styles.dividerLine} />
+                                <Text style={styles.dividerText}>or</Text>
+                                <View style={styles.dividerLine} />
+                            </View>
+
+                            <Button
+                                title="Login with OTP"
+                                onPress={() => Alert.alert('Coming Soon', 'OTP login will be available soon!')}
+                                variant="outline"
+                                fullWidth
+                                icon={<Ionicons name="phone-portrait" size={18} color={colors.primary} />}
+                            />
                         </View>
 
-                        <Button
-                            title="Login with OTP"
-                            onPress={() => Alert.alert('OTP Login', 'OTP login coming soon!')}
-                            variant="outline"
-                            fullWidth
-                            icon={<Ionicons name="phone-portrait-outline" size={20} color={colors.primary} />}
-                        />
-
-                        <View style={styles.signupRow}>
-                            <Text style={styles.signupText}>Don't have an account? </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                                <Text style={styles.signupLink}>Sign Up</Text>
-                            </TouchableOpacity>
+                        {/* Footer */}
+                        <View style={styles.footer}>
+                            <Text style={styles.footerText}>
+                                Don't have an account?{' '}
+                                <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                                    <Text style={styles.footerLink}>Sign Up</Text>
+                                </TouchableOpacity>
+                            </Text>
                         </View>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </GradientBackground>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
     keyboardView: {
         flex: 1,
     },
@@ -180,69 +182,54 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     header: {
-        paddingTop: spacing.xxl + 20,
-        paddingBottom: spacing.xl,
-        paddingHorizontal: spacing.md,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
+        paddingBottom: spacing.lg,
     },
     backButton: {
         width: 40,
         height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.glassSurface,
+        borderRadius: 12,
+        backgroundColor: colors.surface,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: colors.glassBorder,
+        ...shadows.sm,
     },
-    headerContent: {
-        alignItems: 'center',
-        paddingTop: spacing.lg,
-    },
-    headerTitle: {
-        ...typography.h2,
-        color: colors.glassText,
-        marginTop: spacing.md,
-    },
-    roleBadge: {
-        backgroundColor: colors.glassSurface,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.full,
-        marginTop: spacing.sm,
-        borderWidth: 1,
-        borderColor: colors.glassBorder,
-    },
-    roleBadgeText: {
-        ...typography.bodySmall,
-        color: colors.glassText,
-        fontWeight: '600',
-    },
-    formContainer: {
+    content: {
         flex: 1,
-        backgroundColor: colors.surface,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
-        padding: spacing.lg,
-        marginTop: spacing.md,
+        paddingHorizontal: spacing.lg,
     },
-    formTitle: {
-        ...typography.h3,
+    title: {
+        ...typography.title,
         color: colors.text,
-        marginBottom: spacing.lg,
+        marginBottom: spacing.xs,
+    },
+    subtitle: {
+        ...typography.body,
+        color: colors.textSecondary,
+        marginBottom: spacing.xl,
+    },
+    roleText: {
+        color: colors.primary,
+        fontWeight: '700',
+    },
+    form: {
+        marginTop: spacing.lg,
     },
     forgotPassword: {
         alignSelf: 'flex-end',
-        marginBottom: spacing.lg,
+        marginBottom: spacing.xl,
+        marginTop: -spacing.xs,
     },
     forgotPasswordText: {
         ...typography.bodySmall,
-        color: colors.accent,
-        fontWeight: '500',
+        color: colors.primary,
+        fontWeight: '600',
     },
     divider: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: spacing.lg,
+        marginVertical: spacing.xl,
     },
     dividerLine: {
         flex: 1,
@@ -250,22 +237,24 @@ const styles = StyleSheet.create({
         backgroundColor: colors.border,
     },
     dividerText: {
-        ...typography.bodySmall,
-        color: colors.textSecondary,
+        ...typography.caption,
+        color: colors.textMuted,
         marginHorizontal: spacing.md,
-    },
-    signupRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: spacing.lg,
-    },
-    signupText: {
-        ...typography.body,
-        color: colors.textSecondary,
-    },
-    signupLink: {
-        ...typography.body,
-        color: colors.accent,
+        textTransform: 'uppercase',
         fontWeight: '600',
     },
+    footer: {
+        marginTop: spacing.xxl,
+        alignItems: 'center',
+    },
+    footerText: {
+        ...typography.body,
+        color: colors.textSecondary,
+    },
+    footerLink: {
+        ...typography.body,
+        color: colors.primary,
+        fontWeight: '700',
+    },
 });
+

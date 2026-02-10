@@ -74,7 +74,7 @@ export const AgentDashboardScreen: React.FC<AgentDashboardScreenProps> = ({ navi
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}>
-                <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.header}>
+                <View style={styles.header}>
                     <View style={styles.headerTop}>
                         <View>
                             <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0] || 'Agent'}!</Text>
@@ -83,7 +83,7 @@ export const AgentDashboardScreen: React.FC<AgentDashboardScreenProps> = ({ navi
                         <View style={styles.headerActions}>
                             <View style={styles.onlineToggle}>
                                 <Text style={styles.onlineLabel}>{isOnline ? 'Online' : 'Offline'}</Text>
-                                <Switch trackColor={{ false: '#767577', true: colors.success }} thumbColor={colors.secondary} onValueChange={setIsOnline} value={isOnline} />
+                                <Switch trackColor={{ false: '#767577', true: colors.success }} thumbColor='#FFF' onValueChange={setIsOnline} value={isOnline} />
                             </View>
                             <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
                                 <Ionicons name="log-out-outline" size={24} color={colors.textOnPrimary} />
@@ -97,7 +97,7 @@ export const AgentDashboardScreen: React.FC<AgentDashboardScreenProps> = ({ navi
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}><Text style={styles.statValue}>⭐ {stats.rating}</Text><Text style={styles.statLabel}>Rating</Text></View>
                     </View>
-                </LinearGradient>
+                </View>
 
                 <View style={styles.content}>
 
@@ -190,19 +190,19 @@ const styles = StyleSheet.create({
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     greeting: { ...typography.h2, color: colors.textOnPrimary },
-    subGreeting: { ...typography.body, color: colors.secondaryLight },
+    subGreeting: { ...typography.body, color: colors.textOnPrimary },
     onlineToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     logoutButton: { padding: spacing.xs },
     onlineLabel: { ...typography.bodySmall, color: colors.textOnPrimary },
-    statsRow: { flexDirection: 'row', backgroundColor: colors.glassSurface, borderRadius: borderRadius.lg, padding: spacing.md },
+    statsRow: { flexDirection: 'row', backgroundColor: colors.surface2, borderRadius: borderRadius.lg, padding: spacing.md },
     statItem: { flex: 1, alignItems: 'center' },
-    statValue: { ...typography.h3, color: colors.textOnPrimary, fontWeight: '700' },
-    statLabel: { ...typography.caption, color: colors.secondaryLight, marginTop: 2 },
-    statDivider: { width: 1, backgroundColor: colors.glassBorder },
+    statValue: { ...typography.h2, fontSize: 22, color: colors.text, fontWeight: '700' },
+    statLabel: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+    statDivider: { width: 1, backgroundColor: colors.border },
     content: { padding: spacing.md },
     section: { marginBottom: spacing.xl },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-    sectionTitle: { ...typography.h3, color: colors.text },
+    sectionTitle: { ...typography.h2, fontSize: 18, color: colors.text },
     requestCount: { ...typography.bodySmall, color: colors.primary, fontWeight: '600' },
     requestCard: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, ...shadows.sm },
     jobCard: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, ...shadows.sm, borderWidth: 1, borderColor: colors.primary },

@@ -1,60 +1,136 @@
-// Cart Screen
+// Cart Screen - Backend-aware, handles both product and service items
 
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { Button } from '../../components';
-import { useCartStore, useWalletStore, useBookingsStore } from '../../store';
+import { useCartStore } from '../../store';
+import { BackendCartItem } from '../../store/cartStore';
+import ordersService from '../../services/ordersService';
 
 type CartScreenProps = { navigation: NativeStackNavigationProp<any> };
 
+// Normalized cart item for safe rendering
+interface NormalizedCartItem {
+    cartItemId: number;
+    itemType: 'product' | 'service';
+    qty: number;
+    unitPrice: number;
+    title: string;
+    productId?: number;
+    serviceId?: number;
+    bookingDate?: string;
+    bookingTime?: string;
+}
+
+// Normalize backend cart item to UI-safe shape with safe defaults
+const normalizeCartItem = (item: BackendCartItem): NormalizedCartItem => ({
+    cartItemId: item.id ?? 0,
+    itemType: item.itemType ?? 'product',
+    qty: item.qty ?? 1,
+    unitPrice: item.unitPrice ?? 0,
+    title: item.itemType === 'product'
+        ? (item.productName || 'Product')
+        : (item.serviceName || 'Service'),
+    productId: item.productId,
+    serviceId: item.serviceId,
+    bookingDate: item.bookingDate,
+    bookingTime: item.bookingTime,
+});
+
 export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
-    const { items, totalAmount, updateQuantity, removeFromCart, clearCart } = useCartStore();
-    const walletBalance = useWalletStore((state) => state.balance);
+    const { items, totalAmount, isLoading, fetchCart, updateCartItemQty, removeCartItem, clearLocalCart } = useCartStore();
+
     const deliveryFee = totalAmount > 0 ? 99 : 0;
     const finalTotal = totalAmount + deliveryFee;
 
-    const getIcon = (category: string): keyof typeof Ionicons.glyphMap => {
-        switch (category) {
-            case 'water_purifier': return 'water';
-            case 'water_softener': return 'beaker';
-            case 'water_ionizer': return 'flash';
-            case 'ro_plant': return 'construct';
-            case 'ionizer': return 'flash';
-            default: return 'cube';
+    // Fetch cart on screen focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchCart();
+        }, [])
+    );
+
+    // Normalize items safely
+    const cartItemsRaw = items ?? [];
+    const cartItems: NormalizedCartItem[] = cartItemsRaw
+        .filter(Boolean)
+        .map(normalizeCartItem);
+
+    const getIcon = (itemType: 'product' | 'service'): keyof typeof Ionicons.glyphMap => {
+        return itemType === 'service' ? 'construct' : 'cube';
+    };
+
+    const handleUpdateQty = async (cartItemId: number, newQty: number) => {
+        try {
+            await updateCartItemQty(cartItemId, newQty);
+        } catch (error: any) {
+            Alert.alert('Error', error.response?.data?.message || 'Failed to update quantity');
         }
     };
 
-    const { createBooking } = useBookingsStore();
+    const handleRemoveItem = async (cartItemId: number) => {
+        try {
+            await removeCartItem(cartItemId);
+        } catch (error: any) {
+            Alert.alert('Error', error.response?.data?.message || 'Failed to remove item');
+        }
+    };
 
     const handleCheckout = async () => {
-        // Process services
-        const serviceItems = items.filter(i => i.type === 'service');
-
-        for (const item of serviceItems) {
-            if (item.service && item.bookingDate && item.bookingTime) {
-                await createBooking(
-                    item.service,
-                    item.bookingDate,
-                    item.bookingTime,
-                    {
-                        id: 'default',
-                        street: '123 Main Street',
-                        city: 'Mumbai',
-                        state: 'Maharashtra',
-                        pincode: '400001',
-                        isDefault: true,
-                    }
-                );
-            }
-        }
-
-        Alert.alert('Order Placed! 🎉', 'Your order and service bookings have been placed successfully.', [{ text: 'OK', onPress: () => { clearCart(); navigation.navigate('Home'); } }]);
+        // For now, use COD with a placeholder address
+        // In production, user should select address first
+        Alert.alert(
+            'Checkout',
+            'Select payment method:',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Cash on Delivery',
+                    onPress: async () => {
+                        try {
+                            // TODO: Replace with actual address selection
+                            const result = await ordersService.checkout({
+                                addressId: 1, // Placeholder address
+                                paymentMethod: 'cod',
+                            });
+                            Alert.alert(
+                                'Order Placed! 🎉',
+                                `Order #${result.orderId} placed successfully.`,
+                                [{ text: 'OK', onPress: () => { clearLocalCart(); fetchCart(); navigation.navigate('Home'); } }]
+                            );
+                        } catch (error: any) {
+                            Alert.alert('Error', error.response?.data?.message || 'Checkout failed');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
-    if (items.length === 0) {
+    // Loading state
+    if (isLoading && cartItems.length === 0) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Cart</Text>
+                </View>
+                <View style={styles.emptyContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={styles.loadingText}>Loading cart...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    // Empty cart
+    if (cartItems.length === 0) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
@@ -66,7 +142,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                 <View style={styles.emptyContainer}>
                     <Ionicons name="cart-outline" size={80} color={colors.textLight} />
                     <Text style={styles.emptyTitle}>Your cart is empty</Text>
-                    <Button title="Browse Products" onPress={() => navigation.navigate('Home')} style={{ marginTop: 16 }} />
+                    <Button title="Browse Products" onPress={() => navigation.navigate('ProductListing', {})} style={{ marginTop: 16 }} />
                 </View>
             </SafeAreaView>
         );
@@ -79,52 +155,50 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Cart ({items.length})</Text>
+                    <Text style={styles.headerTitle}>Cart ({cartItems.length})</Text>
                 </View>
-                <TouchableOpacity onPress={clearCart}><Text style={styles.clearText}>Clear All</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { clearLocalCart(); fetchCart(); }}>
+                    <Text style={styles.clearText}>Refresh</Text>
+                </TouchableOpacity>
             </View>
-            <ScrollView style={styles.scrollView}>
-                {items.map((item) => {
-                    const isService = item.type === 'service';
-                    const data = isService ? item.service! : item.product!;
-                    const itemId = data.id;
 
-                    return (
-                        <View key={item.id} style={styles.cartItem}>
-                            <View style={styles.itemImage}>
-                                <Ionicons name={getIcon(data.category)} size={40} color={colors.primary} />
-                            </View>
-                            <View style={styles.itemContent}>
-                                <Text style={styles.itemName} numberOfLines={2}>{data.name}</Text>
-                                <Text style={styles.itemPrice}>₹{data.price.toLocaleString()}</Text>
-                                {isService && item.bookingDate && (
-                                    <View style={styles.bookingInfo}>
-                                        <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
-                                        <Text style={styles.bookingText}>{item.bookingDate} at {item.bookingTime}</Text>
-                                    </View>
-                                )}
-                                <View style={styles.quantityRow}>
-                                    <TouchableOpacity
-                                        style={styles.quantityButton}
-                                        onPress={() => updateQuantity(itemId, item.quantity - 1)}
-                                    >
-                                        <Ionicons name="remove" size={18} color={colors.primary} />
-                                    </TouchableOpacity>
-                                    <Text style={styles.quantityText}>{item.quantity}</Text>
-                                    <TouchableOpacity
-                                        style={styles.quantityButton}
-                                        onPress={() => updateQuantity(itemId, item.quantity + 1)}
-                                    >
-                                        <Ionicons name="add" size={18} color={colors.primary} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                            <TouchableOpacity onPress={() => removeFromCart(itemId)}>
-                                <Ionicons name="trash-outline" size={20} color={colors.error} />
-                            </TouchableOpacity>
+            <ScrollView style={styles.scrollView}>
+                {cartItems.map((item) => (
+                    <View key={String(item.cartItemId)} style={styles.cartItem}>
+                        <View style={styles.itemImage}>
+                            <Ionicons name={getIcon(item.itemType)} size={40} color={colors.primary} />
                         </View>
-                    );
-                })}
+                        <View style={styles.itemContent}>
+                            <Text style={styles.itemName} numberOfLines={2}>{item.title}</Text>
+                            <Text style={styles.itemPrice}>₹{item.unitPrice.toLocaleString()}</Text>
+                            {item.itemType === 'service' && item.bookingDate && (
+                                <View style={styles.bookingInfo}>
+                                    <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+                                    <Text style={styles.bookingText}>{item.bookingDate} at {item.bookingTime}</Text>
+                                </View>
+                            )}
+                            <View style={styles.quantityRow}>
+                                <TouchableOpacity
+                                    style={styles.quantityButton}
+                                    onPress={() => handleUpdateQty(item.cartItemId, item.qty - 1)}
+                                >
+                                    <Ionicons name="remove" size={18} color={colors.primary} />
+                                </TouchableOpacity>
+                                <Text style={styles.quantityText}>{item.qty}</Text>
+                                <TouchableOpacity
+                                    style={styles.quantityButton}
+                                    onPress={() => handleUpdateQty(item.cartItemId, item.qty + 1)}
+                                >
+                                    <Ionicons name="add" size={18} color={colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        <TouchableOpacity onPress={() => handleRemoveItem(item.cartItemId)}>
+                            <Ionicons name="trash-outline" size={20} color={colors.error} />
+                        </TouchableOpacity>
+                    </View>
+                ))}
+
                 <View style={styles.summaryCard}>
                     <Text style={styles.summaryTitle}>Price Details</Text>
                     <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Subtotal</Text><Text>₹{totalAmount.toLocaleString()}</Text></View>
@@ -132,6 +206,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                     <View style={[styles.summaryRow, styles.totalRow]}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>₹{finalTotal.toLocaleString()}</Text></View>
                 </View>
             </ScrollView>
+
             <View style={styles.bottomBar}>
                 <View><Text style={styles.bottomLabel}>Total</Text><Text style={styles.bottomPrice}>₹{finalTotal.toLocaleString()}</Text></View>
                 <Button title="Checkout" onPress={handleCheckout} style={{ paddingHorizontal: 32 }} />
@@ -146,7 +221,7 @@ const styles = StyleSheet.create({
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     backButton: { marginRight: spacing.sm },
     headerTitle: { ...typography.h3, color: colors.text },
-    clearText: { ...typography.bodySmall, color: colors.error },
+    clearText: { ...typography.bodySmall, color: colors.primary },
     scrollView: { flex: 1, padding: spacing.md },
     cartItem: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, ...shadows.sm, alignItems: 'center' },
     itemImage: { width: 70, height: 70, borderRadius: borderRadius.md, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' },
@@ -170,4 +245,5 @@ const styles = StyleSheet.create({
     bottomPrice: { ...typography.h3, fontWeight: '700' },
     emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
     emptyTitle: { ...typography.h3, color: colors.text, marginTop: spacing.lg },
+    loadingText: { ...typography.body, color: colors.textSecondary, marginTop: spacing.md },
 });

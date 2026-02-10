@@ -1,4 +1,5 @@
-// Role Selection Screen - First screen of the app with animations
+// Role Selection Screen - First screen of the app
+// Modern 'Viral India' Aesthetic: Clean, Accessible, High Contrast
 
 import React from 'react';
 import {
@@ -6,17 +7,18 @@ import {
     Text,
     StyleSheet,
     StatusBar,
+    Image,
+    SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, spacing, typography, borderRadius } from '../../theme/theme';
+import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
 import { UserRole } from '../../models/types';
 import {
     GradientBackground,
     AnimatedPressable,
     FadeInView,
-    PulseIcon
 } from '../../components';
 
 type RoleSelectionScreenProps = {
@@ -30,6 +32,7 @@ interface RoleCardProps {
     icon: keyof typeof Ionicons.glyphMap;
     onPress: () => void;
     delay: number;
+    color: string;
 }
 
 const RoleCard: React.FC<RoleCardProps> = ({
@@ -39,18 +42,19 @@ const RoleCard: React.FC<RoleCardProps> = ({
     icon,
     onPress,
     delay,
+    color,
 }) => (
     <FadeInView delay={delay} duration={500} direction="up" distance={30}>
-        <AnimatedPressable style={styles.roleCard} onPress={onPress} scaleValue={0.97}>
-            <View style={styles.roleIconContainer}>
-                <Ionicons name={icon} size={32} color={colors.glassText} />
+        <AnimatedPressable style={styles.roleCard} onPress={onPress}>
+            <View style={[styles.roleIconContainer, { backgroundColor: color + '15' }]}>
+                <Ionicons name={icon} size={28} color={color} />
             </View>
             <View style={styles.roleContent}>
                 <Text style={styles.roleTitle}>{title}</Text>
                 <Text style={styles.roleDescription}>{description}</Text>
             </View>
             <View style={styles.arrowContainer}>
-                <Ionicons name="chevron-forward" size={24} color={colors.glassTextSecondary} />
+                <Ionicons name="arrow-forward" size={20} color={colors.textSecondary} />
             </View>
         </AnimatedPressable>
     </FadeInView>
@@ -62,78 +66,63 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
     const setSelectedRole = useAuthStore((state) => state.setSelectedRole);
 
     const handleRoleSelect = (role: UserRole) => {
-        console.log('Role selected:', role);
         setSelectedRole(role);
-        console.log('Navigating to Login...');
         navigation.navigate('Login');
     };
 
     return (
-        <GradientBackground>
-            <StatusBar barStyle="light-content" />
-            <View style={styles.container}>
-                {/* Logo Section with Pulse Animation */}
-                <FadeInView delay={100} duration={600} direction="down" distance={20}>
-                    <View style={styles.header}>
-                        <View style={styles.logoContainer}>
-                            <PulseIcon
-                                name="water"
-                                size={64}
-                                color={colors.glassText}
-                                pulseColor={colors.glowTeal}
-                            />
-                        </View>
-
-                        <Text style={styles.appName}>AquaCare</Text>
-                        <Text style={styles.tagline}>Pure Water, Better Life</Text>
+        <GradientBackground lightStatusBar={true}>
+            <SafeAreaView style={styles.container}>
+                {/* Header Section */}
+                <FadeInView delay={100} duration={600} direction="down" distance={20} style={styles.header}>
+                    <View style={styles.logoBadge}>
+                        <Ionicons name="water" size={32} color={colors.primary} />
                     </View>
+                    <Text style={styles.appName}>AquaCare</Text>
+                    <Text style={styles.tagline}>Select your role to continue</Text>
                 </FadeInView>
 
-                {/* Role Selection Cards with Staggered Animation */}
+                {/* Role Selection Cards */}
                 <View style={styles.content}>
-                    <FadeInView delay={300} duration={400}>
-                        <Text style={styles.selectTitle}>Continue as</Text>
-                    </FadeInView>
-
                     <RoleCard
                         role="customer"
                         title="Customer"
                         description="Book services & buy products"
-                        icon="person-outline"
+                        icon="person"
+                        color={colors.primary}
                         onPress={() => handleRoleSelect('customer')}
-                        delay={400}
+                        delay={300}
                     />
 
                     <RoleCard
                         role="agent"
                         title="Service Agent"
-                        description="Accept jobs & earn money"
-                        icon="construct-outline"
+                        description="Accept jobs & manage earnings"
+                        icon="construct"
+                        color={colors.accent}
                         onPress={() => handleRoleSelect('agent')}
-                        delay={550}
+                        delay={400}
                     />
 
                     <RoleCard
                         role="dealer"
                         title="Dealer"
-                        description="Manage orders & commissions"
-                        icon="business-outline"
+                        description="Manage inventory & orders"
+                        icon="business"
+                        color={colors.info}
                         onPress={() => handleRoleSelect('dealer')}
-                        delay={700}
+                        delay={500}
                     />
                 </View>
 
                 {/* Footer */}
-                <FadeInView delay={900} duration={400}>
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>
-                            By continuing, you agree to our{' '}
-                            <Text style={styles.link}>Terms of Service</Text> and{' '}
-                            <Text style={styles.link}>Privacy Policy</Text>
-                        </Text>
-                    </View>
+                <FadeInView delay={700} duration={400} style={styles.footer}>
+                    <Text style={styles.footerText}>
+                        By continuing, you agree to our{' '}
+                        <Text style={styles.link}>Terms</Text> & <Text style={styles.link}>Privacy Policy</Text>
+                    </Text>
                 </FadeInView>
-            </View>
+            </SafeAreaView>
         </GradientBackground>
     );
 };
@@ -141,58 +130,51 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: spacing.xxl + 20,
     },
     header: {
         alignItems: 'center',
-        paddingBottom: spacing.xl,
+        paddingVertical: spacing.xl,
+        marginTop: spacing.xl,
     },
-    logoContainer: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: colors.glassSurfaceStrong,
+    logoBadge: {
+        width: 64,
+        height: 64,
+        borderRadius: 24,
+        backgroundColor: colors.surface,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.md,
-        borderWidth: 2,
-        borderColor: colors.glassBorder,
+        ...shadows.sm,
     },
     appName: {
         ...typography.h1,
-        color: colors.glassText,
-        fontWeight: '700',
-        letterSpacing: 1,
+        color: colors.text,
+        marginBottom: spacing.xs,
     },
     tagline: {
         ...typography.body,
-        color: colors.glassTextSecondary,
-        marginTop: spacing.xs,
+        color: colors.textSecondary,
     },
     content: {
         flex: 1,
-        padding: spacing.lg,
-    },
-    selectTitle: {
-        ...typography.h3,
-        color: colors.glassText,
-        marginBottom: spacing.lg,
+        paddingHorizontal: spacing.lg,
+        justifyContent: 'center',
+        gap: spacing.md,
     },
     roleCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.glassSurfaceStrong,
+        backgroundColor: colors.surface,
         borderRadius: borderRadius.lg,
         padding: spacing.md,
-        marginBottom: spacing.md,
-        borderWidth: 1.5,
-        borderColor: colors.glassBorder,
+        borderWidth: 1,
+        borderColor: colors.border,
+        ...shadows.sm,
     },
     roleIconContainer: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: colors.glassSurfaceVibrant,
+        width: 52,
+        height: 52,
+        borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -201,22 +183,18 @@ const styles = StyleSheet.create({
         marginLeft: spacing.md,
     },
     roleTitle: {
-        ...typography.body,
-        fontWeight: '700',
-        color: colors.glassText,
+        ...typography.h2,
+        fontSize: 18,
+        color: colors.text,
+        marginBottom: 2,
     },
     roleDescription: {
-        ...typography.bodySmall,
-        color: colors.glassTextSecondary,
-        marginTop: 2,
+        ...typography.caption,
+        color: colors.textSecondary,
+        fontSize: 13,
     },
     arrowContainer: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: colors.glassSurface,
-        alignItems: 'center',
-        justifyContent: 'center',
+        padding: spacing.xs,
     },
     footer: {
         padding: spacing.lg,
@@ -224,11 +202,11 @@ const styles = StyleSheet.create({
     },
     footerText: {
         ...typography.caption,
-        color: colors.glassTextSecondary,
+        color: colors.textMuted,
         textAlign: 'center',
     },
     link: {
-        color: colors.glassText,
+        color: colors.primary,
         fontWeight: '600',
     },
 });

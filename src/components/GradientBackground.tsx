@@ -19,18 +19,13 @@ export const GradientBackground: React.FC<GradientBackgroundProps> = ({
 }) => {
     return (
         <LinearGradient
-            colors={[
-                colors.gradientStart,    // Deep ocean blue
-                colors.gradientMiddle,   // Electric blue
-                colors.gradientEnd       // Bright cyan
-            ]}
+            colors={[colors.background, colors.backgroundAlt]}
             style={[styles.gradient, style]}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            locations={[0, 0.5, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
         >
             <StatusBar
-                barStyle={lightStatusBar ? 'light-content' : 'dark-content'}
+                barStyle={lightStatusBar ? 'dark-content' : 'light-content'}
                 backgroundColor="transparent"
                 translucent
             />
