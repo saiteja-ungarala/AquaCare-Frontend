@@ -12,6 +12,7 @@ import {
     Platform,
     Alert,
     SafeAreaView,
+    ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -76,97 +77,124 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         }
     };
 
+    const isCustomLogin = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
+    const Wrapper = (isCustomLogin ? ImageBackground : View) as React.ComponentType<any>;
+
+    const getBackgroundImage = () => {
+        if (selectedRole === 'customer') return require('../../../assets/customer-login.png');
+        if (selectedRole === 'agent') return require('../../../assets/technicain-login.jpg');
+        if (selectedRole === 'dealer') return require('../../../assets/dealer-login.png');
+        return undefined;
+    };
+
+    const wrapperProps = isCustomLogin
+        ? { source: getBackgroundImage(), style: styles.backgroundImage, resizeMode: 'cover' as const }
+        : { style: styles.container };
+
     return (
-        <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView
-                style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            >
-                <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
+        <Wrapper {...wrapperProps}>
+            {isCustomLogin && (
+                <View style={styles.overlay} />
+            )}
+            <SafeAreaView style={isCustomLogin ? styles.safeArea : styles.container}>
+                <KeyboardAvoidingView
+                    style={styles.keyboardView}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <Ionicons name="arrow-back" size={22} color={colors.text} />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Main Content */}
-                    <View style={styles.content}>
-                        <Text style={styles.title}>Welcome Back</Text>
-                        <Text style={styles.subtitle}>
-                            Login as <Text style={styles.roleText}>{getRoleLabel()}</Text>
-                        </Text>
-
-                        {/* Form */}
-                        <View style={styles.form}>
-                            <Input
-                                label="Email"
-                                placeholder="Enter your email"
-                                value={email}
-                                onChangeText={setEmail}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                leftIcon="mail-outline"
-                            />
-
-                            <Input
-                                label="Password"
-                                placeholder="Enter your password"
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry
-                                leftIcon="lock-closed-outline"
-                            />
-
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {/* Header */}
+                        <View style={styles.header}>
                             <TouchableOpacity
-                                style={styles.forgotPassword}
-                                onPress={() => navigation.navigate('ForgotPassword')}
+                                style={[styles.backButton, isCustomLogin && styles.glassButton]}
+                                onPress={() => navigation.goBack()}
                             >
-                                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                                <Ionicons name="arrow-back" size={22} color={colors.text} />
                             </TouchableOpacity>
+                        </View>
 
-                            <Button
-                                title="Login"
-                                onPress={handleLogin}
-                                loading={isLoading}
-                                fullWidth
-                            />
+                        {/* Main Content Wrapper */}
+                        <View style={[
+                            styles.content,
+                            isCustomLogin && styles.bottomContent,
+                        ]}>
+                            {/* Frosted Glass Card (for refined roles) */}
+                            <View style={isCustomLogin ? styles.glassContent : undefined}>
+                                <Text style={styles.title}>Welcome Back</Text>
+                                <Text style={styles.subtitle}>
+                                    Login as <Text style={styles.roleText}>{getRoleLabel()}</Text>
+                                </Text>
 
-                            <View style={styles.divider}>
-                                <View style={styles.dividerLine} />
-                                <Text style={styles.dividerText}>or</Text>
-                                <View style={styles.dividerLine} />
+                                {/* Form */}
+                                <View style={styles.form}>
+                                    <Input
+                                        label="Email"
+                                        placeholder="Enter your email"
+                                        value={email}
+                                        onChangeText={setEmail}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        leftIcon="mail-outline"
+                                        inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
+                                    />
+
+                                    <Input
+                                        label="Password"
+                                        placeholder="Enter your password"
+                                        value={password}
+                                        onChangeText={setPassword}
+                                        secureTextEntry
+                                        leftIcon="lock-closed-outline"
+                                        inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
+                                    />
+
+                                    <TouchableOpacity
+                                        style={styles.forgotPassword}
+                                        onPress={() => navigation.navigate('ForgotPassword')}
+                                    >
+                                        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                                    </TouchableOpacity>
+
+                                    <Button
+                                        title="Login"
+                                        onPress={handleLogin}
+                                        loading={isLoading}
+                                        fullWidth
+                                    />
+
+                                    <View style={styles.divider}>
+                                        <View style={styles.dividerLine} />
+                                        <Text style={styles.dividerText}>or</Text>
+                                        <View style={styles.dividerLine} />
+                                    </View>
+
+                                    <Button
+                                        title="Login with OTP"
+                                        onPress={() => Alert.alert('Coming Soon', 'OTP login will be available soon!')}
+                                        variant="outline"
+                                        fullWidth
+                                        icon={<Ionicons name="phone-portrait" size={18} color={colors.primary} />}
+                                    />
+                                </View>
+
+                                {/* Footer */}
+                                <View style={styles.footer}>
+                                    <Text style={styles.footerText}>
+                                        Don't have an account?{' '}
+                                        <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                                            <Text style={styles.footerLink}>Sign Up</Text>
+                                        </TouchableOpacity>
+                                    </Text>
+                                </View>
                             </View>
-
-                            <Button
-                                title="Login with OTP"
-                                onPress={() => Alert.alert('Coming Soon', 'OTP login will be available soon!')}
-                                variant="outline"
-                                fullWidth
-                                icon={<Ionicons name="phone-portrait" size={18} color={colors.primary} />}
-                            />
                         </View>
-
-                        {/* Footer */}
-                        <View style={styles.footer}>
-                            <Text style={styles.footerText}>
-                                Don't have an account?{' '}
-                                <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                                    <Text style={styles.footerLink}>Sign Up</Text>
-                                </TouchableOpacity>
-                            </Text>
-                        </View>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </Wrapper>
     );
 };
 
@@ -198,6 +226,11 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         paddingHorizontal: spacing.lg,
+        justifyContent: 'center', // Default center for consistency
+    },
+    bottomContent: {
+        justifyContent: 'flex-end',
+        paddingBottom: spacing.xxl,
     },
     title: {
         ...typography.title,
@@ -255,6 +288,37 @@ const styles = StyleSheet.create({
         ...typography.body,
         color: colors.primary,
         fontWeight: '700',
+    },
+    // New Styles for Image Background / Glass Effect
+    backgroundImage: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+    },
+    safeArea: {
+        flex: 1,
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.05)', // Very subtle dark tint to make white text pop if needed, or just clear
+    },
+    glassContent: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)', // Much more transparent
+        borderRadius: borderRadius.xl,
+        padding: spacing.lg,
+        // Removed marginTop to rely on parent positioning
+        marginHorizontal: spacing.md,
+        ...shadows.lg,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.5)',
+    },
+    transparentInput: {
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.5)',
+        borderWidth: 1,
+    },
+    glassButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
     },
 });
 

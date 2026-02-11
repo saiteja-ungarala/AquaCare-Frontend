@@ -20,6 +20,7 @@ interface InputProps extends TextInputProps {
     rightIcon?: keyof typeof Ionicons.glyphMap;
     onRightIconPress?: () => void;
     containerStyle?: ViewStyle;
+    inputContainerStyle?: ViewStyle;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -29,6 +30,7 @@ export const Input: React.FC<InputProps> = ({
     rightIcon,
     onRightIconPress,
     containerStyle,
+    inputContainerStyle,
     secureTextEntry,
     ...props
 }) => {
@@ -43,6 +45,7 @@ export const Input: React.FC<InputProps> = ({
             <View
                 style={[
                     styles.inputContainer,
+                    inputContainerStyle,
                     isFocused && styles.inputFocused,
                     error && styles.inputError,
                 ]}
@@ -57,7 +60,7 @@ export const Input: React.FC<InputProps> = ({
                 )}
                 <TextInput
                     style={[styles.input, leftIcon && styles.inputWithLeftIcon]}
-                    placeholderTextColor={colors.textLight}
+                    placeholderTextColor={colors.textMuted}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     secureTextEntry={isPassword ? !isPasswordVisible : false}

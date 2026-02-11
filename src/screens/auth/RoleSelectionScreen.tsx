@@ -1,6 +1,3 @@
-// Role Selection Screen - First screen of the app
-// Modern 'Viral India' Aesthetic: Clean, Accessible, High Contrast
-
 import React from 'react';
 import {
     View,
@@ -9,14 +6,15 @@ import {
     StatusBar,
     Image,
     SafeAreaView,
+    ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
 import { UserRole } from '../../models/types';
 import {
-    GradientBackground,
     AnimatedPressable,
     FadeInView,
 } from '../../components';
@@ -46,8 +44,8 @@ const RoleCard: React.FC<RoleCardProps> = ({
 }) => (
     <FadeInView delay={delay} duration={500} direction="up" distance={30}>
         <AnimatedPressable style={styles.roleCard} onPress={onPress}>
-            <View style={[styles.roleIconContainer, { backgroundColor: color + '15' }]}>
-                <Ionicons name={icon} size={28} color={color} />
+            <View style={[styles.roleIconContainer, { backgroundColor: color }]}>
+                <Ionicons name={icon} size={28} color="#FFFFFF" />
             </View>
             <View style={styles.roleContent}>
                 <Text style={styles.roleTitle}>{title}</Text>
@@ -71,7 +69,20 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
     };
 
     return (
-        <GradientBackground lightStatusBar={true}>
+        <ImageBackground
+            source={require('../../../assets/purifier5.jpg')}
+            style={styles.backgroundImage}
+            resizeMode="cover"
+        >
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+            {/* Gradient Overlay: Dark top for white text, transparent middle, slight dark bottom for card contrast */}
+            <LinearGradient
+                colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.0)', 'rgba(0,0,0,0.3)']}
+                locations={[0, 0.4, 1]}
+                style={styles.overlay}
+            />
+
             <SafeAreaView style={styles.container}>
                 {/* Header Section */}
                 <FadeInView delay={100} duration={600} direction="down" distance={20} style={styles.header}>
@@ -123,11 +134,19 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
                     </Text>
                 </FadeInView>
             </SafeAreaView>
-        </GradientBackground>
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
+    backgroundImage: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+    },
     container: {
         flex: 1,
     },
@@ -140,36 +159,40 @@ const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 24,
-        backgroundColor: colors.surface,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)', // Keep white for logo
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.md,
-        ...shadows.sm,
+        ...shadows.md,
     },
     appName: {
         ...typography.h1,
-        color: colors.text,
+        color: '#FFFFFF', // White text for contrast against blue water
         marginBottom: spacing.xs,
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
     tagline: {
         ...typography.body,
-        color: colors.textSecondary,
+        color: 'rgba(255, 255, 255, 0.9)', // White/Transparent styling
     },
     content: {
         flex: 1,
         paddingHorizontal: spacing.lg,
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
         gap: spacing.md,
+        paddingBottom: spacing.xl,
     },
     roleCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.surface,
+        backgroundColor: 'rgba(255, 255, 255, 0.75)', // More transparent/glassy
         borderRadius: borderRadius.lg,
         padding: spacing.md,
         borderWidth: 1,
-        borderColor: colors.border,
-        ...shadows.sm,
+        borderColor: 'rgba(255, 255, 255, 0.4)',
+        ...shadows.md,
     },
     roleIconContainer: {
         width: 52,
@@ -202,11 +225,11 @@ const styles = StyleSheet.create({
     },
     footerText: {
         ...typography.caption,
-        color: colors.textMuted,
+        color: 'rgba(255, 255, 255, 0.7)',
         textAlign: 'center',
     },
     link: {
-        color: colors.primary,
+        color: '#FFFFFF',
         fontWeight: '600',
     },
 });
