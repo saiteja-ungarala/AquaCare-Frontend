@@ -1,6 +1,6 @@
-// Product Details Screen
+// Product Details Screen - API-backed with real cart integration
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -8,72 +8,142 @@ import {
     SafeAreaView,
     ScrollView,
     TouchableOpacity,
-    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { RootStackScreenProps } from '../../models/types';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { Button } from '../../components';
-import { Product } from '../../models/types';
-import { useCartStore } from '../../store';
+import { useCartStore } from '../../store/cartStore';
+import storeService, { StoreProduct } from '../../services/storeService';
 
-type ProductDetailsScreenProps = RootStackScreenProps<'ProductDetails'>;
+// Icon mapping for product categories
+const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
+    'water-cans': 'water',
+    'dispensers': 'cube',
+    'filters': 'filter',
+    'accessories': 'construct',
+    'pumps': 'hardware-chip',
+    'coolers': 'snow',
+};
 
-export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
-    navigation,
-    route,
-}) => {
-    const { product } = route.params;
-    const addToCart = useCartStore((state) => state.addToCart);
+export const ProductDetailsScreen = ({ navigation, route }: any) => {
+    const { productId } = route.params;
+    const [product, setProduct] = useState<StoreProduct | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [addingToCart, setAddingToCart] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const discount = product.originalPrice
-        ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-        : 0;
+    const { addProductToCart, totalItems, fetchCart } = useCartStore();
 
-    // Get icon based on category
-    const getIcon = (): keyof typeof Ionicons.glyphMap => {
-        switch (product.category) {
-            case 'water_purifier':
-                return 'water';
-            case 'water_softener':
-                return 'beaker';
-            case 'water_ionizer':
-                return 'flash';
-            default:
-                return 'cube';
+    useEffect(() => {
+        loadProduct();
+        fetchCart();
+    }, [productId]);
+
+    const loadProduct = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const data = await storeService.getProductById(productId);
+            setProduct(data);
+        } catch (err: any) {
+            console.error('[ProductDetails] Error loading product:', err);
+            setError(err.message || 'Failed to load product');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleAddToCart = () => {
-        addToCart(product, 'product');
-        Alert.alert(
-            'Added to Cart! 🛒',
-            `${product.name} has been added to your cart`,
-            [
-                { text: 'Continue Shopping', style: 'cancel' },
-                { text: 'View Cart', onPress: () => navigation.navigate('Cart') },
-            ]
-        );
+    const getIcon = (): keyof typeof Ionicons.glyphMap => {
+        const slug = product?.category?.slug || '';
+        return ICON_MAP[slug] || 'cube';
     };
 
-    const handleBuyNow = () => {
-        addToCart(product, 'product');
-        navigation.navigate('Cart');
+    const discount = product && product.mrp > product.price
+        ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+        : 0;
+
+    const handleAddToCart = async () => {
+        if (!product) return;
+        setAddingToCart(true);
+        try {
+            await addProductToCart(product.id, 1);
+            console.log('[ProductDetails] Added to cart');
+        } catch (err: any) {
+            console.error('[ProductDetails] Add to cart error:', err);
+        } finally {
+            setAddingToCart(false);
+        }
     };
+
+    const handleBuyNow = async () => {
+        if (!product) return;
+        setAddingToCart(true);
+        try {
+            await addProductToCart(product.id, 1);
+            navigation.navigate('Cart');
+        } catch (err: any) {
+            console.error('[ProductDetails] Buy now error:', err);
+        } finally {
+            setAddingToCart(false);
+        }
+    };
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={styles.loadingText}>Loading product...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    // Error state
+    if (error || !product) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.centered}>
+                    <Ionicons name="alert-circle-outline" size={64} color={colors.textSecondary} />
+                    <Text style={styles.errorText}>{error || 'Product not found'}</Text>
+                    <Button title="Go Back" onPress={() => navigation.goBack()} style={{ marginTop: spacing.md }} />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    const inStock = product.stockQty > 0;
 
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
+                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.shareButton}>
-                        <Ionicons name="share-outline" size={24} color={colors.text} />
+                    <TouchableOpacity
+                        style={styles.cartButton}
+                        onPress={() => navigation.navigate('Cart')}
+                    >
+                        <Ionicons name="cart-outline" size={24} color={colors.text} />
+                        {totalItems > 0 && (
+                            <View style={styles.badge}>
+                                <Text style={styles.badgeText}>{totalItems > 99 ? '99+' : totalItems}</Text>
+                            </View>
+                        )}
                     </TouchableOpacity>
                 </View>
 
@@ -91,15 +161,15 @@ export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
                 <View style={styles.content}>
                     <Text style={styles.productName}>{product.name}</Text>
 
+                    {/* Category & Stock */}
                     <View style={styles.ratingRow}>
-                        <View style={styles.rating}>
-                            <Ionicons name="star" size={18} color="#FFB800" />
-                            <Text style={styles.ratingText}>{product.rating}</Text>
-                            <Text style={styles.reviewCount}>({product.reviewCount} reviews)</Text>
+                        <View style={styles.categoryChip}>
+                            <Ionicons name={getIcon()} size={14} color={colors.primary} />
+                            <Text style={styles.categoryText}>{product.category?.name || 'Product'}</Text>
                         </View>
-                        {product.inStock ? (
+                        {inStock ? (
                             <View style={styles.stockBadge}>
-                                <Text style={styles.stockText}>In Stock</Text>
+                                <Text style={styles.stockText}>In Stock ({product.stockQty})</Text>
                             </View>
                         ) : (
                             <View style={[styles.stockBadge, styles.outOfStock]}>
@@ -110,14 +180,12 @@ export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
 
                     {/* Price */}
                     <View style={styles.priceRow}>
-                        <Text style={styles.price}>₹{product.price.toLocaleString()}</Text>
-                        {product.originalPrice && (
-                            <Text style={styles.originalPrice}>
-                                ₹{product.originalPrice.toLocaleString()}
-                            </Text>
+                        <Text style={styles.price}>₹{Number(product.price).toLocaleString()}</Text>
+                        {product.mrp > product.price && (
+                            <Text style={styles.originalPrice}>₹{Number(product.mrp).toLocaleString()}</Text>
                         )}
                         {discount > 0 && (
-                            <Text style={styles.saveText}>You save ₹{(product.originalPrice! - product.price).toLocaleString()}</Text>
+                            <Text style={styles.saveText}>You save ₹{(product.mrp - product.price).toLocaleString()}</Text>
                         )}
                     </View>
 
@@ -131,21 +199,23 @@ export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
                     </View>
 
                     {/* Description */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Description</Text>
-                        <Text style={styles.description}>{product.description}</Text>
-                    </View>
+                    {product.description ? (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Description</Text>
+                            <Text style={styles.description}>{product.description}</Text>
+                        </View>
+                    ) : null}
 
-                    {/* Features */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Key Features</Text>
-                        {product.features.map((feature, index) => (
-                            <View key={index} style={styles.featureItem}>
-                                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-                                <Text style={styles.featureText}>{feature}</Text>
+                    {/* SKU */}
+                    {product.sku && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Product Details</Text>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>SKU</Text>
+                                <Text style={styles.detailValue}>{product.sku}</Text>
                             </View>
-                        ))}
-                    </View>
+                        </View>
+                    )}
 
                     {/* Delivery Info */}
                     <View style={styles.deliveryCard}>
@@ -166,19 +236,23 @@ export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
             </ScrollView>
 
             {/* Bottom Bar */}
-            <View style={styles.bottomBar}>
-                <Button
-                    title="Add to Cart"
-                    onPress={handleAddToCart}
-                    variant="outline"
-                    style={styles.addToCartButton}
-                />
-                <Button
-                    title="Buy Now"
-                    onPress={handleBuyNow}
-                    style={styles.buyNowButton}
-                />
-            </View>
+            {inStock && (
+                <View style={styles.bottomBar}>
+                    <Button
+                        title={addingToCart ? 'Adding...' : 'Add to Cart'}
+                        onPress={handleAddToCart}
+                        variant="outline"
+                        style={styles.addToCartButton}
+                        disabled={addingToCart}
+                    />
+                    <Button
+                        title="Buy Now"
+                        onPress={handleBuyNow}
+                        style={styles.buyNowButton}
+                        disabled={addingToCart}
+                    />
+                </View>
+            )}
         </SafeAreaView>
     );
 };
@@ -187,6 +261,23 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
+    },
+    centered: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: spacing.xl,
+    },
+    loadingText: {
+        ...typography.body,
+        color: colors.textSecondary,
+        marginTop: spacing.md,
+    },
+    errorText: {
+        ...typography.body,
+        color: colors.textSecondary,
+        marginTop: spacing.md,
+        textAlign: 'center',
     },
     header: {
         flexDirection: 'row',
@@ -202,7 +293,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         ...shadows.sm,
     },
-    shareButton: {
+    cartButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
@@ -210,6 +301,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         ...shadows.sm,
+    },
+    badge: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        backgroundColor: colors.error,
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 4,
+    },
+    badgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: '700',
     },
     imageContainer: {
         height: 250,
@@ -246,20 +354,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: spacing.md,
     },
-    rating: {
+    categoryChip: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: colors.primary + '15',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+        gap: 4,
     },
-    ratingText: {
-        ...typography.body,
+    categoryText: {
+        ...typography.caption,
+        color: colors.primary,
         fontWeight: '600',
-        color: colors.text,
-        marginLeft: 4,
-    },
-    reviewCount: {
-        ...typography.bodySmall,
-        color: colors.textSecondary,
-        marginLeft: 4,
     },
     stockBadge: {
         backgroundColor: colors.success + '20',
@@ -334,15 +441,21 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         lineHeight: 24,
     },
-    featureItem: {
+    detailRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-        marginBottom: spacing.sm,
+        justifyContent: 'space-between',
+        paddingVertical: spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
     },
-    featureText: {
+    detailLabel: {
+        ...typography.body,
+        color: colors.textSecondary,
+    },
+    detailValue: {
         ...typography.body,
         color: colors.text,
+        fontWeight: '600',
     },
     deliveryCard: {
         backgroundColor: colors.surface,

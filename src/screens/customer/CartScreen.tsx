@@ -1,7 +1,7 @@
 // Cart Screen - Backend-aware, handles both product and service items
 
 import React, { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -44,6 +44,13 @@ const normalizeCartItem = (item: BackendCartItem): NormalizedCartItem => ({
 export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
     const { items, totalAmount, isLoading, fetchCart, updateCartItemQty, removeCartItem, clearLocalCart } = useCartStore();
 
+    // Local State for Checkout
+    const [checkoutModalVisible, setCheckoutModalVisible] = React.useState(false);
+    const [isCheckingOut, setIsCheckingOut] = React.useState(false);
+    const [checkoutSuccess, setCheckoutSuccess] = React.useState(false);
+    const [checkoutError, setCheckoutError] = React.useState<string | null>(null);
+    const [orderId, setOrderId] = React.useState<string | null>(null);
+
     const deliveryFee = totalAmount > 0 ? 99 : 0;
     const finalTotal = totalAmount + deliveryFee;
 
@@ -68,7 +75,8 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
         try {
             await updateCartItemQty(cartItemId, newQty);
         } catch (error: any) {
-            Alert.alert('Error', error.response?.data?.message || 'Failed to update quantity');
+            setCheckoutError(error.response?.data?.message || 'Failed to update quantity');
+            setTimeout(() => setCheckoutError(null), 3000);
         }
     };
 
@@ -76,39 +84,45 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
         try {
             await removeCartItem(cartItemId);
         } catch (error: any) {
-            Alert.alert('Error', error.response?.data?.message || 'Failed to remove item');
+            setCheckoutError(error.response?.data?.message || 'Failed to remove item');
+            setTimeout(() => setCheckoutError(null), 3000);
         }
     };
 
-    const handleCheckout = async () => {
-        // For now, use COD with a placeholder address
-        // In production, user should select address first
-        Alert.alert(
-            'Checkout',
-            'Select payment method:',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Cash on Delivery',
-                    onPress: async () => {
-                        try {
-                            // TODO: Replace with actual address selection
-                            const result = await ordersService.checkout({
-                                addressId: 1, // Placeholder address
-                                paymentMethod: 'cod',
-                            });
-                            Alert.alert(
-                                'Order Placed! 🎉',
-                                `Order #${result.orderId} placed successfully.`,
-                                [{ text: 'OK', onPress: () => { clearLocalCart(); fetchCart(); navigation.navigate('Home'); } }]
-                            );
-                        } catch (error: any) {
-                            Alert.alert('Error', error.response?.data?.message || 'Checkout failed');
-                        }
-                    },
-                },
-            ]
-        );
+    const handleCheckoutButton = () => {
+        if (cartItems.length === 0) return;
+        setCheckoutModalVisible(true);
+    };
+
+    const confirmCheckout = async () => {
+        setIsCheckingOut(true);
+        setCheckoutError(null);
+        try {
+            // Placeholder address ID 1
+            const result = await ordersService.checkout({
+                addressId: 1,
+                paymentMethod: 'cod',
+            });
+            setOrderId(String(result.orderId));
+            setCheckoutModalVisible(false);
+            setCheckoutSuccess(true);
+
+            // Clear cart and navigate after delay
+            setTimeout(() => {
+                clearLocalCart();
+                fetchCart();
+                setCheckoutSuccess(false);
+                // Navigate to Bookings tab or Home
+                navigation.navigate('CustomerTabs', { screen: 'Bookings' } as any);
+            }, 2500);
+        } catch (error: any) {
+            console.error(error);
+            setCheckoutError(error.response?.data?.message || 'Checkout failed');
+            setTimeout(() => setCheckoutError(null), 3000);
+            setCheckoutModalVisible(false);
+        } finally {
+            setIsCheckingOut(false);
+        }
     };
 
     // Loading state
@@ -207,11 +221,72 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                 </View>
             </ScrollView>
 
+            {/* Error Banner in Cart */}
+            {checkoutError && (
+                <View style={styles.errorBanner}>
+                    <Ionicons name="alert-circle" size={20} color={colors.error} />
+                    <Text style={styles.errorBannerText}>{checkoutError}</Text>
+                </View>
+            )}
+
             <View style={styles.bottomBar}>
                 <View><Text style={styles.bottomLabel}>Total</Text><Text style={styles.bottomPrice}>₹{finalTotal.toLocaleString()}</Text></View>
-                <Button title="Checkout" onPress={handleCheckout} style={{ paddingHorizontal: 32 }} />
+                <Button title="Checkout" onPress={handleCheckoutButton} style={{ paddingHorizontal: 32 }} />
             </View>
-        </SafeAreaView>
+
+            {/* Checkout Confirmation Modal */}
+            <Modal
+                transparent
+                visible={checkoutModalVisible}
+                animationType="fade"
+                onRequestClose={() => setCheckoutModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.confirmModal}>
+                        <Ionicons name="cart-outline" size={48} color={colors.primary} />
+                        <Text style={styles.confirmTitle}>Confirm Order</Text>
+                        <Text style={styles.confirmDesc}>
+                            Total Amount: ₹{finalTotal.toLocaleString()}
+                        </Text>
+                        <View style={styles.paymentMethod}>
+                            <Ionicons name="cash-outline" size={20} color={colors.textSecondary} />
+                            <Text style={styles.paymentText}>Cash on Delivery</Text>
+                        </View>
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnCancel]}
+                                onPress={() => setCheckoutModalVisible(false)}
+                            >
+                                <Text style={styles.modalBtnTextCancel}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnConfirm]}
+                                onPress={confirmCheckout}
+                                disabled={isCheckingOut}
+                            >
+                                {isCheckingOut ? (
+                                    <ActivityIndicator size="small" color={colors.textOnPrimary} />
+                                ) : (
+                                    <Text style={styles.modalBtnTextConfirm}>Place Order</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Success Overlay */}
+            {
+                checkoutSuccess && (
+                    <View style={styles.successOverlay}>
+                        <Ionicons name="checkmark-circle" size={64} color={colors.success} />
+                        <Text style={styles.successTitle}>Order Placed! 🎉</Text>
+                        <Text style={styles.successDesc}>Order #{orderId} has been placed successfully.</Text>
+                    </View>
+                )
+            }
+        </SafeAreaView >
     );
 };
 
@@ -246,4 +321,24 @@ const styles = StyleSheet.create({
     emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
     emptyTitle: { ...typography.h3, color: colors.text, marginTop: spacing.lg },
     loadingText: { ...typography.body, color: colors.textSecondary, marginTop: spacing.md },
+    // Modal Styles
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
+    confirmModal: { backgroundColor: colors.surface, width: '100%', maxWidth: 320, borderRadius: borderRadius.lg, padding: spacing.xl, alignItems: 'center', ...shadows.md },
+    confirmTitle: { ...typography.h3, color: colors.text, marginTop: spacing.md, textAlign: 'center' },
+    confirmDesc: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center', marginBottom: spacing.sm },
+    paymentMethod: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surfaceSecondary, padding: spacing.sm, borderRadius: borderRadius.md, marginBottom: spacing.xl },
+    paymentText: { ...typography.body, color: colors.text },
+    modalActions: { flexDirection: 'row', gap: spacing.md, width: '100%' },
+    modalBtn: { flex: 1, paddingVertical: spacing.md, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
+    modalBtnCancel: { backgroundColor: colors.surfaceSecondary },
+    modalBtnConfirm: { backgroundColor: colors.primary },
+    modalBtnTextCancel: { ...typography.body, fontWeight: '600', color: colors.text },
+    modalBtnTextConfirm: { ...typography.body, fontWeight: '600', color: colors.textOnPrimary },
+    // Success Overlay
+    successOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.95)', alignItems: 'center', justifyContent: 'center', zIndex: 10, padding: spacing.xl },
+    successTitle: { ...typography.h2, color: colors.success, marginTop: spacing.md, textAlign: 'center' },
+    successDesc: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center' },
+    // Error Banner
+    errorBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.error + '15', padding: spacing.md, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.error + '30', position: 'absolute', bottom: 80, left: spacing.md, right: spacing.md, borderRadius: borderRadius.md },
+    errorBannerText: { ...typography.bodySmall, color: colors.error, flex: 1, fontWeight: '600' },
 });

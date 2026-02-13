@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,100 +6,95 @@ import {
     FlatList,
     TouchableOpacity,
     SafeAreaView,
-    ImageBackground,
+    ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, Service, ServiceCategory } from '../../models/types';
+import { RootStackParamList, Service } from '../../models/types';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
+import { catalogService } from '../../services/catalogService';
 
 type ServicesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-interface ServiceCategoryItem {
-    id: string;
-    title: string;
-    category: ServiceCategory;
-    icon: keyof typeof Ionicons.glyphMap;
-    color: string;
-    description: string;
-    price: number;
-}
+// Icon by category
+const getCategoryIcon = (category: string): keyof typeof Ionicons.glyphMap => {
+    switch (category) {
+        case 'Service': case 'water_purifier': return 'water';
+        case 'Purifier': return 'water';
+        case 'ro_service': case 'ro_plant': return 'construct';
+        case 'Cleaning': return 'sparkles';
+        case 'Testing': case 'testing': return 'flask';
+        case 'water_softener': return 'beaker';
+        case 'installation': return 'build';
+        case 'ionizer': return 'flash';
+        default: return 'construct';
+    }
+};
 
-const SERVICE_CATEGORIES: ServiceCategoryItem[] = [
-    {
-        id: '1',
-        title: 'Water Purifier Service',
-        category: 'water_purifier',
-        icon: 'water',
-        color: '#4FC3F7',
-        description: 'Complete RO water purifier service including filter change and membrane cleaning.',
-        price: 499,
-    },
-    {
-        id: '2',
-        title: 'RO Plant Service',
-        category: 'ro_plant',
-        icon: 'construct',
-        color: '#29B6F6',
-        description: 'Industrial and commercial RO plant maintenance and repair services.',
-        price: 1499,
-    },
-    {
-        id: '3',
-        title: 'Water Softener Service',
-        category: 'water_softener',
-        icon: 'beaker',
-        color: '#039BE5',
-        description: 'Water softener regeneration and resin cleaning service.',
-        price: 899,
-    },
-    {
-        id: '4',
-        title: 'Ionizer Service',
-        category: 'ionizer',
-        icon: 'flash',
-        color: '#0277BD',
-        description: 'Deep cleaning and electrode maintenance for water ionizers.',
-        price: 1999,
-    },
-];
+const getCategoryColor = (category: string): string => {
+    switch (category) {
+        case 'Service': case 'water_purifier': return '#4FC3F7';
+        case 'Purifier': return '#29B6F6';
+        case 'ro_service': case 'ro_plant': return '#039BE5';
+        case 'Cleaning': return '#26A69A';
+        case 'Testing': case 'testing': return '#7E57C2';
+        case 'water_softener': return '#42A5F5';
+        case 'installation': return '#66BB6A';
+        case 'ionizer': return '#0277BD';
+        default: return '#78909C';
+    }
+};
 
 export const ServicesScreen = () => {
     const navigation = useNavigation<ServicesScreenNavigationProp>();
+    const [services, setServices] = useState<Service[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleServicePress = (item: ServiceCategoryItem) => {
-        // Create a dummy service object to pass to details
-        const service: Service = {
-            id: item.id,
-            name: item.title,
-            description: item.description,
-            price: item.price,
-            category: item.category,
-            image: 'https://via.placeholder.com/300', // Placeholder
-            duration: '60 mins',
-        };
+    useEffect(() => {
+        catalogService.getServices().then((list) => {
+            setServices(list);
+            setLoading(false);
+        });
+    }, []);
+
+    const handleServicePress = (service: Service) => {
         navigation.navigate('ServiceDetails', { service });
     };
 
-    const renderItem = ({ item }: { item: ServiceCategoryItem }) => (
+    const renderItem = ({ item }: { item: Service }) => (
         <TouchableOpacity
             style={styles.card}
             onPress={() => handleServicePress(item)}
             activeOpacity={0.9}
         >
-            <View style={[styles.iconContainer, { backgroundColor: item.color }]}>
-                <Ionicons name={item.icon} size={32} color="#FFFFFF" />
+            <View style={[styles.iconContainer, { backgroundColor: getCategoryColor(item.category) }]}>
+                <Ionicons name={getCategoryIcon(item.category)} size={32} color="#FFFFFF" />
             </View>
             <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardPrice}>Starts @ ₹{item.price}</Text>
+                <Text style={styles.cardTitle}>{item.name}</Text>
+                <Text style={styles.cardDuration}>{item.duration}</Text>
+                <Text style={styles.cardPrice}>₹{item.price}</Text>
             </View>
             <View style={styles.arrowContainer}>
                 <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </View>
         </TouchableOpacity>
     );
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Our Services</Text>
+                    <Text style={styles.headerSubtitle}>Select a service to book</Text>
+                </View>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -108,7 +103,7 @@ export const ServicesScreen = () => {
                 <Text style={styles.headerSubtitle}>Select a service to book</Text>
             </View>
             <FlatList
-                data={SERVICE_CATEGORIES}
+                data={services}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.listContent}
@@ -142,6 +137,11 @@ const styles = StyleSheet.create({
         ...typography.body,
         color: colors.textSecondary,
     },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     listContent: {
         padding: spacing.md,
     },
@@ -171,7 +171,12 @@ const styles = StyleSheet.create({
         ...typography.h2,
         fontSize: 17,
         color: colors.text,
-        marginBottom: 4,
+        marginBottom: 2,
+    },
+    cardDuration: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        marginBottom: 2,
     },
     cardPrice: {
         ...typography.bodySmall,

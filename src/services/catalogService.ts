@@ -4,13 +4,19 @@ import { Service, Product } from '../models/types';
 
 // Helper to map backend service to frontend Service type
 const mapBackendService = (backendService: any): Service => {
+    // Backend uses base_price; frontend expects price
+    const price = Number(backendService.base_price) || Number(backendService.price) || 0;
+    // Backend uses duration_minutes (number); frontend expects duration (string)
+    const mins = backendService.duration_minutes;
+    const duration = mins ? `${mins} mins` : (backendService.duration || '45-60 mins');
+
     return {
         id: String(backendService.id),
         name: backendService.name,
         description: backendService.description || '',
         image: backendService.image_url || backendService.image || 'https://images.unsplash.com/photo-1624958723474-a6e0e9d4e4b0?w=400',
-        price: Number(backendService.price) || 0,
-        duration: backendService.duration || '45-60 mins',
+        price,
+        duration,
         category: backendService.category || 'water_purifier',
     };
 };

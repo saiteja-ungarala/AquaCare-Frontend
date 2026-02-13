@@ -61,7 +61,7 @@ const homeBanners: BannerItem[] = [
         id: '3',
         title: 'Refer & Earn',
         subtitle: 'Get ₹500 for every friend you invite',
-        backgroundColor: customerColors.accent,
+        backgroundColor: '#7FA650', // Sage leaf green
         ctaText: 'Invite',
     },
     {
@@ -103,7 +103,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                 contentContainerStyle={styles.scrollContent}
             >
                 {/* Search Bar */}
-                <TouchableOpacity style={styles.searchBar} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.searchBar} activeOpacity={0.7} onPress={() => navigation.navigate('Search')}>
                     <Ionicons name="search" size={20} color={colors.textMuted} />
                     <Text style={styles.searchPlaceholder}>Search services & products</Text>
                 </TouchableOpacity>
@@ -148,7 +148,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
 
                 {/* Referral Banner */}
                 <TouchableOpacity style={[styles.referralBanner, { backgroundColor: customerColors.surface }]} activeOpacity={0.8}>
-                    <Ionicons name="gift" size={28} color={customerColors.accent} />
+                    <Ionicons name="gift" size={28} color={'#7FA650'} />
                     <View style={styles.referralContent}>
                         <Text style={[styles.referralTitle, { color: customerColors.text }]}>Refer & Earn ₹500</Text>
                         <Text style={[styles.referralDesc, { color: customerColors.textSecondary }]}>Invite friends to AquaCare</Text>
@@ -209,7 +209,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                                     <Ionicons
                                         name={feature.icon as any}
                                         size={22}
-                                        color={colors.primary}
+                                        color={'#7FA650'}
                                     />
                                 </View>
                                 <Text style={styles.featureTitle}>{feature.title}</Text>

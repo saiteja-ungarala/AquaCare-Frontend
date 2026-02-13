@@ -17,12 +17,14 @@ export interface User {
 
 export interface Address {
     id: string;
-    street: string;
+    label?: string;
+    line1: string;
+    line2?: string;
     city: string;
     state: string;
-    pincode: string;
-    landmark?: string;
-    isDefault: boolean;
+    postal_code: string;
+    country?: string;
+    is_default: boolean;
 }
 
 export interface Service {
@@ -184,12 +186,22 @@ export type RootStackParamList = {
     Signup: undefined;
     ForgotPassword: undefined;
     CustomerTabs: undefined;
+    Search: undefined;
     ServiceDetails: { service: Service };
     ProductDetails: { product: Product };
     Cart: undefined;
     Bookings: undefined;
     Wallet: undefined;
     Profile: undefined;
+    EditProfile: undefined;
+    Addresses: undefined;
+    AddEditAddress: { address?: Address };
+    PaymentMethods: undefined;
+    Notifications: undefined;
+    HelpFAQ: undefined;
+    ContactUs: undefined;
+    Terms: undefined;
+    Privacy: undefined;
     AgentDashboard: undefined;
     Earnings: undefined;
     DealerDashboard: undefined;

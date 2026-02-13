@@ -48,13 +48,13 @@ export const AppBar: React.FC<AppBarProps> = ({
                 {/* Profile */}
                 {onProfilePress && (
                     <TouchableOpacity style={styles.iconButton} onPress={onProfilePress}>
-                        <Ionicons name="person-circle-outline" size={26} color={theme.text} />
+                        <Ionicons name="person-circle-outline" size={26} color={theme.primary} />
                     </TouchableOpacity>
                 )}
 
                 {/* Notifications */}
                 <TouchableOpacity style={styles.iconButton} onPress={onNotificationPress}>
-                    <Ionicons name="notifications-outline" size={22} color={theme.text} />
+                    <Ionicons name="notifications-outline" size={22} color={theme.primary} />
                     {notificationCount > 0 && (
                         <View style={[styles.badge, { backgroundColor: theme.error }]}>
                             <Text style={[styles.badgeText, { color: theme.textOnPrimary }]}>
@@ -67,7 +67,7 @@ export const AppBar: React.FC<AppBarProps> = ({
                 {/* Cart */}
                 {onCartPress && (
                     <TouchableOpacity style={styles.iconButton} onPress={onCartPress}>
-                        <Ionicons name="cart-outline" size={22} color={theme.text} />
+                        <Ionicons name="cart-outline" size={22} color={theme.primary} />
                         {cartCount > 0 && (
                             <View style={[styles.badge, { backgroundColor: theme.error }]}>
                                 <Text style={[styles.badgeText, { color: theme.textOnPrimary }]}>

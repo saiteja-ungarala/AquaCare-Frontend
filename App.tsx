@@ -14,9 +14,19 @@ import { RoleSelectionScreen, LoginScreen, SignupScreen, ForgotPasswordScreen } 
 
 // Customer screens
 import { CustomerHomeScreen, ServiceDetailsScreen, ProductDetailsScreen, WalletScreen, ServicesScreen } from './src/screens/customer';
+import { SearchScreen } from './src/screens/customer/SearchScreen';
 import { CartScreen } from './src/screens/customer/CartScreen';
 import { BookingsScreen } from './src/screens/customer/BookingsScreen';
 import { ProfileScreen } from './src/screens/customer/ProfileScreen';
+import { EditProfileScreen } from './src/screens/customer/EditProfileScreen';
+import { AddressesScreen } from './src/screens/customer/AddressesScreen';
+import { AddEditAddressScreen } from './src/screens/customer/AddEditAddressScreen';
+import { PaymentMethodsScreen } from './src/screens/customer/PaymentMethodsScreen';
+import { NotificationsScreen } from './src/screens/customer/NotificationsScreen';
+import { HelpFAQScreen } from './src/screens/customer/HelpFAQScreen';
+import { ContactUsScreen } from './src/screens/customer/ContactUsScreen';
+import { TermsScreen } from './src/screens/customer/TermsScreen';
+import { PrivacyScreen } from './src/screens/customer/PrivacyScreen';
 
 // Store screens
 import { StoreHomeScreen, ProductListingScreen } from './src/screens/store';
@@ -141,10 +151,21 @@ function CustomerStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CustomerTabs" component={CustomerTabs} />
+      <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
       <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="OrderHistory" component={BookingsScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="Addresses" component={AddressesScreen} />
+      <Stack.Screen name="AddEditAddress" component={AddEditAddressScreen} />
+      <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="HelpFAQ" component={HelpFAQScreen} />
+      <Stack.Screen name="ContactUs" component={ContactUsScreen} />
+      <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
     </Stack.Navigator>
   );
 }

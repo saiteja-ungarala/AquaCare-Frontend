@@ -102,9 +102,7 @@ export function StoreHomeScreen({ navigation }: any) {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.headerButton}>
-                    <Ionicons name="menu" size={24} color={storeTheme.text} />
-                </TouchableOpacity>
+
                 <Text style={styles.headerTitle}>Store</Text>
                 <TouchableOpacity
                     style={styles.headerButton}

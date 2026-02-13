@@ -1,11 +1,14 @@
 // Profile Screen
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
+import { profileService } from '../../services/profileService';
 
 type ProfileScreenProps = { navigation: NativeStackNavigationProp<any> };
 
@@ -32,6 +35,35 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, subtitle, onPress, dan
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     const { user, logout } = useAuthStore();
+    const [referralCode, setReferralCode] = useState(user?.referralCode || '');
+    const [profileName, setProfileName] = useState(user?.name || 'User');
+    const [profilePhone, setProfilePhone] = useState(user?.phone || '');
+
+    // Fetch real profile data on focus
+    useFocusEffect(useCallback(() => {
+        profileService.getProfile().then((p) => {
+            if (p) {
+                setReferralCode(p.referral_code || '');
+                setProfileName(p.full_name || 'User');
+                setProfilePhone(p.phone || '');
+                // Also update the auth store so other screens see it
+                useAuthStore.setState((s) => ({
+                    user: s.user ? {
+                        ...s.user,
+                        name: p.full_name,
+                        phone: p.phone,
+                        referralCode: p.referral_code,
+                    } : s.user,
+                }));
+            }
+        });
+    }, []));
+
+    const handleCopyReferral = async () => {
+        if (!referralCode) return;
+        await Clipboard.setStringAsync(referralCode);
+        Alert.alert('Copied!', 'Referral code copied to clipboard');
+    };
 
     const handleLogout = () => {
         if (Platform.OS === 'web') {
@@ -58,29 +90,29 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.profileCard}>
                     <View style={styles.avatar}>
-                        <Ionicons name="person" size={40} color={colors.accent} />
+                        <Ionicons name="person" size={40} color={colors.primary} />
                     </View>
                     <View style={styles.profileInfo}>
-                        <Text style={styles.profileName}>{user?.name || 'User'}</Text>
+                        <Text style={styles.profileName}>{profileName}</Text>
                         <Text style={styles.profileEmail}>{user?.email}</Text>
-                        <Text style={styles.profilePhone}>{user?.phone}</Text>
+                        <Text style={styles.profilePhone}>{profilePhone}</Text>
                     </View>
-                    <TouchableOpacity style={styles.editButton}>
-                        <Ionicons name="pencil" size={18} color={colors.accent} />
+                    <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
+                        <Ionicons name="pencil" size={18} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
 
                 {/* Referral Code Card */}
-                <View style={styles.referralCard}>
+                <TouchableOpacity style={styles.referralCard} onPress={handleCopyReferral} activeOpacity={0.7}>
                     <View>
                         <Text style={styles.referralTitle}>Refer & Earn</Text>
                         <Text style={styles.referralSubtitle}>Share your code</Text>
                     </View>
                     <View style={styles.codeContainer}>
-                        <Text style={styles.referralCode}>{user?.referralCode || 'WATER2024'}</Text>
-                        <Ionicons name="copy-outline" size={18} color={colors.accent} />
+                        <Text style={styles.referralCode}>{referralCode || '...'}</Text>
+                        <Ionicons name="copy-outline" size={18} color={'#7FA650'} />
                     </View>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Account</Text>
@@ -95,21 +127,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                             icon="receipt-outline"
                             title="Order History"
                             subtitle="Product orders & past services"
-                            onPress={() => navigation.navigate('Bookings')}
+                            onPress={() => navigation.navigate('OrderHistory', { enableBack: true })}
                         />
-                        <MenuItem icon="location-outline" title="Addresses" subtitle="Manage delivery addresses" onPress={() => { }} />
-                        <MenuItem icon="card-outline" title="Payment Methods" subtitle="Cards, UPI, Wallets" onPress={() => { }} />
-                        <MenuItem icon="notifications-outline" title="Notifications" subtitle="Manage preferences" onPress={() => { }} />
+                        <MenuItem icon="location-outline" title="Addresses" subtitle="Manage delivery addresses" onPress={() => navigation.navigate('Addresses')} />
+                        <MenuItem icon="card-outline" title="Payment Methods" subtitle="Cards, UPI, Wallets" onPress={() => navigation.navigate('PaymentMethods')} />
+                        <MenuItem icon="notifications-outline" title="Notifications" subtitle="Manage preferences" onPress={() => navigation.navigate('Notifications')} />
                     </View>
                 </View>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Support</Text>
                     <View style={styles.menuCard}>
-                        <MenuItem icon="help-circle-outline" title="Help & FAQ" onPress={() => { }} />
-                        <MenuItem icon="chatbubble-outline" title="Contact Us" onPress={() => { }} />
-                        <MenuItem icon="document-text-outline" title="Terms & Conditions" onPress={() => { }} />
-                        <MenuItem icon="shield-outline" title="Privacy Policy" onPress={() => { }} />
+                        <MenuItem icon="help-circle-outline" title="Help & FAQ" onPress={() => navigation.navigate('HelpFAQ')} />
+                        <MenuItem icon="chatbubble-outline" title="Contact Us" onPress={() => navigation.navigate('ContactUs')} />
+                        <MenuItem icon="document-text-outline" title="Terms & Conditions" onPress={() => navigation.navigate('Terms')} />
+                        <MenuItem icon="shield-outline" title="Privacy Policy" onPress={() => navigation.navigate('Privacy')} />
                     </View>
                 </View>
 
