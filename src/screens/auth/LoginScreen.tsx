@@ -13,6 +13,7 @@ import {
     Alert,
     SafeAreaView,
     ImageBackground,
+    TextStyle, // Added TextStyle
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -78,6 +79,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     };
 
     const isCustomLogin = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
+    const isAgent = selectedRole === 'agent';
     const Wrapper = (isCustomLogin ? ImageBackground : View) as React.ComponentType<any>;
 
     const getBackgroundImage = () => {
@@ -86,6 +88,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         if (selectedRole === 'dealer') return require('../../../assets/dealer-login.png');
         return undefined;
     };
+
+    const activeThemeColor = selectedRole === 'agent' ? colors.accent : (selectedRole === 'dealer' ? colors.info : colors.primary);
 
     const wrapperProps = isCustomLogin
         ? { source: getBackgroundImage(), style: styles.backgroundImage, resizeMode: 'cover' as const }
@@ -123,9 +127,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                         ]}>
                             {/* Frosted Glass Card (for refined roles) */}
                             <View style={isCustomLogin ? styles.glassContent : undefined}>
-                                <Text style={styles.title}>Welcome Back</Text>
-                                <Text style={styles.subtitle}>
-                                    Login as <Text style={styles.roleText}>{getRoleLabel()}</Text>
+                                <Text style={[styles.title, isAgent ? { color: colors.surface } : null]}>Welcome Back</Text>
+                                <Text style={[styles.subtitle, isAgent ? { color: 'rgba(255, 255, 255, 0.8)' } : null]}>
+                                    Login as <Text style={[styles.roleText, { color: activeThemeColor }]}>{getRoleLabel()}</Text>
                                 </Text>
 
                                 {/* Form */}
@@ -139,6 +143,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                         autoCapitalize="none"
                                         leftIcon="mail-outline"
                                         inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
+                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                     />
 
                                     <Input
@@ -149,13 +155,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                         secureTextEntry
                                         leftIcon="lock-closed-outline"
                                         inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
+                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                     />
 
                                     <TouchableOpacity
                                         style={styles.forgotPassword}
                                         onPress={() => navigation.navigate('ForgotPassword')}
                                     >
-                                        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                                        <Text style={[styles.forgotPasswordText, { color: activeThemeColor }]}>Forgot Password?</Text>
                                     </TouchableOpacity>
 
                                     <Button
@@ -163,6 +171,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                         onPress={handleLogin}
                                         loading={isLoading}
                                         fullWidth
+                                        style={{ backgroundColor: activeThemeColor, shadowColor: activeThemeColor }}
                                     />
 
                                     <View style={styles.divider}>
@@ -176,7 +185,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                         onPress={() => Alert.alert('Coming Soon', 'OTP login will be available soon!')}
                                         variant="outline"
                                         fullWidth
-                                        icon={<Ionicons name="phone-portrait" size={18} color={colors.primary} />}
+                                        icon={<Ionicons name="phone-portrait" size={18} color={activeThemeColor} />}
+                                        style={{ borderColor: activeThemeColor }}
+                                        textStyle={{ color: activeThemeColor }}
                                     />
                                 </View>
 
@@ -185,7 +196,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                     <Text style={styles.footerText}>
                                         Don't have an account?{' '}
                                         <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                                            <Text style={styles.footerLink}>Sign Up</Text>
+                                            <Text style={[styles.footerLink, { color: activeThemeColor }]}>Sign Up</Text>
                                         </TouchableOpacity>
                                     </Text>
                                 </View>

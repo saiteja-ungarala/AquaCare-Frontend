@@ -43,9 +43,11 @@ const light = {
 
     // Interactive
     primary: common.primary,
+    primaryPressed: common.primaryPressed,
     primaryLight: '#CFF7F3',          // subtle tint backgrounds
     primaryDark: '#007E74',
     accent: common.accent,
+    accentPressed: common.accentPressed,
 
     // Status colors
     success: common.success,
@@ -64,6 +66,21 @@ const light = {
     tabBarActive: common.primary,
     tabBarInactive: '#7A8A99',
     tabBarBorder: '#E4EFF1',
+
+    // Gradients
+    gradientStart: common.primary,
+    gradientEnd: '#007E74',
+
+    // Missing properties
+    secondary: common.accent,
+    secondaryLight: 'rgba(255, 255, 255, 0.7)',
+    textLight: '#94A3B8',
+    glassBorder: 'rgba(255, 255, 255, 0.2)',
+    surfaceSecondary: '#F1F5F9',
+    glassSurface: 'rgba(255, 255, 255, 0.9)',
+    glowPink: '#FF4081',
+    glassText: '#0B1220',
+    glowTeal: common.primary,
 };
 
 const dark = {
@@ -92,9 +109,11 @@ const dark = {
 
     // Interactive
     primary: common.primary,
+    primaryPressed: common.primaryPressed,
     primaryLight: 'rgba(0, 194, 179, 0.18)',
     primaryDark: '#00A79A',
     accent: common.accent,
+    accentPressed: common.accentPressed,
 
     // Feedback surfaces
     successBg: 'rgba(22, 163, 74, 0.18)',
@@ -107,6 +126,21 @@ const dark = {
     tabBarActive: common.primary,
     tabBarInactive: '#97B9BE',
     tabBarBorder: 'rgba(255, 255, 255, 0.10)',
+
+    // Gradients
+    gradientStart: common.primary,
+    gradientEnd: '#00A79A',
+
+    // Missing properties
+    secondary: common.accent,
+    secondaryLight: 'rgba(255, 255, 255, 0.6)',
+    textLight: '#94A3B8',
+    glassBorder: 'rgba(255, 255, 255, 0.1)',
+    surfaceSecondary: '#1E293B',
+    glassSurface: 'rgba(30, 41, 59, 0.8)',
+    glowPink: '#FF4081',
+    glassText: '#EAF6F6',
+    glowTeal: common.primary,
 };
 
 export type ThemeColors = typeof light;
@@ -166,6 +200,11 @@ export const typography = {
     },
     h2: {
         fontSize: 18,
+        fontWeight: '700' as const,
+        lineHeight: 24,
+    },
+    h3: {
+        fontSize: 16,
         fontWeight: '700' as const,
         lineHeight: 24,
     },

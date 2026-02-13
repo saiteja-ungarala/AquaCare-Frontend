@@ -69,6 +69,8 @@ export interface CartState {
 export interface CartActions {
     fetchCart: () => Promise<void>;
     addProductToCart: (productId: number, qty?: number) => Promise<void>;
+    addServiceToCart: (serviceId: number, date?: string, time?: string) => Promise<void>;
+    addToCart: (item: any, type: 'product' | 'service', options?: { date?: string; time?: string; qty?: number }) => Promise<void>;
     updateCartItemQty: (cartItemId: number, qty: number) => Promise<void>;
     removeCartItem: (cartItemId: number) => Promise<void>;
     clearLocalCart: () => void;
@@ -118,14 +120,20 @@ export const useCartStore = create<CartStore>((set, get) => ({
         try {
             console.log('[CartStore] addProductToCart:', { productId, qty });
             const response = await api.post('/cart/items', {
-                item_type: 'product',  // Backend expects snake_case
+                item_type: 'product',
                 product_id: productId,
                 qty,
             });
             console.log('[CartStore] addProductToCart response:', response.data);
-            // Response includes updated cart
+
             const cartData = response.data.data;
-            const rawItems: RawBackendCartItem[] = cartData?.items || [];
+            if (!cartData || !Array.isArray(cartData.items)) {
+                console.warn('[CartStore] Response missing items, refetching cart...');
+                await get().fetchCart();
+                return;
+            }
+
+            const rawItems: RawBackendCartItem[] = cartData.items;
             const items = rawItems.map(normalizeCartItem);
             const totals = calculateTotals(items);
             set({ items, ...totals, isLoading: false });
@@ -133,6 +141,47 @@ export const useCartStore = create<CartStore>((set, get) => ({
             console.error('[CartStore] addProductToCart error:', error.response?.data || error);
             set({ isLoading: false, error: error.response?.data?.message || error.message });
             throw error;
+        }
+    },
+
+    // Add service to cart
+    addServiceToCart: async (serviceId: number, date?: string, time?: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            console.log('[CartStore] addServiceToCart:', { serviceId, date, time });
+            const response = await api.post('/cart/items', {
+                item_type: 'service',
+                service_id: serviceId,
+                booking_date: date,
+                booking_time: time,
+                qty: 1
+            });
+            console.log('[CartStore] addServiceToCart response:', response.data);
+
+            const cartData = response.data.data;
+            if (!cartData || !Array.isArray(cartData.items)) {
+                console.warn('[CartStore] Response missing items, refetching cart...');
+                await get().fetchCart();
+                return;
+            }
+
+            const rawItems: RawBackendCartItem[] = cartData.items;
+            const items = rawItems.map(normalizeCartItem);
+            const totals = calculateTotals(items);
+            set({ items, ...totals, isLoading: false });
+        } catch (error: any) {
+            console.error('[CartStore] addServiceToCart error:', error.response?.data || error);
+            set({ isLoading: false, error: error.response?.data?.message || error.message });
+            throw error;
+        }
+    },
+
+    // Generic add to cart (handles both products and services)
+    addToCart: async (item: any, type: 'product' | 'service', options?: { date?: string; time?: string; qty?: number }) => {
+        if (type === 'product') {
+            await get().addProductToCart(Number(item.id), options?.qty || 1);
+        } else {
+            await get().addServiceToCart(Number(item.id), options?.date, options?.time);
         }
     },
 
@@ -145,8 +194,15 @@ export const useCartStore = create<CartStore>((set, get) => ({
                 return;
             }
             const response = await api.patch(`/cart/items/${cartItemId}`, { qty });
+
             const cartData = response.data.data;
-            const rawItems: RawBackendCartItem[] = cartData?.items || [];
+            if (!cartData || !Array.isArray(cartData.items)) {
+                console.warn('[CartStore] Response missing items, refetching cart...');
+                await get().fetchCart();
+                return;
+            }
+
+            const rawItems: RawBackendCartItem[] = cartData.items;
             const items = rawItems.map(normalizeCartItem);
             const totals = calculateTotals(items);
             set({ items, ...totals, isLoading: false });
@@ -162,8 +218,15 @@ export const useCartStore = create<CartStore>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const response = await api.delete(`/cart/items/${cartItemId}`);
+
             const cartData = response.data.data;
-            const rawItems: RawBackendCartItem[] = cartData?.items || [];
+            if (!cartData || !Array.isArray(cartData.items)) {
+                console.warn('[CartStore] Response missing items, refetching cart...');
+                await get().fetchCart();
+                return;
+            }
+
+            const rawItems: RawBackendCartItem[] = cartData.items;
             const items = rawItems.map(normalizeCartItem);
             const totals = calculateTotals(items);
             set({ items, ...totals, isLoading: false });

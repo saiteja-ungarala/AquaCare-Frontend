@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
+import { customerColors } from '../../theme/customerTheme';
 import {
     AppBar,
     CategoryChip,
@@ -21,8 +22,10 @@ import {
     ProductCard,
     FadeInView,
     BubbleCelebration,
+    BannerCarousel,
+    type CategoryItem,
+    type BannerItem,
 } from '../../components';
-import type { CategoryItem } from '../../components';
 import { useCartStore, useAuthStore } from '../../store';
 import { mockServices, mockProducts } from '../../services/mockData';
 
@@ -39,6 +42,44 @@ const categories: CategoryItem[] = [
     { id: 'spares', name: 'Spares', icon: 'construct' },
 ];
 
+const homeBanners: BannerItem[] = [
+    {
+        id: '1',
+        title: 'Complete Care',
+        subtitle: 'Annual maintenance plan starting @ ₹2999',
+        backgroundColor: customerColors.primary,
+        ctaText: 'View Plans',
+    },
+    {
+        id: '2',
+        title: 'New Alkalisers',
+        subtitle: 'Upgrade your water quality today',
+        backgroundColor: customerColors.primaryDark, // Deep Teal
+        ctaText: 'Shop Now',
+    },
+    {
+        id: '3',
+        title: 'Refer & Earn',
+        subtitle: 'Get ₹500 for every friend you invite',
+        backgroundColor: customerColors.accent,
+        ctaText: 'Invite',
+    },
+    {
+        id: '4',
+        title: 'Free Water Test',
+        subtitle: 'Check your TDS level at home for free',
+        backgroundColor: customerColors.secondary, // Sky Blue
+        ctaText: 'Book Now',
+    },
+    {
+        id: '5',
+        title: 'Smart Softeners',
+        subtitle: 'Hard water solutions for your home',
+        backgroundColor: customerColors.text, // Charcoal/Black for premium look
+        ctaText: 'Explore',
+    },
+];
+
 export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
     navigation,
 }) => {
@@ -53,8 +94,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                 location="Select Location"
                 onLocationPress={() => Alert.alert('Location', 'Location selector coming soon!')}
                 onNotificationPress={() => Alert.alert('Notifications', 'No new notifications')}
-                onCartPress={() => navigation.navigate('Cart')}
-                cartCount={cartItems.length}
+                onProfilePress={() => navigation.navigate('Profile')}
             />
 
             <ScrollView
@@ -73,6 +113,13 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     categories={categories}
                     selectedId={selectedCategory}
                     onSelect={setSelectedCategory}
+                    customColors={customerColors}
+                />
+
+                {/* Promotional Banners */}
+                <BannerCarousel
+                    banners={homeBanners}
+                    onBannerPress={(banner) => Alert.alert('Banner', `Pressed: ${banner.title}`)}
                 />
 
                 {/* Book Service Section */}
@@ -93,19 +140,20 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                                     navigation.navigate('ServiceDetails', { service })
                                 }
                                 compact
+                                customColors={customerColors}
                             />
                         ))}
                     </View>
                 </View>
 
                 {/* Referral Banner */}
-                <TouchableOpacity style={styles.referralBanner} activeOpacity={0.8}>
-                    <Ionicons name="gift" size={28} color={colors.accent} />
+                <TouchableOpacity style={[styles.referralBanner, { backgroundColor: customerColors.surface }]} activeOpacity={0.8}>
+                    <Ionicons name="gift" size={28} color={customerColors.accent} />
                     <View style={styles.referralContent}>
-                        <Text style={styles.referralTitle}>Refer & Earn ₹500</Text>
-                        <Text style={styles.referralDesc}>Invite friends to AquaCare</Text>
+                        <Text style={[styles.referralTitle, { color: customerColors.text }]}>Refer & Earn ₹500</Text>
+                        <Text style={[styles.referralDesc, { color: customerColors.textSecondary }]}>Invite friends to AquaCare</Text>
                     </View>
-                    <Ionicons name="arrow-forward" size={20} color={colors.textSecondary} />
+                    <Ionicons name="arrow-forward" size={20} color={customerColors.textSecondary} />
                 </TouchableOpacity>
 
                 {/* Water Products Section */}

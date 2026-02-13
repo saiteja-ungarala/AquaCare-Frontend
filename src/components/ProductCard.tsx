@@ -10,13 +10,17 @@ interface ProductCardProps {
     product: Product;
     onPress: () => void;
     onAddToCart?: () => void;
+    customColors?: any;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
     product,
     onPress,
     onAddToCart,
+    customColors,
 }) => {
+    const theme = customColors || colors;
+
     const discount = product.originalPrice
         ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
         : 0;
@@ -42,30 +46,30 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             activeOpacity={0.7}
         >
             {discount > 0 && (
-                <View style={styles.discountBadge}>
-                    <Text style={styles.discountText}>{discount}% OFF</Text>
+                <View style={[styles.discountBadge, { backgroundColor: theme.warning }]}>
+                    <Text style={[styles.discountText, { color: theme.textOnPrimary }]}>{discount}% OFF</Text>
                 </View>
             )}
 
-            <View style={styles.imageContainer}>
-                <Ionicons name={getIcon()} size={48} color={colors.accent} />
+            <View style={[styles.imageContainer, { backgroundColor: theme.surfaceSecondary }]}>
+                <Ionicons name={getIcon()} size={48} color={theme.primary} />
             </View>
 
             <View style={styles.content}>
-                <Text style={styles.name} numberOfLines={2}>
+                <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>
                     {product.name}
                 </Text>
 
                 <View style={styles.ratingContainer}>
-                    <Ionicons name="star" size={14} color="#FFB800" />
-                    <Text style={styles.rating}>{product.rating}</Text>
-                    <Text style={styles.reviewCount}>({product.reviewCount})</Text>
+                    <Ionicons name="star" size={14} color={theme.secondary || theme.info} />
+                    <Text style={[styles.rating, { color: theme.text }]}>{product.rating}</Text>
+                    <Text style={[styles.reviewCount, { color: theme.textSecondary }]}>({product.reviewCount})</Text>
                 </View>
 
                 <View style={styles.priceContainer}>
-                    <Text style={styles.price}>₹{product.price.toLocaleString()}</Text>
+                    <Text style={[styles.price, { color: theme.primary }]}>₹{product.price.toLocaleString()}</Text>
                     {product.originalPrice && (
-                        <Text style={styles.originalPrice}>
+                        <Text style={[styles.originalPrice, { color: theme.textSecondary }]}>
                             ₹{product.originalPrice.toLocaleString()}
                         </Text>
                     )}
@@ -79,7 +83,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                             onAddToCart();
                         }}
                     >
-                        <Ionicons name="add" size={20} color={colors.textOnPrimary} />
+                        <Ionicons name="add" size={20} color={theme.textOnPrimary} />
                     </TouchableOpacity>
                 )}
             </View>

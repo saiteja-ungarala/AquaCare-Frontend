@@ -49,7 +49,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}><Text style={styles.headerTitle}>Profile</Text></View>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Profile</Text>
+            </View>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.profileCard}>
                     <View style={styles.avatar}>
@@ -122,7 +127,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    header: { padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
+    header: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
+    backButton: { marginRight: spacing.md },
     headerTitle: { ...typography.h2, fontSize: 20, color: colors.text },
     scrollView: { flex: 1, padding: spacing.md },
     profileCard: { flexDirection: 'row', backgroundColor: colors.surface2, borderRadius: borderRadius.lg, padding: spacing.md, ...shadows.sm, marginBottom: spacing.md },

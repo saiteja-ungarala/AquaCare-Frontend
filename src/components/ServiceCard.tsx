@@ -10,13 +10,17 @@ interface ServiceCardProps {
     service: Service;
     onPress: () => void;
     compact?: boolean;
+    customColors?: any; // ThemeColors type creates circular dependency if imported from theme.ts directly sometimes, can use Partial<ThemeColors>
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
     service,
     onPress,
     compact = false,
+    customColors,
 }) => {
+    // Use custom colors if provided, else default
+    const theme = customColors || colors;
     // Get icon based on category
     const getIcon = (): keyof typeof Ionicons.glyphMap => {
         switch (service.category) {
@@ -40,10 +44,10 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                 onPress={onPress}
                 activeOpacity={0.7}
             >
-                <View style={styles.compactIconContainer}>
-                    <Ionicons name={getIcon()} size={28} color={colors.primary} />
+                <View style={[styles.compactIconContainer, { backgroundColor: theme.surfaceSecondary }]}>
+                    <Ionicons name={getIcon()} size={28} color={theme.primary} />
                 </View>
-                <Text style={styles.compactTitle} numberOfLines={2}>
+                <Text style={[styles.compactTitle, { color: theme.text }]} numberOfLines={2}>
                     {service.name}
                 </Text>
             </TouchableOpacity>
@@ -56,15 +60,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             onPress={onPress}
             activeOpacity={0.7}
         >
-            <View style={styles.iconContainer}>
-                <Ionicons name={getIcon()} size={32} color={colors.accent} />
+            <View style={[styles.iconContainer, { backgroundColor: theme.surfaceSecondary }]}>
+                <Ionicons name={getIcon()} size={32} color={theme.primary} />
             </View>
             <View style={styles.content}>
-                <Text style={styles.title}>{service.name}</Text>
-                <Text style={styles.duration}>{service.duration}</Text>
-                <Text style={styles.price}>₹{service.price}</Text>
+                <Text style={[styles.title, { color: theme.text }]}>{service.name}</Text>
+                <Text style={[styles.duration, { color: theme.textSecondary }]}>{service.duration}</Text>
+                <Text style={[styles.price, { color: theme.primary }]}>₹{service.price}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+            <Ionicons name="chevron-forward" size={20} color={theme.textLight || theme.textSecondary} />
         </TouchableOpacity>
     );
 };

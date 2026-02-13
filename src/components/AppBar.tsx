@@ -11,8 +11,10 @@ interface AppBarProps {
     onLocationPress?: () => void;
     onNotificationPress?: () => void;
     onCartPress?: () => void;
+    onProfilePress?: () => void;
     notificationCount?: number;
     cartCount?: number;
+    customColors?: any;
 }
 
 export const AppBar: React.FC<AppBarProps> = ({
@@ -20,31 +22,42 @@ export const AppBar: React.FC<AppBarProps> = ({
     onLocationPress,
     onNotificationPress,
     onCartPress,
+    onProfilePress,
     notificationCount = 0,
     cartCount = 0,
+    customColors,
 }) => {
+    const theme = customColors || colors;
+
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             {/* Location Selector */}
             <TouchableOpacity style={styles.locationButton} onPress={onLocationPress}>
-                <Ionicons name="location" size={18} color={colors.primary} />
+                <Ionicons name="location" size={18} color={theme.primary} />
                 <View style={styles.locationTextContainer}>
-                    <Text style={styles.locationLabel}>Deliver to</Text>
-                    <Text style={styles.locationText} numberOfLines={1}>
+                    <Text style={[styles.locationLabel, { color: theme.textMuted }]}>Deliver to</Text>
+                    <Text style={[styles.locationText, { color: theme.text }]} numberOfLines={1}>
                         {location}
                     </Text>
                 </View>
-                <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
+                <Ionicons name="chevron-down" size={16} color={theme.textSecondary} />
             </TouchableOpacity>
 
             {/* Actions */}
             <View style={styles.actions}>
+                {/* Profile */}
+                {onProfilePress && (
+                    <TouchableOpacity style={styles.iconButton} onPress={onProfilePress}>
+                        <Ionicons name="person-circle-outline" size={26} color={theme.text} />
+                    </TouchableOpacity>
+                )}
+
                 {/* Notifications */}
                 <TouchableOpacity style={styles.iconButton} onPress={onNotificationPress}>
-                    <Ionicons name="notifications-outline" size={22} color={colors.text} />
+                    <Ionicons name="notifications-outline" size={22} color={theme.text} />
                     {notificationCount > 0 && (
-                        <View style={styles.badge}>
-                            <Text style={styles.badgeText}>
+                        <View style={[styles.badge, { backgroundColor: theme.error }]}>
+                            <Text style={[styles.badgeText, { color: theme.textOnPrimary }]}>
                                 {notificationCount > 9 ? '9+' : notificationCount}
                             </Text>
                         </View>
@@ -54,10 +67,10 @@ export const AppBar: React.FC<AppBarProps> = ({
                 {/* Cart */}
                 {onCartPress && (
                     <TouchableOpacity style={styles.iconButton} onPress={onCartPress}>
-                        <Ionicons name="cart-outline" size={22} color={colors.text} />
+                        <Ionicons name="cart-outline" size={22} color={theme.text} />
                         {cartCount > 0 && (
-                            <View style={styles.badge}>
-                                <Text style={styles.badgeText}>
+                            <View style={[styles.badge, { backgroundColor: theme.error }]}>
+                                <Text style={[styles.badgeText, { color: theme.textOnPrimary }]}>
                                     {cartCount > 9 ? '9+' : cartCount}
                                 </Text>
                             </View>

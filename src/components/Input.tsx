@@ -9,6 +9,7 @@ import {
     TextInputProps,
     TouchableOpacity,
     ViewStyle,
+    TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, borderRadius, spacing, typography } from '../theme/theme';
@@ -21,6 +22,7 @@ interface InputProps extends TextInputProps {
     onRightIconPress?: () => void;
     containerStyle?: ViewStyle;
     inputContainerStyle?: ViewStyle;
+    labelStyle?: TextStyle;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -31,6 +33,7 @@ export const Input: React.FC<InputProps> = ({
     onRightIconPress,
     containerStyle,
     inputContainerStyle,
+    labelStyle,
     secureTextEntry,
     ...props
 }) => {
@@ -41,7 +44,7 @@ export const Input: React.FC<InputProps> = ({
 
     return (
         <View style={[styles.container, containerStyle]}>
-            {label && <Text style={styles.label}>{label}</Text>}
+            {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
             <View
                 style={[
                     styles.inputContainer,

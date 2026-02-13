@@ -2,6 +2,7 @@
 // React Navigation doesn't handle fragments well, using proper screen arrays
 
 import React from 'react';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -32,6 +33,7 @@ import { useAuthStore } from './src/store';
 // Types
 import { RootStackParamList } from './src/models/types';
 import { colors } from './src/theme/theme';
+import { customerColors } from './src/theme/customerTheme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -89,9 +91,35 @@ function CustomerTabs() {
     >
       <Tab.Screen name="Home" component={CustomerHomeScreen} />
       <Tab.Screen name="Services" component={ServicesScreen} />
-      <Tab.Screen name="Bookings" component={BookingsScreen} />
+      <Tab.Screen
+        name="Wallet"
+        component={WalletScreen}
+        options={{
+          tabBarLabel: '',
+          tabBarIcon: ({ color }) => (
+            <View
+              style={{
+                top: -20,
+                width: 60,
+                height: 60,
+                borderRadius: 30,
+                backgroundColor: customerColors.primary,
+                justifyContent: 'center',
+                alignItems: 'center',
+                shadowColor: customerColors.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 6,
+              }}
+            >
+              <Ionicons name="wallet" size={28} color={customerColors.textOnPrimary} />
+            </View>
+          ),
+        }}
+      />
       <Tab.Screen name="Store" component={StoreStack} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Bookings" component={BookingsScreen} />
     </Tab.Navigator>
   );
 }
@@ -116,6 +144,7 @@ function CustomerStack() {
       <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
       <Stack.Screen name="Wallet" component={WalletScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 }

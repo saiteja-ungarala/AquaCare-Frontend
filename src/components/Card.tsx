@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
     },
     filled: {
-        backgroundColor: colors.surfaceSecondary,
+        backgroundColor: colors.primary,
     },
 });

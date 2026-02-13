@@ -16,13 +16,17 @@ interface CategoryChipProps {
     categories: CategoryItem[];
     selectedId?: string;
     onSelect: (id: string) => void;
+    customColors?: any;
 }
 
 export const CategoryChip: React.FC<CategoryChipProps> = ({
     categories,
     selectedId,
     onSelect,
+    customColors,
 }) => {
+    const theme = customColors || colors;
+
     return (
         <ScrollView
             horizontal
@@ -36,19 +40,21 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({
                         key={category.id}
                         style={[
                             styles.chip,
-                            isSelected && styles.chipSelected,
+                            { backgroundColor: theme.surface2, borderColor: theme.border },
+                            isSelected && { backgroundColor: theme.primary, borderColor: theme.primary },
                         ]}
                         onPress={() => onSelect(category.id)}
                     >
                         <Ionicons
                             name={category.icon}
                             size={18}
-                            color={isSelected ? colors.textOnPrimary : colors.textSecondary}
+                            color={isSelected ? theme.textOnPrimary : theme.textSecondary}
                         />
                         <Text
                             style={[
                                 styles.chipText,
-                                isSelected && styles.chipTextSelected,
+                                { color: theme.textSecondary },
+                                isSelected && { color: theme.textOnPrimary },
                             ]}
                         >
                             {category.name}
