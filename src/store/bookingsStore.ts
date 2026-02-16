@@ -19,6 +19,7 @@ interface BookingsActions {
         notes?: string;
     }) => Promise<Booking>;
     cancelBooking: (bookingId: string) => Promise<void>;
+    updateBookingStatus: (bookingId: string, status: Booking['status']) => void;
 }
 
 type BookingsStore = BookingsState & BookingsActions;
@@ -67,5 +68,14 @@ export const useBookingsStore = create<BookingsStore>((set, get) => ({
             set({ isLoading: false });
             throw error;
         }
+    },
+
+    // Local state update used in agent UI flow.
+    updateBookingStatus: (bookingId: string, status: Booking['status']) => {
+        set((state) => ({
+            bookings: state.bookings.map((b) =>
+                b.id === bookingId ? { ...b, status } : b
+            ),
+        }));
     },
 }));

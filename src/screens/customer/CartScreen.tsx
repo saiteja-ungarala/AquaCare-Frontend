@@ -1,15 +1,17 @@
 // Cart Screen - Backend-aware, handles both product and service items
 
 import React, { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { Button } from '../../components';
 import { useCartStore } from '../../store';
 import { BackendCartItem } from '../../store/cartStore';
 import ordersService from '../../services/ordersService';
+import { profileService } from '../../services/profileService';
 
 type CartScreenProps = { navigation: NativeStackNavigationProp<any> };
 
@@ -25,6 +27,9 @@ interface NormalizedCartItem {
     bookingDate?: string;
     bookingTime?: string;
 }
+
+const REFERRAL_CODE_STORAGE_KEY = 'checkout_referral_code';
+const REFERRAL_CODE_REGEX = /^[A-Z0-9]{3,32}$/;
 
 // Normalize backend cart item to UI-safe shape with safe defaults
 const normalizeCartItem = (item: BackendCartItem): NormalizedCartItem => ({
@@ -50,9 +55,13 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
     const [checkoutSuccess, setCheckoutSuccess] = React.useState(false);
     const [checkoutError, setCheckoutError] = React.useState<string | null>(null);
     const [orderId, setOrderId] = React.useState<string | null>(null);
+    const [referralCode, setReferralCode] = React.useState('');
 
     const deliveryFee = totalAmount > 0 ? 99 : 0;
     const finalTotal = totalAmount + deliveryFee;
+
+    const isReferralCodeValid = referralCode.length === 0 || REFERRAL_CODE_REGEX.test(referralCode);
+    const referralCodeError = referralCode.length > 0 && !isReferralCodeValid ? 'Invalid code format' : null;
 
     // Fetch cart on screen focus
     useFocusEffect(
@@ -60,6 +69,21 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
             fetchCart();
         }, [])
     );
+
+    useEffect(() => {
+        const loadReferralCode = async () => {
+            try {
+                const storedCode = await AsyncStorage.getItem(REFERRAL_CODE_STORAGE_KEY);
+                if (storedCode && REFERRAL_CODE_REGEX.test(storedCode)) {
+                    setReferralCode(storedCode);
+                }
+            } catch (error) {
+                console.warn('[CartScreen] Failed to load referral code:', error);
+            }
+        };
+
+        loadReferralCode();
+    }, []);
 
     // Normalize items safely
     const cartItemsRaw = items ?? [];
@@ -94,15 +118,71 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
         setCheckoutModalVisible(true);
     };
 
+    const handleReferralCodeChange = (value: string) => {
+        const normalized = value
+            .toUpperCase()
+            .replace(/\s+/g, '')
+            .replace(/[^A-Z0-9]/g, '')
+            .slice(0, 32);
+
+        setReferralCode(normalized);
+    };
+
+    const handleClearReferralCode = async () => {
+        setReferralCode('');
+        try {
+            await AsyncStorage.removeItem(REFERRAL_CODE_STORAGE_KEY);
+        } catch (error) {
+            console.warn('[CartScreen] Failed to clear referral code:', error);
+        }
+    };
+
+    const resolveCheckoutAddressId = async (): Promise<number | null> => {
+        const addresses = await profileService.getAddresses();
+        if (addresses.length === 0) {
+            setCheckoutError('Please add a delivery address before checkout.');
+            setTimeout(() => setCheckoutError(null), 3000);
+            setCheckoutModalVisible(false);
+            Alert.alert(
+                'Address Required',
+                'Please add a delivery address to continue checkout.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Add Address',
+                        onPress: () => navigation.navigate('Addresses'),
+                    },
+                ]
+            );
+            return null;
+        }
+
+        const defaultAddress = addresses.find((a) => a.is_default) || addresses[0];
+        return Number(defaultAddress.id);
+    };
+
     const confirmCheckout = async () => {
         setIsCheckingOut(true);
         setCheckoutError(null);
         try {
-            // Placeholder address ID 1
+            const addressId = await resolveCheckoutAddressId();
+            if (!addressId) {
+                setIsCheckingOut(false);
+                return;
+            }
+
+            const validReferralCode = isReferralCodeValid && referralCode.length > 0 ? referralCode : undefined;
+
             const result = await ordersService.checkout({
-                addressId: 1,
+                addressId,
                 paymentMethod: 'cod',
+                referralCode: validReferralCode,
             });
+
+            if (validReferralCode) {
+                await AsyncStorage.setItem(REFERRAL_CODE_STORAGE_KEY, validReferralCode);
+            }
+
             setOrderId(String(result.orderId));
             setCheckoutModalVisible(false);
             setCheckoutSuccess(true);
@@ -253,6 +333,31 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                             <Text style={styles.paymentText}>Cash on Delivery</Text>
                         </View>
 
+                        <View style={styles.referralSection}>
+                            <View style={styles.referralHeader}>
+                                <Text style={styles.referralLabel}>Referral Code (optional)</Text>
+                                {referralCode.length > 0 ? (
+                                    <TouchableOpacity onPress={handleClearReferralCode}>
+                                        <Text style={styles.referralClearText}>Clear</Text>
+                                    </TouchableOpacity>
+                                ) : null}
+                            </View>
+                            <TextInput
+                                value={referralCode}
+                                onChangeText={handleReferralCodeChange}
+                                placeholder="Enter agent code"
+                                autoCapitalize="characters"
+                                autoCorrect={false}
+                                style={[styles.referralInput, referralCodeError ? styles.referralInputError : null]}
+                                placeholderTextColor={colors.textLight}
+                                maxLength={32}
+                            />
+                            <Text style={styles.referralHelperText}>Enter agent code to support them and unlock offers.</Text>
+                            {referralCodeError ? (
+                                <Text style={styles.referralErrorText}>{referralCodeError}</Text>
+                            ) : null}
+                        </View>
+
                         <View style={styles.modalActions}>
                             <TouchableOpacity
                                 style={[styles.modalBtn, styles.modalBtnCancel]}
@@ -328,6 +433,25 @@ const styles = StyleSheet.create({
     confirmDesc: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center', marginBottom: spacing.sm },
     paymentMethod: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surfaceSecondary, padding: spacing.sm, borderRadius: borderRadius.md, marginBottom: spacing.xl },
     paymentText: { ...typography.body, color: colors.text },
+    referralSection: { width: '100%', marginBottom: spacing.lg },
+    referralHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+    referralLabel: { ...typography.bodySmall, color: colors.text, fontWeight: '600' },
+    referralClearText: { ...typography.caption, color: colors.primary, fontWeight: '600' },
+    referralInput: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.md,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        backgroundColor: colors.surface,
+        color: colors.text,
+        ...typography.body,
+    },
+    referralInputError: {
+        borderColor: colors.error,
+    },
+    referralHelperText: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
+    referralErrorText: { ...typography.caption, color: colors.error, marginTop: 2 },
     modalActions: { flexDirection: 'row', gap: spacing.md, width: '100%' },
     modalBtn: { flex: 1, paddingVertical: spacing.md, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
     modalBtnCancel: { backgroundColor: colors.surfaceSecondary },

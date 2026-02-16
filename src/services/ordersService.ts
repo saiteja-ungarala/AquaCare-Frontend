@@ -6,6 +6,7 @@ import api from './api';
 export interface CheckoutRequest {
     addressId: number;
     paymentMethod: 'cod' | 'wallet';
+    referralCode?: string;
 }
 
 export interface CheckoutResponse {
@@ -13,6 +14,8 @@ export interface CheckoutResponse {
     totalAmount: number;
     status: string;
     paymentStatus: string;
+    referred_by_agent_id?: number | null;
+    referral_code_used?: string | null;
 }
 
 export interface OrderItem {
@@ -41,7 +44,16 @@ export const ordersService = {
      * Checkout cart and create order
      */
     async checkout(data: CheckoutRequest): Promise<CheckoutResponse> {
-        const response = await api.post('/orders/checkout', data);
+        const payload: Record<string, unknown> = {
+            address_id: data.addressId,
+            payment_method: data.paymentMethod,
+        };
+
+        if (data.referralCode) {
+            payload.referral_code = data.referralCode;
+        }
+
+        const response = await api.post('/orders/checkout', payload);
         return response.data.data;
     },
 

@@ -29,16 +29,29 @@ const storage = {
     }
 };
 
+const normalizeRole = (value: unknown): UserRole | null => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'customer' || normalized === 'agent' || normalized === 'dealer') {
+        return normalized;
+    }
+    return null;
+};
+
 // Map backend user to frontend User type
 const mapBackendUser = (backendUser: any, role?: UserRole): User => {
+    const backendRole = normalizeRole(backendUser?.role);
+    const fallbackRole = normalizeRole(role);
+
     return {
-        id: String(backendUser.id),
-        email: backendUser.email,
-        name: backendUser.full_name || backendUser.name || '',
-        phone: backendUser.phone || '',
-        role: role || backendUser.role || 'customer',
-        referralCode: backendUser.referral_code,
-        createdAt: backendUser.created_at || new Date().toISOString(),
+        id: String(backendUser?.id || ''),
+        email: backendUser?.email || '',
+        name: backendUser?.full_name || backendUser?.fullName || backendUser?.name || '',
+        phone: backendUser?.phone || '',
+        // Prefer backend role for routing correctness after login/restart.
+        role: backendRole || fallbackRole || 'customer',
+        referralCode: backendUser?.referral_code || backendUser?.referralCode,
+        createdAt: backendUser?.created_at || backendUser?.createdAt || new Date().toISOString(),
     };
 };
 
@@ -52,9 +65,26 @@ export const authService = {
             });
 
             const { data } = response.data;
-            const user = mapBackendUser(data.user, credentials.role);
             const accessToken = data.accessToken;
             const refreshToken = data.refreshToken;
+
+            // Validate role from backend /auth/me so role-based navigation is always authoritative.
+            let user = mapBackendUser(data.user, credentials.role);
+            try {
+                const meResponse = await api.get('/auth/me', {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                });
+                user = mapBackendUser(meResponse.data?.data?.user, user.role);
+            } catch (meError: any) {
+                console.warn('[Auth] /auth/me hydration after login failed, using login payload:', meError?.message);
+            }
+
+            const selectedRole = normalizeRole(credentials.role);
+            if (selectedRole && user.role !== selectedRole) {
+                throw new Error(`This account is registered as ${user.role}. Please choose ${user.role} at role selection.`);
+            }
 
             // Store tokens and user in secure storage
             await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);

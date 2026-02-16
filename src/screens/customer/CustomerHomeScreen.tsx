@@ -1,7 +1,7 @@
 // Customer Home Screen - Modern Viral India Dashboard
 // Clean, flat, high contrast
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -27,7 +27,8 @@ import {
     type BannerItem,
 } from '../../components';
 import { useCartStore, useAuthStore } from '../../store';
-import { mockServices, mockProducts } from '../../services/mockData';
+import { catalogService } from '../../services/catalogService';
+import { Product, Service } from '../../models/types';
 
 type CustomerHomeScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -84,8 +85,29 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
     navigation,
 }) => {
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [services, setServices] = useState<Service[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const { showLoginCelebration, setShowLoginCelebration } = useAuthStore();
     const { items: cartItems } = useCartStore();
+
+    useEffect(() => {
+        const loadHomeData = async () => {
+            try {
+                const [serviceList, productList] = await Promise.all([
+                    catalogService.getServices(),
+                    catalogService.getProducts(),
+                ]);
+                setServices(serviceList);
+                setProducts(productList);
+            } catch (error) {
+                console.error('[CustomerHome] Failed to load data:', error);
+                setServices([]);
+                setProducts([]);
+            }
+        };
+
+        loadHomeData();
+    }, []);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -132,7 +154,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     </View>
 
                     <View style={styles.serviceGrid}>
-                        {mockServices.slice(0, 4).map((service) => (
+                        {services.slice(0, 4).map((service) => (
                             <ServiceCard
                                 key={service.id}
                                 service={service}
@@ -166,7 +188,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     </View>
 
                     <View style={styles.productGrid}>
-                        {mockProducts.slice(0, 4).map((product) => (
+                        {products.slice(0, 4).map((product) => (
                             <ProductCard
                                 key={product.id}
                                 product={product}

@@ -1,19 +1,33 @@
 // Wallet Screen
 
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Share } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Share, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useWalletStore, useAuthStore, REFERRAL_CONSTANTS } from '../../store';
 
-import { RootStackScreenProps } from '../../models/types';
-
-type WalletScreenProps = RootStackScreenProps<'Wallet'>;
-
-export const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
-    const { balance, transactions } = useWalletStore();
+export const WalletScreen: React.FC = () => {
+    const navigation = useNavigation<any>();
+    const {
+        balance,
+        transactions,
+        isLoading,
+        error,
+        fetchWallet,
+        fetchTransactions,
+    } = useWalletStore();
     const user = useAuthStore((state) => state.user);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            const loadWalletData = async () => {
+                await Promise.all([fetchWallet(), fetchTransactions()]);
+            };
+            loadWalletData();
+        }, [fetchWallet, fetchTransactions])
+    );
 
     const handleShare = async () => {
         try {
@@ -32,7 +46,19 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Wallet</Text>
             </View>
+            {isLoading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={styles.loadingText}>Loading wallet...</Text>
+                </View>
+            ) : (
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                {error ? (
+                    <View style={styles.errorCard}>
+                        <Ionicons name="alert-circle-outline" size={20} color={colors.error} />
+                        <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                ) : null}
                 <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.balanceCard}>
                     <Text style={styles.balanceLabel}>Available Balance</Text>
                     <Text style={styles.balanceAmount}>₹{balance}</Text>
@@ -88,6 +114,7 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
                     )}
                 </View>
             </ScrollView>
+            )}
         </SafeAreaView>
     );
 };
@@ -97,7 +124,19 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
     backButton: { marginRight: spacing.md },
     headerTitle: { ...typography.h3, color: colors.text },
+    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    loadingText: { ...typography.bodySmall, color: colors.textSecondary, marginTop: spacing.sm },
     scrollView: { flex: 1, padding: spacing.md },
+    errorCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        backgroundColor: colors.error + '12',
+        borderRadius: borderRadius.md,
+        padding: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    errorText: { ...typography.caption, color: colors.error, flex: 1 },
     balanceCard: { borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.md },
     balanceLabel: { ...typography.body, color: colors.secondaryLight },
     balanceAmount: { ...typography.h1, color: colors.textOnPrimary, fontWeight: '700', marginVertical: spacing.sm },

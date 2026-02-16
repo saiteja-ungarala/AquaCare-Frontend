@@ -141,6 +141,21 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation, rout
                     </View>
                 ) : null}
 
+                {booking.agent?.name ? (
+                    <View style={styles.agentBlock}>
+                        <View style={styles.bookingRow}>
+                            <Ionicons name="person-circle-outline" size={16} color={colors.primary} />
+                            <Text style={styles.agentName}>Assigned Agent: {booking.agent.name}</Text>
+                        </View>
+                        {booking.agent.phone ? (
+                            <View style={styles.bookingRow}>
+                                <Ionicons name="call-outline" size={15} color={colors.textSecondary} />
+                                <Text style={styles.bookingInfo}>{booking.agent.phone}</Text>
+                            </View>
+                        ) : null}
+                    </View>
+                ) : null}
+
                 <View style={styles.bookingFooter}>
                     <Text style={styles.bookingPrice}>₹{booking.totalAmount}</Text>
                     {canCancel && (
@@ -267,6 +282,8 @@ const styles = StyleSheet.create({
     serviceName: { ...typography.body, fontWeight: '600', color: colors.text, marginBottom: spacing.sm },
     bookingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 4 },
     bookingInfo: { ...typography.bodySmall, color: colors.textSecondary },
+    agentBlock: { marginTop: spacing.sm, padding: spacing.sm, borderRadius: borderRadius.md, backgroundColor: colors.primaryLight },
+    agentName: { ...typography.bodySmall, color: colors.text, fontWeight: '700' },
     bookingFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
     bookingPrice: { ...typography.body, fontWeight: '700', color: colors.primary },
     cancelBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -290,4 +307,6 @@ const styles = StyleSheet.create({
     successTitle: { ...typography.h2, color: colors.success, marginTop: spacing.md, textAlign: 'center' },
     successDesc: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center' },
 });
+
+
 

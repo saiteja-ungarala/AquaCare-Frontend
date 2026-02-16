@@ -94,6 +94,9 @@ export type BookingStatus =
     | 'completed'
     | 'cancelled';
 
+export type AgentVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
+export type AgentKycDocType = 'aadhaar' | 'pan' | 'driving_license' | 'selfie' | 'other';
+
 export interface Agent {
     id: string;
     name: string;
@@ -101,6 +104,114 @@ export interface Agent {
     avatar?: string;
     rating: number;
     totalJobs: number;
+}
+
+export interface AgentProfile {
+    user_id: string;
+    full_name: string;
+    phone: string | null;
+    verification_status: AgentVerificationStatus | string;
+    is_online: boolean;
+    service_radius_km: number;
+    base_lat: number | null;
+    base_lng: number | null;
+    last_online_at: string | null;
+}
+
+export interface AgentKycDocument {
+    id: number;
+    doc_type: AgentKycDocType | string;
+    file_url: string;
+    status: string;
+    review_notes?: string | null;
+    reviewed_by?: string | null;
+    reviewed_at?: string | null;
+}
+
+export interface AgentKycSummary {
+    verification_status: AgentVerificationStatus | string;
+    latest_document: AgentKycDocument | null;
+    counts: Record<string, number>;
+}
+
+export interface AgentMePayload {
+    profile: AgentProfile;
+    kyc: AgentKycSummary;
+}
+
+export interface AgentJob {
+    id: string;
+    user_id: number;
+    service_id: number;
+    address_id: number | null;
+    scheduled_date: string;
+    scheduled_time: string;
+    status: BookingStatus | 'assigned';
+    price: number;
+    notes: string | null;
+    created_at: string;
+    service_name: string;
+    service_image: string | null;
+    service_category: string | null;
+    duration_minutes: number | null;
+    address_line1: string | null;
+    address_line2: string | null;
+    address_city: string | null;
+    address_state: string | null;
+    address_postal_code: string | null;
+    address_latitude: number | null;
+    address_longitude: number | null;
+    customer_name: string | null;
+    customer_phone: string | null;
+    distance_km: number | null;
+}
+
+export interface AgentJobsMeta {
+    distance_filter_applied: boolean;
+    note?: string;
+    base_lat?: number;
+    base_lng?: number;
+    service_radius_km?: number;
+}
+
+export interface AgentEarnSummary {
+    totalsPending: number;
+    totalsApproved: number;
+    totalsPaid: number;
+    bonusPending: number;
+    bonusPaid: number;
+}
+
+export interface AgentCampaignTier {
+    thresholdQty: number;
+    bonusAmount: number;
+}
+
+export interface AgentCampaign {
+    id: number;
+    name: string;
+    description?: string;
+    startAt: string;
+    endAt: string;
+    tiers: AgentCampaignTier[];
+}
+
+export interface AgentEarnProgress {
+    soldQty: number;
+    nextThreshold: number | null;
+    remainingToNextThreshold: number;
+    bonusesEarned: number;
+    tiersReached: AgentCampaignTier[];
+}
+
+export interface AgentProductCommissionPreview {
+    id: number;
+    name: string;
+    price: number;
+    commissionType: 'flat' | 'percent' | null;
+    commissionValue: number | null;
+    commissionAmount: number | null;
+    campaignId: number | null;
 }
 
 export interface ServiceRequest {
@@ -202,11 +313,17 @@ export type RootStackParamList = {
     ContactUs: undefined;
     Terms: undefined;
     Privacy: undefined;
-    AgentDashboard: undefined;
-    Earnings: undefined;
-    DealerDashboard: undefined;
-    Commission: undefined;
-    ProductOrders: undefined;
+    AgentEntry: undefined;
+    AgentKycUpload: undefined;
+    AgentKycPending: undefined;
+    AgentTabs: undefined;
+    AgentJobs: undefined;
+    AgentActiveJob: undefined;
+    AgentEarn: undefined;
+    AgentHistory: undefined;
+    AgentProfile: undefined;
+    AgentCampaignMilestones: { campaignId: number };
+    DealerComingSoon: undefined;
     // Store navigation
     StoreHome: undefined;
     ProductListing: { category?: string };

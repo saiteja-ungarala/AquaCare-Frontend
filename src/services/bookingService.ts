@@ -30,6 +30,15 @@ const mapBackendBooking = (b: any): Booking => {
         scheduledDate: b.scheduled_date,
         scheduledTime: b.scheduled_time,
         address,
+        agent: b.agent_name
+            ? {
+                id: String(b.agent_id || ''),
+                name: b.agent_name,
+                phone: b.agent_phone || '',
+                rating: 0,
+                totalJobs: 0,
+            }
+            : undefined,
         totalAmount: Number(b.price) || 0,
         createdAt: b.created_at,
     };

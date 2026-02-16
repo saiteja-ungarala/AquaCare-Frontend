@@ -1,3 +1,9 @@
-// Agent screens exports
-export { AgentDashboardScreen } from './AgentDashboardScreen';
-export { EarningsScreen } from './EarningsScreen';
+export { AgentEntryScreen } from './AgentEntryScreen';
+export { AgentKycUploadScreen } from './AgentKycUploadScreen';
+export { AgentKycPendingScreen } from './AgentKycPendingScreen';
+export { AgentJobsScreen } from './AgentJobsScreen';
+export { AgentActiveJobScreen } from './AgentActiveJobScreen';
+export { AgentEarnScreen } from './AgentEarnScreen';
+export { AgentHistoryScreen } from './AgentHistoryScreen';
+export { AgentProfileScreen } from './AgentProfileScreen';
+export { CampaignMilestonesScreen } from './CampaignMilestonesScreen';

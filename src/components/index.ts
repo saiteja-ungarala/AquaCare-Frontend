@@ -4,7 +4,6 @@ export { Input } from './Input';
 export { Card } from './Card';
 export { ServiceCard } from './ServiceCard';
 export { ProductCard } from './ProductCard';
-export { BannerSlider } from './BannerSlider';
 export * from './BannerCarousel';
 export * from './GradientBackground';
 export { AppBar } from './AppBar';

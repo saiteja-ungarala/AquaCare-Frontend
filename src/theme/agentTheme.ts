@@ -1,0 +1,60 @@
+export const agentTheme = {
+    colors: {
+        agentPrimary: '#FFB000',
+        agentPrimaryDark: '#D79600',
+        agentDark: '#031930',
+        agentDarkSoft: '#0A2745',
+        agentSurface: '#FFFDF9',
+        agentSurfaceAlt: '#F7F4EE',
+        agentMuted: '#C0C6CC',
+        textPrimary: '#0F1D2B',
+        textSecondary: '#5E6A76',
+        textOnDark: '#F6F8FB',
+        textOnPrimary: '#2A1B00',
+        success: '#2FBF71',
+        warning: '#F4A100',
+        danger: '#D64545',
+        border: '#E6E8EC',
+    },
+    spacing: {
+        xs: 6,
+        sm: 10,
+        md: 14,
+        lg: 18,
+        xl: 24,
+        xxl: 32,
+    },
+    radius: {
+        sm: 10,
+        md: 14,
+        lg: 20,
+        full: 999,
+    },
+    typography: {
+        title: { fontSize: 28, fontWeight: '800' as const, lineHeight: 34 },
+        h1: { fontSize: 22, fontWeight: '700' as const, lineHeight: 28 },
+        h2: { fontSize: 18, fontWeight: '700' as const, lineHeight: 24 },
+        body: { fontSize: 15, fontWeight: '500' as const, lineHeight: 22 },
+        bodySmall: { fontSize: 13, fontWeight: '500' as const, lineHeight: 18 },
+        caption: { fontSize: 12, fontWeight: '600' as const, lineHeight: 16 },
+        button: { fontSize: 15, fontWeight: '700' as const, lineHeight: 20 },
+    },
+    shadows: {
+        card: {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 10,
+            elevation: 4,
+        },
+        bar: {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 10,
+            elevation: 8,
+        },
+    },
+} as const;
+
+export type AgentTheme = typeof agentTheme;
