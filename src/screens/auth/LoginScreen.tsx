@@ -20,7 +20,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
 import { Button, Input } from '../../components';
-import { validateLoginForm, mapAuthError } from '../../utils/errorMapper';
+import { validateLoginForm } from '../../utils/errorMapper';
 
 type LoginScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -66,15 +66,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             });
 
             if (success) {
+                Alert.alert('Success', 'succesfully logined');
                 setShowLoginCelebration(true);
             } else {
                 const currentError = useAuthStore.getState().error;
-                const message = currentError || 'Login failed. Please try again.';
+                const message = currentError || 'some error';
                 Alert.alert('Login Failed', message);
             }
         } catch (error) {
-            const message = mapAuthError(error);
-            Alert.alert('Login Failed', message);
+            Alert.alert('Login Failed', 'some error');
         }
     };
 

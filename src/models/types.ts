@@ -96,6 +96,8 @@ export type BookingStatus =
 
 export type AgentVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
 export type AgentKycDocType = 'aadhaar' | 'pan' | 'driving_license' | 'selfie' | 'other';
+export type DealerVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
+export type DealerKycDocType = 'gst_certificate' | 'shop_license' | 'pan' | 'aadhaar' | 'bank_proof' | 'selfie' | 'other';
 
 export interface Agent {
     id: string;
@@ -137,6 +139,49 @@ export interface AgentKycSummary {
 export interface AgentMePayload {
     profile: AgentProfile;
     kyc: AgentKycSummary;
+}
+
+export interface DealerProfile {
+    user_id: string;
+    full_name: string;
+    phone: string | null;
+    verification_status: DealerVerificationStatus | string;
+    business_name: string | null;
+    gst_number: string | null;
+    address_text: string | null;
+    base_lat: number | null;
+    base_lng: number | null;
+}
+
+export interface DealerKycDocument {
+    id: number;
+    doc_type: string;
+    file_url: string;
+    status: string;
+    review_notes?: string | null;
+    reviewed_by?: string | null;
+    reviewed_at?: string | null;
+}
+
+export interface DealerKycDocSummary {
+    pendingCount: number;
+    approvedCount: number;
+    rejectedCount: number;
+    totalCount: number;
+    lastReviewNotes?: string | null;
+}
+
+export interface DealerPricingProduct {
+    product_id: number;
+    name: string;
+    image_url?: string | null;
+    mrp_price: number;
+    dealer_price: number;
+    margin_type: 'flat' | 'percent' | null;
+    margin_value: number | null;
+    is_active: boolean;
+    margin_display: string;
+    earning_preview: number | null;
 }
 
 export interface AgentJob {
@@ -304,6 +349,8 @@ export type RootStackParamList = {
     Bookings: undefined;
     Wallet: undefined;
     Profile: undefined;
+    OrderHistory: { enableBack?: boolean } | undefined;
+    OrderDetails: { orderId: number };
     EditProfile: undefined;
     Addresses: undefined;
     AddEditAddress: { address?: Address };
@@ -323,6 +370,13 @@ export type RootStackParamList = {
     AgentHistory: undefined;
     AgentProfile: undefined;
     AgentCampaignMilestones: { campaignId: number };
+    DealerEntry: undefined;
+    DealerKycUpload: undefined;
+    DealerKycPending: undefined;
+    DealerTabs: undefined;
+    DealerPricing: undefined;
+    DealerProfile: undefined;
+    DealerOrders: undefined;
     DealerComingSoon: undefined;
     // Store navigation
     StoreHome: undefined;

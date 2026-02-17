@@ -192,8 +192,8 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                 clearLocalCart();
                 fetchCart();
                 setCheckoutSuccess(false);
-                // Navigate to Bookings tab or Home
-                navigation.navigate('CustomerTabs', { screen: 'Bookings' } as any);
+                // Navigate to customer order history after successful checkout
+                navigation.navigate('OrderHistory', { enableBack: true });
             }, 2500);
         } catch (error: any) {
             console.error(error);

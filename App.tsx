@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -11,6 +11,8 @@ import { CustomerHomeScreen, ServiceDetailsScreen, ProductDetailsScreen, WalletS
 import { SearchScreen } from './src/screens/customer/SearchScreen';
 import { CartScreen } from './src/screens/customer/CartScreen';
 import { BookingsScreen } from './src/screens/customer/BookingsScreen';
+import { OrderHistoryScreen } from './src/screens/customer/OrderHistoryScreen';
+import { OrderDetailsScreen } from './src/screens/customer/OrderDetailsScreen';
 import { ProfileScreen } from './src/screens/customer/ProfileScreen';
 import { EditProfileScreen } from './src/screens/customer/EditProfileScreen';
 import { AddressesScreen } from './src/screens/customer/AddressesScreen';
@@ -34,13 +36,22 @@ import {
     AgentProfileScreen,
     CampaignMilestonesScreen,
 } from './src/screens/agent';
+import {
+    DealerEntryScreen,
+    DealerKycPendingScreen,
+    DealerKycUploadScreen,
+    DealerOrdersPlaceholderScreen,
+    DealerPricingScreen,
+    DealerProfileScreen,
+} from './src/screens/dealer';
 
 import { useAuthStore } from './src/store';
 
 import { RootStackParamList } from './src/models/types';
-import { borderRadius, colors, spacing, typography } from './src/theme/theme';
+import { colors } from './src/theme/theme';
 import { customerColors } from './src/theme/customerTheme';
 import { agentTheme } from './src/theme/agentTheme';
+import { dealerTheme } from './src/theme/dealerTheme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -172,6 +183,46 @@ function AgentTabs() {
     );
 }
 
+function DealerTabs() {
+    return (
+        <Tab.Navigator
+            screenOptions={({ route }) => ({
+                headerShown: false,
+                tabBarActiveTintColor: dealerTheme.colors.dealerPrimary,
+                tabBarInactiveTintColor: dealerTheme.colors.dealerMuted,
+                tabBarLabelStyle: {
+                    fontSize: 11,
+                    fontWeight: '700',
+                },
+                tabBarStyle: {
+                    backgroundColor: dealerTheme.colors.dealerSurface,
+                    height: 64,
+                    borderTopWidth: 1,
+                    borderTopColor: dealerTheme.colors.border,
+                    paddingTop: 6,
+                },
+                tabBarIcon: ({ color, size, focused }) => {
+                    let iconName: keyof typeof Ionicons.glyphMap = 'pricetag-outline';
+
+                    if (route.name === 'DealerPricing') {
+                        iconName = focused ? 'pricetag' : 'pricetag-outline';
+                    } else if (route.name === 'DealerOrders') {
+                        iconName = focused ? 'receipt' : 'receipt-outline';
+                    } else if (route.name === 'DealerProfile') {
+                        iconName = focused ? 'person' : 'person-outline';
+                    }
+
+                    return <Ionicons name={iconName} size={size} color={color} />;
+                },
+            })}
+        >
+            <Tab.Screen name="DealerPricing" component={DealerPricingScreen} options={{ title: 'Pricing' }} />
+            <Tab.Screen name="DealerOrders" component={DealerOrdersPlaceholderScreen} options={{ title: 'Orders' }} />
+            <Tab.Screen name="DealerProfile" component={DealerProfileScreen} options={{ title: 'Profile' }} />
+        </Tab.Navigator>
+    );
+}
+
 function AuthStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -192,7 +243,8 @@ function CustomerStack() {
             <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
             <Stack.Screen name="Wallet" component={WalletScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="OrderHistory" component={BookingsScreen} />
+            <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
+            <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="Addresses" component={AddressesScreen} />
             <Stack.Screen name="AddEditAddress" component={AddEditAddressScreen} />
@@ -218,22 +270,13 @@ function AgentGateStack() {
     );
 }
 
-function DealerComingSoonScreen() {
-    return (
-        <View style={styles.dealerContainer}>
-            <View style={styles.dealerCard}>
-                <Ionicons name="storefront-outline" size={44} color="#2E3A46" />
-                <Text style={styles.dealerTitle}>Dealer Portal</Text>
-                <Text style={styles.dealerSubtitle}>Coming soon in a dedicated release.</Text>
-            </View>
-        </View>
-    );
-}
-
-function DealerStack() {
+function DealerGateStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="DealerComingSoon" component={DealerComingSoonScreen} />
+            <Stack.Screen name="DealerEntry" component={DealerEntryScreen} />
+            <Stack.Screen name="DealerKycUpload" component={DealerKycUploadScreen} />
+            <Stack.Screen name="DealerKycPending" component={DealerKycPendingScreen} />
+            <Stack.Screen name="DealerTabs" component={DealerTabs} />
         </Stack.Navigator>
     );
 }
@@ -269,7 +312,7 @@ export default function App() {
         }
 
         if (user?.role === 'dealer') {
-            return <DealerStack />;
+            return <DealerGateStack />;
         }
 
         if (user?.role === 'customer') {
@@ -287,32 +330,3 @@ export default function App() {
         </SafeAreaProvider>
     );
 }
-
-const styles = StyleSheet.create({
-    dealerContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#ECEFF2',
-        padding: 20,
-    },
-    dealerCard: {
-        width: '100%',
-        borderRadius: 18,
-        backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: '#D2D8DE',
-        padding: 24,
-        alignItems: 'center',
-    },
-    dealerTitle: {
-        ...typography.h2,
-        color: '#1F2933',
-        marginTop: 12,
-    },
-    dealerSubtitle: {
-        ...typography.bodySmall,
-        color: '#5B6773',
-        marginTop: 4,
-    },
-});

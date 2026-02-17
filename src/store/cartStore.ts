@@ -137,6 +137,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
             const items = rawItems.map(normalizeCartItem);
             const totals = calculateTotals(items);
             set({ items, ...totals, isLoading: false });
+            await get().fetchCart();
         } catch (error: any) {
             console.error('[CartStore] addProductToCart error:', error.response?.data || error);
             set({ isLoading: false, error: error.response?.data?.message || error.message });
@@ -169,6 +170,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
             const items = rawItems.map(normalizeCartItem);
             const totals = calculateTotals(items);
             set({ items, ...totals, isLoading: false });
+            await get().fetchCart();
         } catch (error: any) {
             console.error('[CartStore] addServiceToCart error:', error.response?.data || error);
             set({ isLoading: false, error: error.response?.data?.message || error.message });
@@ -206,6 +208,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
             const items = rawItems.map(normalizeCartItem);
             const totals = calculateTotals(items);
             set({ items, ...totals, isLoading: false });
+            await get().fetchCart();
         } catch (error: any) {
             console.error('[CartStore] updateCartItemQty error:', error);
             set({ isLoading: false, error: error.response?.data?.message || error.message });
@@ -230,6 +233,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
             const items = rawItems.map(normalizeCartItem);
             const totals = calculateTotals(items);
             set({ items, ...totals, isLoading: false });
+            await get().fetchCart();
         } catch (error: any) {
             console.error('[CartStore] removeCartItem error:', error);
             set({ isLoading: false, error: error.response?.data?.message || error.message });

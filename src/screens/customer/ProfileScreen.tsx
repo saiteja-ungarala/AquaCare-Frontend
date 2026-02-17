@@ -126,7 +126,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                         <MenuItem
                             icon="receipt-outline"
                             title="Order History"
-                            subtitle="Product orders & past services"
+                            subtitle="Purchased products & delivery status"
                             onPress={() => navigation.navigate('OrderHistory', { enableBack: true })}
                         />
                         <MenuItem icon="location-outline" title="Addresses" subtitle="Manage delivery addresses" onPress={() => navigation.navigate('Addresses')} />

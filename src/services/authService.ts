@@ -38,6 +38,29 @@ const normalizeRole = (value: unknown): UserRole | null => {
     return null;
 };
 
+const getLoginErrorMessage = (error: any): string => {
+    const status = Number(error?.response?.status || 0);
+    const rawMessage = String(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        ''
+    ).toLowerCase();
+
+    if (status === 401 || rawMessage.includes('invalid password')) {
+        return 'wrong password';
+    }
+
+    if (status === 404) {
+        if (rawMessage.includes('credentials not found')) {
+            return 'creadtials not found';
+        }
+        return 'not regitered';
+    }
+
+    return 'some error';
+};
+
 // Map backend user to frontend User type
 const mapBackendUser = (backendUser: any, role?: UserRole): User => {
     const backendRole = normalizeRole(backendUser?.role);
@@ -62,6 +85,7 @@ export const authService = {
             const response = await api.post('/auth/login', {
                 email: credentials.email,
                 password: credentials.password,
+                role: credentials.role,
             });
 
             const { data } = response.data;
@@ -81,11 +105,6 @@ export const authService = {
                 console.warn('[Auth] /auth/me hydration after login failed, using login payload:', meError?.message);
             }
 
-            const selectedRole = normalizeRole(credentials.role);
-            if (selectedRole && user.role !== selectedRole) {
-                throw new Error(`This account is registered as ${user.role}. Please choose ${user.role} at role selection.`);
-            }
-
             // Store tokens and user in secure storage
             await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
             if (refreshToken) {
@@ -98,18 +117,7 @@ export const authService = {
         } catch (error: any) {
             console.error('[Auth] Login error full:', JSON.stringify(error.response?.data, null, 2));
             console.error('[Auth] Login error status:', error.response?.status);
-
-            // Extract message from various possible locations in the error response
-            let message = 'Login failed. Please try again.';
-
-            if (error.response?.data) {
-                const data = error.response.data;
-                // Try different possible message locations
-                message = data.message || data.error || data.msg || message;
-            } else if (error.message) {
-                message = error.message;
-            }
-
+            const message = getLoginErrorMessage(error);
             console.error('[Auth] Final error message:', message);
             throw new Error(message);
         }
