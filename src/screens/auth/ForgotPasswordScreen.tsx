@@ -1,7 +1,7 @@
 // Forgot Password Screen - Modern Viral India Aesthetic
 // Clean, minimal, high contrast
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -15,10 +15,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
-import { Button, Input } from '../../components';
+import { colors, spacing, typography, shadows } from '../../theme/theme';
+import { AuthErrorBanner, Button, Input } from '../../components';
 import { isValidEmail } from '../../utils/errorMapper';
-import api from '../../services/api';
+import { useAuthStore } from '../../store';
 
 type ForgotPasswordScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -26,39 +26,71 @@ type ForgotPasswordScreenProps = {
 
 export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation }) => {
     const [email, setEmail] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [clientFieldErrors, setClientFieldErrors] = useState<Record<string, string>>({});
+    const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null);
+    const {
+        forgotPassword,
+        isLoading,
+        errorMessage,
+        fieldErrors,
+        clearError,
+        clearFieldError,
+    } = useAuthStore();
+
+    useEffect(() => {
+        clearError();
+    }, [clearError]);
+
+    const dismissErrorBanner = () => {
+        setLocalErrorMessage(null);
+        clearError();
+    };
+
+    const clearEmailFieldState = () => {
+        if (localErrorMessage) {
+            setLocalErrorMessage(null);
+        }
+        if (errorMessage) {
+            clearError();
+        }
+        if (fieldErrors.email) {
+            clearFieldError('email');
+        }
+        if (clientFieldErrors.email) {
+            setClientFieldErrors({});
+        }
+    };
+
+    const validateForm = (): boolean => {
+        const nextFieldErrors: Record<string, string> = {};
+
+        if (!email.trim()) {
+            nextFieldErrors.email = 'Email is required';
+        } else if (!isValidEmail(email.trim())) {
+            nextFieldErrors.email = 'Enter a valid email address';
+        }
+
+        setClientFieldErrors(nextFieldErrors);
+        return Object.keys(nextFieldErrors).length === 0;
+    };
 
     const handleSubmit = async () => {
-        // Validate email
-        if (!email.trim()) {
-            Alert.alert('Error', 'Please enter your email address');
-            return;
-        }
-        if (!isValidEmail(email)) {
-            Alert.alert('Error', 'Please enter a valid email address');
+        setLocalErrorMessage(null);
+        clearError();
+
+        if (!validateForm()) {
             return;
         }
 
-        setIsLoading(true);
-        try {
-            await api.post('/auth/forgot-password', { email: email.trim() });
+        const success = await forgotPassword(email.trim());
+        if (success) {
             setIsSubmitted(true);
             Alert.alert(
                 'Request Sent',
                 'If this email exists in our system, we have sent reset instructions.',
                 [{ text: 'OK', onPress: () => navigation.goBack() }]
             );
-        } catch (error) {
-            // Even on error, show the same message for security
-            setIsSubmitted(true);
-            Alert.alert(
-                'Request Sent',
-                'If this email exists in our system, we have sent reset instructions.',
-                [{ text: 'OK', onPress: () => navigation.goBack() }]
-            );
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -73,7 +105,6 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Header */}
                     <View style={styles.header}>
                         <TouchableOpacity
                             style={styles.backButton}
@@ -83,7 +114,6 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
                         </TouchableOpacity>
                     </View>
 
-                    {/* Main Content */}
                     <View style={styles.content}>
                         <View style={styles.iconContainer}>
                             <Ionicons name="key-outline" size={48} color={colors.primary} />
@@ -93,17 +123,25 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
                             No worries! Enter your email and we'll send you reset instructions
                         </Text>
 
-                        {/* Form */}
                         <View style={styles.form}>
+                            <AuthErrorBanner
+                                message={localErrorMessage || errorMessage}
+                                onClose={dismissErrorBanner}
+                            />
+
                             <Input
                                 label="Email"
                                 placeholder="Enter your registered email"
                                 value={email}
-                                onChangeText={setEmail}
+                                onChangeText={(value) => {
+                                    setEmail(value);
+                                    clearEmailFieldState();
+                                }}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 leftIcon="mail-outline"
                                 editable={!isSubmitted}
+                                error={clientFieldErrors.email || fieldErrors.email}
                             />
 
                             <Button
@@ -111,7 +149,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
                                 onPress={handleSubmit}
                                 loading={isLoading}
                                 fullWidth
-                                disabled={isSubmitted}
+                                disabled={isSubmitted || isLoading}
                             />
 
                             <TouchableOpacity

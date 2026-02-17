@@ -1,6 +1,6 @@
 // Signup Screen
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -10,14 +10,13 @@ import {
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
-    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
-import { Button, Input } from '../../components';
-import { mapAuthError, isValidEmail } from '../../utils/errorMapper';
+import { AuthErrorBanner, Button, Input } from '../../components';
+import { isValidEmail } from '../../utils/errorMapper';
 
 type SignupScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -30,8 +29,49 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [referralCode, setReferralCode] = useState('');
+    const [clientFieldErrors, setClientFieldErrors] = useState<Record<string, string>>({});
+    const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null);
 
-    const { signup, isLoading, error, selectedRole, clearError } = useAuthStore();
+    const {
+        signup,
+        isLoading,
+        selectedRole,
+        errorMessage,
+        fieldErrors,
+        clearError,
+        clearFieldError,
+    } = useAuthStore();
+    const isAgent = selectedRole === 'agent';
+    const isDealer = selectedRole === 'dealer';
+    const activeAccentColor = isAgent ? colors.accent : isDealer ? colors.info : colors.primary;
+
+    useEffect(() => {
+        clearError();
+    }, [clearError]);
+
+    const dismissErrorBanner = () => {
+        setLocalErrorMessage(null);
+        clearError();
+    };
+
+    const clearFieldState = (field: string) => {
+        if (localErrorMessage) {
+            setLocalErrorMessage(null);
+        }
+        if (errorMessage) {
+            clearError();
+        }
+        if (fieldErrors[field]) {
+            clearFieldError(field);
+        }
+        if (clientFieldErrors[field]) {
+            setClientFieldErrors((prev) => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
+        }
+    };
 
     const getRoleLabel = () => {
         switch (selectedRole) {
@@ -46,73 +86,55 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         }
     };
 
-    const validateForm = () => {
+    const validateForm = (): boolean => {
+        const nextFieldErrors: Record<string, string> = {};
+
         if (!name.trim()) {
-            Alert.alert('Error', 'Please enter your name');
-            return false;
+            nextFieldErrors.name = 'Full name is required';
         }
         if (!email.trim()) {
-            Alert.alert('Error', 'Please enter your email');
-            return false;
+            nextFieldErrors.email = 'Email is required';
+        } else if (!isValidEmail(email.trim())) {
+            nextFieldErrors.email = 'Enter a valid email address';
         }
         if (!phone.trim()) {
-            Alert.alert('Error', 'Please enter your phone number');
-            return false;
+            nextFieldErrors.phone = 'Phone number is required';
         }
         if (!password) {
-            Alert.alert('Error', 'Please enter a password');
-            return false;
+            nextFieldErrors.password = 'Password is required';
+        } else if (password.length < 6) {
+            nextFieldErrors.password = 'Password must be at least 6 characters';
         }
-        if (password.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters');
-            return false;
+        if (!confirmPassword) {
+            nextFieldErrors.confirmPassword = 'Please confirm your password';
+        } else if (password !== confirmPassword) {
+            nextFieldErrors.confirmPassword = 'Passwords do not match';
         }
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
-            return false;
-        }
-        return true;
+
+        setClientFieldErrors(nextFieldErrors);
+        return Object.keys(nextFieldErrors).length === 0;
     };
 
     const handleSignup = async () => {
+        setLocalErrorMessage(null);
+        clearError();
+
         if (!validateForm()) return;
 
-        // Additional email format validation
-        if (!isValidEmail(email)) {
-            Alert.alert('Validation Error', 'Please enter a valid email address');
-            return;
-        }
-
         if (!selectedRole) {
-            Alert.alert('Error', 'Please select a role first');
+            setLocalErrorMessage('Please select a role first.');
             navigation.navigate('RoleSelection');
             return;
         }
 
-        try {
-            const success = await signup({
-                name,
-                email: email.trim(),
-                phone,
-                password,
-                role: selectedRole,
-                referralCode: referralCode.trim() || undefined,
-            });
-
-            if (success) {
-                // Show success toast - auto-login happens via the store
-                Alert.alert('Success', 'Registration successful! Welcome to AquaCare.');
-            } else {
-                // Get fresh error from store and map it
-                const currentError = useAuthStore.getState().error;
-                const message = currentError || mapAuthError(null);
-                Alert.alert('Signup Failed', message);
-                clearError();
-            }
-        } catch (error) {
-            const message = mapAuthError(error);
-            Alert.alert('Signup Failed', message);
-        }
+        await signup({
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            password,
+            role: selectedRole,
+            referralCode: referralCode.trim() || undefined,
+        });
     };
 
     return (
@@ -133,12 +155,24 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                             <Ionicons name="arrow-back" size={22} color={colors.text} />
                         </TouchableOpacity>
                         <View style={styles.headerContent}>
-                            <View style={styles.iconContainer}>
-                                <Ionicons name="water" size={48} color={colors.primary} />
+                            <View
+                                style={[
+                                    styles.iconContainer,
+                                    isAgent ? styles.agentIconContainer : null,
+                                    isDealer ? styles.dealerIconContainer : null,
+                                ]}
+                            >
+                                <Ionicons name="water" size={48} color={activeAccentColor} />
                             </View>
                             <Text style={styles.headerTitle}>Create Account</Text>
-                            <View style={styles.roleBadge}>
-                                <Text style={styles.roleBadgeText}>{getRoleLabel()}</Text>
+                            <View
+                                style={[
+                                    styles.roleBadge,
+                                    isAgent ? styles.agentRoleBadge : null,
+                                    isDealer ? styles.dealerRoleBadge : null,
+                                ]}
+                            >
+                                <Text style={[styles.roleBadgeText, { color: activeAccentColor }]}>{getRoleLabel()}</Text>
                             </View>
                         </View>
                     </View>
@@ -146,49 +180,74 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                     <View style={styles.form}>
                         <Text style={styles.formTitle}>Fill in your details</Text>
 
+                        <AuthErrorBanner
+                            message={localErrorMessage || errorMessage}
+                            onClose={dismissErrorBanner}
+                        />
+
                         <Input
                             label="Full Name"
                             placeholder="Enter your full name"
                             value={name}
-                            onChangeText={setName}
+                            onChangeText={(value) => {
+                                setName(value);
+                                clearFieldState('name');
+                            }}
                             leftIcon="person-outline"
+                            error={clientFieldErrors.name || fieldErrors.name}
                         />
 
                         <Input
                             label="Email"
                             placeholder="Enter your email"
                             value={email}
-                            onChangeText={setEmail}
+                            onChangeText={(value) => {
+                                setEmail(value);
+                                clearFieldState('email');
+                            }}
                             keyboardType="email-address"
                             autoCapitalize="none"
                             leftIcon="mail-outline"
+                            error={clientFieldErrors.email || fieldErrors.email}
                         />
 
                         <Input
                             label="Phone Number"
                             placeholder="Enter your phone number"
                             value={phone}
-                            onChangeText={setPhone}
+                            onChangeText={(value) => {
+                                setPhone(value);
+                                clearFieldState('phone');
+                            }}
                             keyboardType="phone-pad"
                             leftIcon="call-outline"
+                            error={clientFieldErrors.phone || fieldErrors.phone}
                         />
 
                         <Input
                             label="Password"
                             placeholder="Create a password"
                             value={password}
-                            onChangeText={setPassword}
+                            onChangeText={(value) => {
+                                setPassword(value);
+                                clearFieldState('password');
+                            }}
                             secureTextEntry
                             leftIcon="lock-closed-outline"
+                            error={clientFieldErrors.password || fieldErrors.password}
                         />
 
                         <Input
                             label="Confirm Password"
                             placeholder="Confirm your password"
                             value={confirmPassword}
-                            onChangeText={setConfirmPassword}
+                            onChangeText={(value) => {
+                                setConfirmPassword(value);
+                                clearFieldState('confirmPassword');
+                            }}
                             secureTextEntry
                             leftIcon="lock-closed-outline"
+                            error={clientFieldErrors.confirmPassword || fieldErrors.confirmPassword}
                         />
 
                         <Input
@@ -214,13 +273,15 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                             onPress={handleSignup}
                             loading={isLoading}
                             fullWidth
-                            style={styles.signupButton}
+                            style={isAgent || isDealer
+                                ? { ...styles.signupButton, backgroundColor: activeAccentColor, shadowColor: activeAccentColor }
+                                : styles.signupButton}
                         />
 
                         <View style={styles.loginRow}>
                             <Text style={styles.loginText}>Already have an account? </Text>
                             <TouchableOpacity onPress={() => navigation.goBack()}>
-                                <Text style={styles.loginLink}>Login</Text>
+                                <Text style={[styles.loginLink, { color: activeAccentColor }]}>Login</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -272,6 +333,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: spacing.md,
     },
+    agentIconContainer: {
+        backgroundColor: 'rgba(255, 176, 0, 0.22)',
+    },
+    dealerIconContainer: {
+        backgroundColor: 'rgba(37, 99, 235, 0.16)',
+    },
     headerTitle: {
         ...typography.title,
         color: colors.text,
@@ -282,6 +349,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
         borderRadius: borderRadius.full,
+    },
+    agentRoleBadge: {
+        backgroundColor: 'rgba(255, 176, 0, 0.14)',
+    },
+    dealerRoleBadge: {
+        backgroundColor: 'rgba(37, 99, 235, 0.12)',
     },
     roleBadgeText: {
         ...typography.bodySmall,
@@ -331,3 +404,4 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 });
+

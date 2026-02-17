@@ -1,12 +1,12 @@
 export const dealerTheme = {
     colors: {
-        dealerPrimary: '#0D5D8C',
-        dealerPrimaryDark: '#094B71',
-        dealerAccent: '#CC8A1E',
+        dealerPrimary: '#2563EB',
+        dealerPrimaryDark: '#1D4ED8',
+        dealerAccent: '#2563EB',
         dealerDark: '#0C1A26',
         dealerSurface: '#FFFFFF',
         dealerSurfaceAlt: '#EEF4F8',
-        dealerMuted: '#8CA1B3',
+        dealerMuted: '#7F9CE6',
         textPrimary: '#102233',
         textSecondary: '#55697A',
         textOnDark: '#F4F8FB',
@@ -58,4 +58,3 @@ export const dealerTheme = {
 } as const;
 
 export type DealerTheme = typeof dealerTheme;
-

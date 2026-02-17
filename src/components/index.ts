@@ -22,3 +22,4 @@ export { Skeleton, SkeletonCard, SkeletonProductCard, SkeletonList } from './Ske
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { PressableScale } from './PressableScale';
+export { AuthErrorBanner } from './AuthErrorBanner';

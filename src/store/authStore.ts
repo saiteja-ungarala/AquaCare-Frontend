@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { User, UserRole, LoginCredentials, SignupData } from '../models/types';
 import { authService } from '../services/authService';
+import { FieldErrors, getApiErrorMessage } from '../utils/errorMessage';
 
 interface AuthState {
     user: User | null;
@@ -12,6 +13,8 @@ interface AuthState {
     isAuthenticated: boolean;
     selectedRole: UserRole | null;
     error: string | null;
+    errorMessage: string | null;
+    fieldErrors: FieldErrors;
     showLoginCelebration: boolean;
 }
 
@@ -19,9 +22,13 @@ interface AuthActions {
     setSelectedRole: (role: UserRole) => void;
     login: (credentials: LoginCredentials) => Promise<boolean>;
     signup: (data: SignupData) => Promise<boolean>;
+    forgotPassword: (email: string) => Promise<boolean>;
+    requestOTP: (phone: string) => Promise<boolean>;
+    verifyOTP: (phone: string, otp: string, role: UserRole) => Promise<boolean>;
     logout: () => Promise<void>;
     checkAuth: () => Promise<void>;
     clearError: () => void;
+    clearFieldError: (field: string) => void;
     setShowLoginCelebration: (show: boolean) => void;
 }
 
@@ -36,6 +43,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     isAuthenticated: false,
     selectedRole: null,
     error: null,
+    errorMessage: null,
+    fieldErrors: {},
     showLoginCelebration: false,
 
     // Actions
@@ -44,7 +53,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     },
 
     login: async (credentials: LoginCredentials) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
         try {
             const { user, token, refreshToken } = await authService.login(credentials);
             set({
@@ -54,19 +63,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 isAuthenticated: true,
                 isLoading: false,
                 selectedRole: user.role,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
             });
             return true;
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
             set({
                 isLoading: false,
-                error: error.message || 'Login failed',
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
             });
             return false;
         }
     },
 
     signup: async (data: SignupData) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
         try {
             const { user, token, refreshToken } = await authService.signup(data);
             set({
@@ -76,12 +91,81 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 isAuthenticated: true,
                 isLoading: false,
                 selectedRole: user.role,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
             });
             return true;
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
             set({
                 isLoading: false,
-                error: error.message || 'Signup failed',
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
+            });
+            return false;
+        }
+    },
+
+    forgotPassword: async (email: string) => {
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        try {
+            await authService.forgotPassword(email);
+            set({ isLoading: false });
+            return true;
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
+            set({
+                isLoading: false,
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
+            });
+            return false;
+        }
+    },
+
+    requestOTP: async (phone: string) => {
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        try {
+            await authService.requestOTP(phone);
+            set({ isLoading: false });
+            return true;
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
+            set({
+                isLoading: false,
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
+            });
+            return false;
+        }
+    },
+
+    verifyOTP: async (phone: string, otp: string, role: UserRole) => {
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        try {
+            const { user, token } = await authService.verifyOTP(phone, otp, role);
+            set({
+                user,
+                token,
+                isAuthenticated: true,
+                isLoading: false,
+                selectedRole: user.role,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
+            });
+            return true;
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
+            set({
+                isLoading: false,
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
             });
             return false;
         }
@@ -99,6 +183,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 isAuthenticated: false,
                 isLoading: false,
                 selectedRole: null,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
                 showLoginCelebration: false,
             });
         }
@@ -124,7 +211,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     },
 
     clearError: () => {
-        set({ error: null });
+        set({ error: null, errorMessage: null, fieldErrors: {} });
+    },
+
+    clearFieldError: (field: string) => {
+        set((state) => {
+            if (!state.fieldErrors[field]) {
+                return {};
+            }
+            const nextFieldErrors = { ...state.fieldErrors };
+            delete nextFieldErrors[field];
+            return {
+                fieldErrors: nextFieldErrors,
+            };
+        });
     },
 
     setShowLoginCelebration: (show: boolean) => {

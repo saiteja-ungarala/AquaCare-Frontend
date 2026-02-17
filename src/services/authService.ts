@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import api from './api';
 import { User, LoginCredentials, SignupData, UserRole } from '../models/types';
 import { STORAGE_KEYS } from '../config/constants';
+import { getApiErrorMessage } from '../utils/errorMessage';
 
 // Storage helper functions
 const storage = {
@@ -36,29 +37,6 @@ const normalizeRole = (value: unknown): UserRole | null => {
         return normalized;
     }
     return null;
-};
-
-const getLoginErrorMessage = (error: any): string => {
-    const status = Number(error?.response?.status || 0);
-    const rawMessage = String(
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        ''
-    ).toLowerCase();
-
-    if (status === 401 || rawMessage.includes('invalid password')) {
-        return 'wrong password';
-    }
-
-    if (status === 404) {
-        if (rawMessage.includes('credentials not found')) {
-            return 'creadtials not found';
-        }
-        return 'not regitered';
-    }
-
-    return 'some error';
 };
 
 // Map backend user to frontend User type
@@ -112,14 +90,9 @@ export const authService = {
             }
             await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
-            console.log('[Auth] Login successful, token stored');
             return { user, token: accessToken, refreshToken };
-        } catch (error: any) {
-            console.error('[Auth] Login error full:', JSON.stringify(error.response?.data, null, 2));
-            console.error('[Auth] Login error status:', error.response?.status);
-            const message = getLoginErrorMessage(error);
-            console.error('[Auth] Final error message:', message);
-            throw new Error(message);
+        } catch (error: unknown) {
+            throw getApiErrorMessage(error);
         }
     },
 
@@ -146,25 +119,18 @@ export const authService = {
             }
             await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
-            console.log('[Auth] Signup successful, token stored');
             return { user, token: accessToken, refreshToken };
-        } catch (error: any) {
-            console.error('[Auth] Signup error full:', JSON.stringify(error.response?.data, null, 2));
-            console.error('[Auth] Signup error status:', error.response?.status);
+        } catch (error: unknown) {
+            throw getApiErrorMessage(error);
+        }
+    },
 
-            // Extract message from various possible locations in the error response
-            let message = 'Signup failed. Please try again.';
-
-            if (error.response?.data) {
-                const data = error.response.data;
-                // Try different possible message locations
-                message = data.message || data.error || data.msg || message;
-            } else if (error.message) {
-                message = error.message;
-            }
-
-            console.error('[Auth] Final error message:', message);
-            throw new Error(message);
+    async forgotPassword(email: string): Promise<{ message: string }> {
+        try {
+            const response = await api.post('/auth/forgot-password', { email: email.trim() });
+            return { message: response?.data?.message || 'If this email exists, we sent reset instructions.' };
+        } catch (error: unknown) {
+            throw getApiErrorMessage(error);
         }
     },
 
@@ -233,15 +199,15 @@ export const authService = {
 
     // Request OTP (placeholder for future implementation)
     async requestOTP(phone: string): Promise<boolean> {
-        console.log('[Auth] OTP request for:', phone);
-        // TODO: Implement when backend supports OTP
-        throw new Error('OTP login not yet implemented');
+        void phone;
+        throw getApiErrorMessage({ message: 'OTP login not yet implemented' });
     },
 
     // Verify OTP (placeholder for future implementation)
     async verifyOTP(phone: string, otp: string, role: UserRole): Promise<{ user: User; token: string }> {
-        console.log('[Auth] OTP verify for:', phone);
-        // TODO: Implement when backend supports OTP
-        throw new Error('OTP login not yet implemented');
+        void phone;
+        void otp;
+        void role;
+        throw getApiErrorMessage({ message: 'OTP login not yet implemented' });
     },
 };

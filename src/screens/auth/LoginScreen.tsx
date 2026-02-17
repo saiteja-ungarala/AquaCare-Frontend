@@ -1,7 +1,7 @@
 // Login Screen - Modern Viral India Aesthetic
 // Clean, minimal, high contrast
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -10,17 +10,15 @@ import {
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
-    Alert,
     SafeAreaView,
     ImageBackground,
-    TextStyle, // Added TextStyle
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
-import { Button, Input } from '../../components';
-import { validateLoginForm } from '../../utils/errorMapper';
+import { AuthErrorBanner, Button, Input } from '../../components';
+import { isValidEmail } from '../../utils/errorMapper';
 
 type LoginScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -29,7 +27,47 @@ type LoginScreenProps = {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, isLoading, selectedRole, setShowLoginCelebration } = useAuthStore();
+    const [clientFieldErrors, setClientFieldErrors] = useState<Record<string, string>>({});
+    const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null);
+    const {
+        login,
+        requestOTP,
+        isLoading,
+        selectedRole,
+        setShowLoginCelebration,
+        errorMessage,
+        fieldErrors,
+        clearError,
+        clearFieldError,
+    } = useAuthStore();
+
+    useEffect(() => {
+        clearError();
+    }, [clearError]);
+
+    const dismissErrorBanner = () => {
+        setLocalErrorMessage(null);
+        clearError();
+    };
+
+    const clearFieldState = (field: string) => {
+        if (localErrorMessage) {
+            setLocalErrorMessage(null);
+        }
+        if (errorMessage) {
+            clearError();
+        }
+        if (fieldErrors[field]) {
+            clearFieldError(field);
+        }
+        if (clientFieldErrors[field]) {
+            setClientFieldErrors((prev) => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
+        }
+    };
 
     const getRoleLabel = () => {
         switch (selectedRole) {
@@ -44,38 +82,71 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         }
     };
 
+    const validateLogin = (): boolean => {
+        const nextFieldErrors: Record<string, string> = {};
+
+        if (!email.trim()) {
+            nextFieldErrors.email = 'Email is required';
+        } else if (!isValidEmail(email.trim())) {
+            nextFieldErrors.email = 'Enter a valid email address';
+        }
+
+        if (!password) {
+            nextFieldErrors.password = 'Password is required';
+        }
+
+        setClientFieldErrors(nextFieldErrors);
+        return Object.keys(nextFieldErrors).length === 0;
+    };
+
     const handleLogin = async () => {
-        // Client-side validation first
-        const validation = validateLoginForm(email, password);
-        if (!validation.isValid) {
-            Alert.alert('Validation Error', validation.error!);
+        setLocalErrorMessage(null);
+        clearError();
+
+        if (!validateLogin()) {
             return;
         }
 
         if (!selectedRole) {
-            Alert.alert('Error', 'Please select a role first');
+            setLocalErrorMessage('Please select a role first.');
             navigation.goBack();
             return;
         }
 
-        try {
-            const success = await login({
-                email: email.trim(),
-                password,
-                role: selectedRole,
-            });
+        const success = await login({
+            email: email.trim(),
+            password,
+            role: selectedRole,
+        });
 
-            if (success) {
-                Alert.alert('Success', 'succesfully logined');
-                setShowLoginCelebration(true);
-            } else {
-                const currentError = useAuthStore.getState().error;
-                const message = currentError || 'some error';
-                Alert.alert('Login Failed', message);
-            }
-        } catch (error) {
-            Alert.alert('Login Failed', 'some error');
+        if (success) {
+            setShowLoginCelebration(true);
         }
+    };
+
+    const handleOtpLogin = async () => {
+        setLocalErrorMessage(null);
+        clearError();
+
+        const nextFieldErrors: Record<string, string> = {};
+        if (!email.trim()) {
+            nextFieldErrors.email = 'Email is required for OTP login';
+        } else if (!isValidEmail(email.trim())) {
+            nextFieldErrors.email = 'Enter a valid email address';
+        }
+        setClientFieldErrors(nextFieldErrors);
+
+        if (!selectedRole) {
+            setLocalErrorMessage('Please select a role first.');
+            navigation.goBack();
+            return;
+        }
+
+        if (Object.keys(nextFieldErrors).length > 0) {
+            return;
+        }
+
+        await requestOTP(email.trim());
     };
 
     const isCustomLogin = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
@@ -110,7 +181,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                         keyboardShouldPersistTaps="handled"
                         showsVerticalScrollIndicator={false}
                     >
-                        {/* Header */}
                         <View style={styles.header}>
                             <TouchableOpacity
                                 style={[styles.backButton, isCustomLogin && styles.glassButton]}
@@ -120,43 +190,53 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Main Content Wrapper */}
                         <View style={[
                             styles.content,
                             isCustomLogin && styles.bottomContent,
                         ]}>
-                            {/* Frosted Glass Card (for refined roles) */}
                             <View style={isCustomLogin ? styles.glassContent : undefined}>
                                 <Text style={[styles.title, isAgent ? { color: colors.surface } : null]}>Welcome Back</Text>
                                 <Text style={[styles.subtitle, isAgent ? { color: 'rgba(255, 255, 255, 0.8)' } : null]}>
                                     Login as <Text style={[styles.roleText, { color: activeThemeColor }]}>{getRoleLabel()}</Text>
                                 </Text>
 
-                                {/* Form */}
                                 <View style={styles.form}>
+                                    <AuthErrorBanner
+                                        message={localErrorMessage || errorMessage}
+                                        onClose={dismissErrorBanner}
+                                    />
+
                                     <Input
                                         label="Email"
                                         placeholder="Enter your email"
                                         value={email}
-                                        onChangeText={setEmail}
+                                        onChangeText={(value) => {
+                                            setEmail(value);
+                                            clearFieldState('email');
+                                        }}
                                         keyboardType="email-address"
                                         autoCapitalize="none"
                                         leftIcon="mail-outline"
                                         inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
                                         labelStyle={isAgent ? { color: colors.surface } : undefined}
                                         placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                        error={clientFieldErrors.email || fieldErrors.email}
                                     />
 
                                     <Input
                                         label="Password"
                                         placeholder="Enter your password"
                                         value={password}
-                                        onChangeText={setPassword}
+                                        onChangeText={(value) => {
+                                            setPassword(value);
+                                            clearFieldState('password');
+                                        }}
                                         secureTextEntry
                                         leftIcon="lock-closed-outline"
                                         inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
                                         labelStyle={isAgent ? { color: colors.surface } : undefined}
                                         placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                        error={clientFieldErrors.password || fieldErrors.password}
                                     />
 
                                     <TouchableOpacity
@@ -182,16 +262,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
                                     <Button
                                         title="Login with OTP"
-                                        onPress={() => Alert.alert('Coming Soon', 'OTP login will be available soon!')}
+                                        onPress={handleOtpLogin}
                                         variant="outline"
                                         fullWidth
+                                        disabled={isLoading}
                                         icon={<Ionicons name="phone-portrait" size={18} color={activeThemeColor} />}
                                         style={{ borderColor: activeThemeColor }}
                                         textStyle={{ color: activeThemeColor }}
                                     />
                                 </View>
 
-                                {/* Footer */}
                                 <View style={styles.footer}>
                                     <Text style={styles.footerText}>
                                         Don't have an account?{' '}
@@ -237,7 +317,7 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         paddingHorizontal: spacing.lg,
-        justifyContent: 'center', // Default center for consistency
+        justifyContent: 'center',
     },
     bottomContent: {
         justifyContent: 'flex-end',
@@ -300,7 +380,6 @@ const styles = StyleSheet.create({
         color: colors.primary,
         fontWeight: '700',
     },
-    // New Styles for Image Background / Glass Effect
     backgroundImage: {
         flex: 1,
         width: '100%',
@@ -311,13 +390,12 @@ const styles = StyleSheet.create({
     },
     overlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0, 0, 0, 0.05)', // Very subtle dark tint to make white text pop if needed, or just clear
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
     },
     glassContent: {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)', // Much more transparent
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderRadius: borderRadius.xl,
         padding: spacing.lg,
-        // Removed marginTop to rely on parent positioning
         marginHorizontal: spacing.md,
         ...shadows.lg,
         borderWidth: 1,

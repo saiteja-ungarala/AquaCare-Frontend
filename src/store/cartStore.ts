@@ -6,12 +6,14 @@ import api from '../services/api';
 // Raw backend cart item (snake_case from MySQL)
 interface RawBackendCartItem {
     id: number;
+    cart_item_id?: number;
     cart_id: number;
     item_type: 'product' | 'service';
     product_id?: number;
     service_id?: number;
     qty: number;
     unit_price?: number;
+    line_total?: number;
     booking_date?: string;
     booking_time?: string;
     // Joined fields
@@ -21,6 +23,18 @@ interface RawBackendCartItem {
     service_name?: string;
     service_price?: number;
     service_image?: string;
+    product?: {
+        id?: number;
+        name?: string;
+        price?: number;
+        image_url?: string;
+    } | null;
+    service?: {
+        id?: number;
+        name?: string;
+        price?: number;
+        image_url?: string;
+    } | null;
 }
 
 // Normalized cart item for frontend use (camelCase)
@@ -40,19 +54,31 @@ export interface BackendCartItem {
 
 // Convert snake_case backend response to camelCase frontend format
 const normalizeCartItem = (raw: RawBackendCartItem): BackendCartItem => {
-    const isProduct = raw.item_type === 'product';
-    const unitPrice = raw.unit_price ?? (isProduct ? raw.product_price : raw.service_price) ?? 0;
+    const itemType = raw.item_type ?? 'product';
+    const isProduct = itemType === 'product';
+    const qty = Number(raw.qty ?? 0);
+    const productId = raw.product_id ?? raw.product?.id;
+    const serviceId = raw.service_id ?? raw.service?.id;
+    const unitPrice = Number(
+        raw.unit_price ??
+        (isProduct ? raw.product_price ?? raw.product?.price : raw.service_price ?? raw.service?.price) ??
+        0
+    );
+    const lineTotal = Number(raw.line_total ?? unitPrice * qty);
+    const productName = raw.product_name ?? raw.product?.name;
+    const serviceName = raw.service_name ?? raw.service?.name;
+    const cartItemId = Number(raw.id ?? raw.cart_item_id ?? 0);
 
     return {
-        id: raw.id,
-        itemType: raw.item_type,
-        productId: raw.product_id,
-        serviceId: raw.service_id,
-        productName: raw.product_name,
-        serviceName: raw.service_name,
-        qty: raw.qty,
-        unitPrice: Number(unitPrice),
-        totalPrice: Number(unitPrice) * raw.qty,
+        id: cartItemId,
+        itemType,
+        productId,
+        serviceId,
+        productName,
+        serviceName,
+        qty,
+        unitPrice,
+        totalPrice: lineTotal,
         bookingDate: raw.booking_date,
         bookingTime: raw.booking_time,
     };
