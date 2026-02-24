@@ -47,7 +47,8 @@ const homeBanners: BannerItem[] = [
     {
         id: '1',
         title: 'Complete Care',
-        subtitle: 'Annual maintenance plan starting @ ₹2999',
+        subtitle: 'Annual maintenance plan starting @ Rs 2999',
+        image: require('../../../assets/b1.jpg'),
         backgroundColor: customerColors.primary,
         ctaText: 'View Plans',
     },
@@ -55,29 +56,25 @@ const homeBanners: BannerItem[] = [
         id: '2',
         title: 'New Alkalisers',
         subtitle: 'Upgrade your water quality today',
-        backgroundColor: customerColors.primaryDark, // Deep Teal
+        image: require('../../../assets/b2.jpg'),
+        backgroundColor: customerColors.primaryDark,
         ctaText: 'Shop Now',
     },
     {
         id: '3',
         title: 'Refer & Earn',
-        subtitle: 'Get ₹500 for every friend you invite',
-        backgroundColor: '#7FA650', // Sage leaf green
+        subtitle: 'Get Rs 500 for every friend you invite',
+        image: require('../../../assets/b3.jpg'),
+        backgroundColor: '#7FA650',
         ctaText: 'Invite',
     },
     {
         id: '4',
         title: 'Free Water Test',
         subtitle: 'Check your TDS level at home for free',
-        backgroundColor: customerColors.secondary, // Sky Blue
+        image: require('../../../assets/b4.webp'),
+        backgroundColor: customerColors.secondary,
         ctaText: 'Book Now',
-    },
-    {
-        id: '5',
-        title: 'Smart Softeners',
-        subtitle: 'Hard water solutions for your home',
-        backgroundColor: customerColors.text, // Charcoal/Black for premium look
-        ctaText: 'Explore',
     },
 ];
 
@@ -378,3 +375,4 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 });
+

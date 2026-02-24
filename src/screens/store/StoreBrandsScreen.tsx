@@ -2,6 +2,7 @@ import React from 'react';
 import {
     ActivityIndicator,
     FlatList,
+    Image,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -10,47 +11,44 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { borderRadius, spacing, storeTheme } from '../../theme/theme';
-import storeService, { StoreCategory } from '../../services/storeService';
+import storeService, { StoreBrand } from '../../services/storeService';
 import { useCartStore } from '../../store/cartStore';
 
-const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
-    water_drop: 'water',
-    droplet: 'water',
-    box: 'cube',
-    filter: 'filter',
-    tools: 'construct',
-    pump: 'hardware-chip',
-    snow: 'snow',
+const toInitials = (name: string): string => {
+    return name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(word => word[0]?.toUpperCase() || '')
+        .join('');
 };
 
-const getCategoryIcon = (iconKey: string | null): keyof typeof Ionicons.glyphMap => {
-    if (!iconKey) return 'cube';
-    return ICON_MAP[iconKey] || 'cube';
-};
-
-export function StoreHomeScreen({ navigation }: any) {
-    const [categories, setCategories] = React.useState<StoreCategory[]>([]);
+export function StoreBrandsScreen({ route, navigation }: any) {
+    const { categoryId, categoryName } = route.params || {};
+    const [brands, setBrands] = React.useState<StoreBrand[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
+    const [failedLogos, setFailedLogos] = React.useState<Record<number, boolean>>({});
     const { totalItems, fetchCart } = useCartStore();
 
-    const loadCategories = React.useCallback(async () => {
+    const loadBrands = React.useCallback(async () => {
+        if (!categoryId) return;
         setIsLoading(true);
         setError(null);
         try {
-            const response = await storeService.getCategories();
-            setCategories(response);
+            const response = await storeService.getBrandsByCategory(Number(categoryId));
+            setBrands(response);
         } catch (err: any) {
-            console.error('[StoreCategories] load failed:', err);
-            setError(err?.message || 'Failed to load categories');
+            console.error('[StoreBrands] load failed:', err);
+            setError(err?.message || 'Failed to load brands');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [categoryId]);
 
     React.useEffect(() => {
-        loadCategories();
-    }, [loadCategories]);
+        loadBrands();
+    }, [loadBrands]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -58,25 +56,50 @@ export function StoreHomeScreen({ navigation }: any) {
         }, [fetchCart])
     );
 
-    const renderCategory = ({ item }: { item: StoreCategory }) => (
-        <TouchableOpacity
-            style={styles.categoryCard}
-            onPress={() => navigation.navigate('StoreBrands', { categoryId: item.id, categoryName: item.name })}
-        >
-            <View style={styles.iconWrap}>
-                <Ionicons name={getCategoryIcon(item.icon_key)} size={24} color={storeTheme.primary} />
-            </View>
-            <Text style={styles.categoryName} numberOfLines={2}>
-                {item.name}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={storeTheme.textSecondary} />
-        </TouchableOpacity>
-    );
+    const renderBrand = ({ item }: { item: StoreBrand }) => {
+        const logoUrl = item.logo_url || item.logoUrl;
+        const hasLogo = !!logoUrl && !failedLogos[item.id];
+
+        return (
+            <TouchableOpacity
+                style={styles.brandCard}
+                onPress={() => navigation.navigate('ProductListing', {
+                    categoryId: Number(categoryId),
+                    brandId: item.id,
+                    categoryName: categoryName || 'Category',
+                    brandName: item.name,
+                })}
+            >
+                <View style={styles.logoWrap}>
+                    {hasLogo ? (
+                        <Image
+                            source={{ uri: logoUrl as string }}
+                            style={styles.logo}
+                            resizeMode="contain"
+                            onError={() => setFailedLogos(prev => ({ ...prev, [item.id]: true }))}
+                        />
+                    ) : (
+                        <Text style={styles.logoFallback}>{toInitials(item.name) || 'BR'}</Text>
+                    )}
+                </View>
+                <Text style={styles.brandName} numberOfLines={2}>
+                    {item.name}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={storeTheme.textSecondary} />
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Store Categories</Text>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={22} color={storeTheme.text} />
+                </TouchableOpacity>
+                <View style={styles.titleWrap}>
+                    <Text style={styles.headerTitle} numberOfLines={1}>{categoryName || 'Brands'}</Text>
+                    <Text style={styles.headerSubtitle}>Select a brand</Text>
+                </View>
                 <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate('Cart')}>
                     <Ionicons name="cart-outline" size={22} color={storeTheme.text} />
                     {totalItems > 0 ? (
@@ -97,7 +120,7 @@ export function StoreHomeScreen({ navigation }: any) {
                 <View style={styles.centered}>
                     <Ionicons name="alert-circle-outline" size={48} color={storeTheme.error || '#ef4444'} />
                     <Text style={styles.errorText}>{error}</Text>
-                    <TouchableOpacity style={styles.retryButton} onPress={loadCategories}>
+                    <TouchableOpacity style={styles.retryButton} onPress={loadBrands}>
                         <Text style={styles.retryText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
@@ -105,15 +128,15 @@ export function StoreHomeScreen({ navigation }: any) {
 
             {!isLoading && !error ? (
                 <FlatList
-                    data={categories}
+                    data={brands}
                     keyExtractor={(item) => item.id.toString()}
-                    renderItem={renderCategory}
+                    renderItem={renderBrand}
                     contentContainerStyle={styles.listContent}
                     ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
                     ListEmptyComponent={
                         <View style={styles.centered}>
-                            <Ionicons name="grid-outline" size={48} color={storeTheme.textSecondary} />
-                            <Text style={styles.emptyText}>No categories available.</Text>
+                            <Ionicons name="ribbon-outline" size={48} color={storeTheme.textSecondary} />
+                            <Text style={styles.emptyText}>No brands available in this category.</Text>
                         </View>
                     }
                 />
@@ -130,16 +153,31 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: storeTheme.border,
     },
+    backButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    titleWrap: {
+        flex: 1,
+        marginHorizontal: spacing.sm,
+    },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 17,
         fontWeight: '700',
         color: storeTheme.text,
+    },
+    headerSubtitle: {
+        fontSize: 12,
+        color: storeTheme.textSecondary,
+        marginTop: 2,
     },
     cartButton: {
         width: 40,
@@ -168,7 +206,7 @@ const styles = StyleSheet.create({
     listContent: {
         padding: spacing.md,
     },
-    categoryCard: {
+    brandCard: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: spacing.md,
@@ -177,16 +215,26 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: storeTheme.border,
     },
-    iconWrap: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+    logoWrap: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: storeTheme.surfaceSecondary,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: storeTheme.surfaceSecondary,
         marginRight: spacing.md,
+        overflow: 'hidden',
     },
-    categoryName: {
+    logo: {
+        width: '100%',
+        height: '100%',
+    },
+    logoFallback: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: storeTheme.primary,
+    },
+    brandName: {
         flex: 1,
         fontSize: 15,
         fontWeight: '600',
@@ -197,11 +245,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: spacing.lg,
-    },
-    emptyText: {
-        marginTop: spacing.sm,
-        color: storeTheme.textSecondary,
-        fontSize: 15,
     },
     errorText: {
         marginTop: spacing.sm,
@@ -219,6 +262,12 @@ const styles = StyleSheet.create({
     retryText: {
         color: storeTheme.textOnPrimary,
         fontWeight: '700',
+    },
+    emptyText: {
+        marginTop: spacing.sm,
+        color: storeTheme.textSecondary,
+        fontSize: 15,
+        textAlign: 'center',
     },
 });
 

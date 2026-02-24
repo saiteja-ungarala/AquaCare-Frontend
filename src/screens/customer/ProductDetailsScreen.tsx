@@ -9,12 +9,14 @@ import {
     ScrollView,
     TouchableOpacity,
     ActivityIndicator,
+    Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { Button } from '../../components';
 import { useCartStore } from '../../store/cartStore';
 import storeService, { StoreProduct } from '../../services/storeService';
+import { resolveProductImageSource } from '../../utils/productImage';
 
 // Icon mapping for product categories
 const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -125,6 +127,7 @@ export const ProductDetailsScreen = ({ navigation, route }: any) => {
     }
 
     const inStock = product.stockQty > 0;
+    const imageSource = resolveProductImageSource(product.imageUrl);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -154,7 +157,11 @@ export const ProductDetailsScreen = ({ navigation, route }: any) => {
                             <Text style={styles.discountText}>{discount}% OFF</Text>
                         </View>
                     )}
-                    <Ionicons name={getIcon()} size={120} color={colors.primary} />
+                    {imageSource ? (
+                        <Image source={imageSource} style={styles.productImage} resizeMode="contain" />
+                    ) : (
+                        <Ionicons name={getIcon()} size={120} color={colors.primary} />
+                    )}
                 </View>
 
                 {/* Product Info */}
@@ -325,6 +332,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
+        overflow: 'hidden',
+    },
+    productImage: {
+        width: '100%',
+        height: '100%',
     },
     discountBadge: {
         position: 'absolute',

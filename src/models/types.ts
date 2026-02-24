@@ -344,7 +344,7 @@ export type RootStackParamList = {
     CustomerTabs: undefined;
     Search: undefined;
     ServiceDetails: { service: Service };
-    ProductDetails: { product: Product };
+    ProductDetails: { productId: number };
     Cart: undefined;
     Bookings: undefined;
     Wallet: undefined;
@@ -380,7 +380,8 @@ export type RootStackParamList = {
     DealerComingSoon: undefined;
     // Store navigation
     StoreHome: undefined;
-    ProductListing: { category?: string };
+    StoreBrands: { categoryId: number; categoryName: string };
+    ProductListing: { categoryId: number; brandId: number; categoryName?: string; brandName?: string };
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

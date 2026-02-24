@@ -1,7 +1,10 @@
 // Cart Store - Backend-authoritative cart state using Zustand
 
 import { create } from 'zustand';
+import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import api from '../services/api';
+import { STORAGE_KEYS } from '../config/constants';
 
 // Raw backend cart item (snake_case from MySQL)
 interface RawBackendCartItem {
@@ -104,6 +107,18 @@ export interface CartActions {
 
 type CartStore = CartState & CartActions;
 
+const getStoredAuthToken = async (): Promise<string | null> => {
+    try {
+        if (Platform.OS === 'web') {
+            if (typeof localStorage === 'undefined') return null;
+            return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        }
+        return await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+    } catch {
+        return null;
+    }
+};
+
 const calculateTotals = (items: BackendCartItem[]) => {
     return items.reduce(
         (acc, item) => ({
@@ -125,6 +140,13 @@ export const useCartStore = create<CartStore>((set, get) => ({
     // Fetch cart from backend
     fetchCart: async () => {
         set({ isLoading: true, error: null });
+
+        const token = await getStoredAuthToken();
+        if (!token) {
+            set({ isLoading: false, error: null, items: [], totalItems: 0, totalAmount: 0 });
+            return;
+        }
+
         try {
             const response = await api.get('/cart');
             console.log('[CartStore] fetchCart response:', response.data);
@@ -135,8 +157,14 @@ export const useCartStore = create<CartStore>((set, get) => ({
             console.log('[CartStore] Normalized items:', items);
             set({ items, ...totals, isLoading: false });
         } catch (error: any) {
-            console.error('[CartStore] fetchCart error:', error);
-            set({ isLoading: false, error: error.message, items: [] });
+            if (error?.response?.status === 401) {
+                set({ isLoading: false, error: null, items: [], totalItems: 0, totalAmount: 0 });
+                return;
+            }
+
+            const message = error?.response?.data?.message || error?.message || 'Failed to fetch cart';
+            console.error('[CartStore] fetchCart error:', message);
+            set({ isLoading: false, error: message, items: [] });
         }
     },
 

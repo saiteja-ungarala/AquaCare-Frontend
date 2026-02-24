@@ -24,7 +24,7 @@ import { ContactUsScreen } from './src/screens/customer/ContactUsScreen';
 import { TermsScreen } from './src/screens/customer/TermsScreen';
 import { PrivacyScreen } from './src/screens/customer/PrivacyScreen';
 
-import { StoreHomeScreen, ProductListingScreen } from './src/screens/store';
+import { StoreHomeScreen, StoreBrandsScreen, ProductListingScreen } from './src/screens/store';
 import {
     AgentActiveJobScreen,
     AgentEarnScreen,
@@ -60,6 +60,7 @@ function StoreStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="StoreHome" component={StoreHomeScreen} />
+            <Stack.Screen name="StoreBrands" component={StoreBrandsScreen} />
             <Stack.Screen name="ProductListing" component={ProductListingScreen} />
             <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
             <Stack.Screen name="Cart" component={CartScreen} />

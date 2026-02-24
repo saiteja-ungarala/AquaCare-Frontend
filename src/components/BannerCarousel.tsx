@@ -1,16 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     View,
-    Text,
     StyleSheet,
     FlatList,
     useWindowDimensions,
     TouchableOpacity,
     NativeSyntheticEvent,
     NativeScrollEvent,
+    ImageBackground,
 } from 'react-native';
-import { colors, borderRadius, spacing, typography, shadows } from '../theme/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing } from '../theme/theme';
 
 export interface BannerItem {
     id: string;
@@ -33,8 +32,8 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({
     onBannerPress,
 }) => {
     const { width: screenWidth } = useWindowDimensions();
-    const CARD_MARGIN = spacing.lg;
-    const CARD_WIDTH = screenWidth - CARD_MARGIN * 2;
+    const CARD_WIDTH = screenWidth;
+    const BANNER_HEIGHT = 220;
 
     const [activeIndex, setActiveIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
@@ -74,28 +73,19 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({
             onPress={() => onBannerPress?.(item)}
             style={[styles.itemContainer, { width: screenWidth }]}
         >
-            <View style={[styles.card, { backgroundColor: item.backgroundColor, width: CARD_WIDTH }]}>
-                {/* Decorative circles */}
-                <View style={[styles.decorCircle, styles.decorCircle1]} />
-                <View style={[styles.decorCircle, styles.decorCircle2]} />
-
-                <View style={styles.contentContainer}>
-                    <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-                    <Text style={styles.subtitle} numberOfLines={2}>{item.subtitle}</Text>
-
-                    {item.ctaText && (
-                        <View style={styles.ctaButton}>
-                            <Text style={styles.ctaText}>{item.ctaText}</Text>
-                            <Ionicons name="arrow-forward" size={12} color="#FFFFFF" />
-                        </View>
-                    )}
+            {item.image ? (
+                <ImageBackground
+                    source={item.image}
+                    style={[styles.card, { width: CARD_WIDTH, height: BANNER_HEIGHT }]}
+                    imageStyle={styles.cardImage}
+                >
+                    <View style={styles.imageOverlay} />
+                </ImageBackground>
+            ) : (
+                <View style={[styles.card, { backgroundColor: item.backgroundColor, width: CARD_WIDTH, height: BANNER_HEIGHT }]}>
+                    <View style={styles.imageOverlay} />
                 </View>
-
-                {/* Illustration */}
-                <View style={styles.illustration}>
-                    <Ionicons name="water-outline" size={72} color="rgba(255,255,255,0.12)" />
-                </View>
-            </View>
+            )}
         </TouchableOpacity>
     );
 
@@ -143,79 +133,20 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
     },
     itemContainer: {
-        alignItems: 'center',
+        alignItems: 'stretch',
     },
     card: {
-        aspectRatio: 2.2,
-        minHeight: 150,
-        maxHeight: 200,
-        borderRadius: borderRadius.xl,
+        borderRadius: 0,
         overflow: 'hidden',
         flexDirection: 'row',
         position: 'relative',
-        ...shadows.md,
     },
-    decorCircle: {
-        position: 'absolute',
-        borderRadius: 999,
-        backgroundColor: 'rgba(255,255,255,0.08)',
+    cardImage: {
+        borderRadius: 0,
     },
-    decorCircle1: {
-        top: -50,
-        right: -30,
-        width: 180,
-        height: 180,
-    },
-    decorCircle2: {
-        bottom: -40,
-        left: -20,
-        width: 120,
-        height: 120,
-    },
-    contentContainer: {
-        flex: 1,
-        padding: spacing.lg,
-        paddingRight: 80,
-        justifyContent: 'center',
-        zIndex: 1,
-    },
-    title: {
-        ...typography.h2,
-        color: '#FFFFFF',
-        marginBottom: spacing.xs,
-        fontSize: 20,
-        lineHeight: 26,
-    },
-    subtitle: {
-        ...typography.bodySmall,
-        color: 'rgba(255,255,255,0.85)',
-        marginBottom: spacing.md,
-        fontWeight: '500',
-        lineHeight: 18,
-    },
-    ctaButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.22)',
-        alignSelf: 'flex-start',
-        paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: borderRadius.full,
-        gap: 4,
-    },
-    ctaText: {
-        ...typography.caption,
-        color: '#FFFFFF',
-        fontWeight: '700',
-        textTransform: 'uppercase',
-        fontSize: 11,
-    },
-    illustration: {
-        position: 'absolute',
-        bottom: 10,
-        right: 16,
-        opacity: 0.8,
-        zIndex: 0,
+    imageOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(255,255,255,0.12)',
     },
     pagination: {
         flexDirection: 'row',

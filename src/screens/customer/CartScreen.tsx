@@ -236,7 +236,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                 <View style={styles.emptyContainer}>
                     <Ionicons name="cart-outline" size={80} color={colors.textLight} />
                     <Text style={styles.emptyTitle}>Your cart is empty</Text>
-                    <Button title="Browse Products" onPress={() => navigation.navigate('ProductListing', {})} style={{ marginTop: 16 }} />
+                    <Button title="Browse Products" onPress={() => navigation.navigate('StoreHome')} style={{ marginTop: 16 }} />
                 </View>
             </SafeAreaView>
         );

@@ -19,6 +19,7 @@ import { catalogService } from '../../services/catalogService';
 import storeService, { StoreProduct } from '../../services/storeService';
 import { Service } from '../../models/types';
 import { useDebounce } from 'use-debounce';
+import { resolveProductImageSource } from '../../utils/productImage';
 
 type SearchScreenProps = { navigation: NativeStackNavigationProp<any> };
 
@@ -96,13 +97,20 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
         </TouchableOpacity>
     );
 
-    const renderProductItem = ({ item }: { item: StoreProduct }) => (
+    const renderProductItem = ({ item }: { item: StoreProduct }) => {
+        const imageSource = resolveProductImageSource(item.imageUrl);
+
+        return (
         <TouchableOpacity
             style={styles.resultItem}
             onPress={() => navigation.navigate('ProductDetails', { productId: item.id })}
         >
             <View style={[styles.iconBox, { backgroundColor: colors.secondary + '20' }]}>
-                <Ionicons name="cube" size={20} color={colors.secondary} />
+                {imageSource ? (
+                    <Image source={imageSource} style={styles.productThumb} resizeMode="cover" />
+                ) : (
+                    <Ionicons name="cube" size={20} color={colors.secondary} />
+                )}
             </View>
             <View style={styles.resultInfo}>
                 <Text style={styles.resultTitle}>{item.name}</Text>
@@ -110,7 +118,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
         </TouchableOpacity>
-    );
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -199,7 +208,8 @@ const styles = StyleSheet.create({
     section: { marginTop: spacing.lg, paddingHorizontal: spacing.md },
     sectionTitle: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
     resultItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.md, marginBottom: spacing.sm, ...shadows.sm },
-    iconBox: { width: 40, height: 40, borderRadius: borderRadius.sm, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md },
+    iconBox: { width: 40, height: 40, borderRadius: borderRadius.sm, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md, overflow: 'hidden' },
+    productThumb: { width: '100%', height: '100%' },
     resultInfo: { flex: 1 },
     resultTitle: { ...typography.body, fontWeight: '600', color: colors.text },
     resultSub: { ...typography.caption, color: colors.textSecondary },

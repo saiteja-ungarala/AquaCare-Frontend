@@ -7,23 +7,48 @@ export interface StoreCategory {
     id: number;
     name: string;
     slug: string;
-    iconKey: string;
+    icon_key: string | null;
+    sort_order: number;
+    iconKey: string | null;
+    sortOrder: number;
+}
+
+export interface StoreBrand {
+    id: number;
+    name: string;
+    slug: string;
+    logo_url: string | null;
+    logoUrl: string | null;
 }
 
 export interface StoreProduct {
     id: number;
     name: string;
-    description: string;
+    description: string | null;
     price: number;
-    mrp: number;
+    mrp: number | null;
+    stock_qty: number;
     stockQty: number;
+    image_url: string | null;
+    image_url_full: string | null;
     imageUrl: string | null;
-    sku: string;
+    imageUrlFull: string | null;
+    sku: string | null;
     category: {
         id: number;
         name: string;
         slug: string;
+        icon_key?: string | null;
+        sort_order?: number;
     };
+    brand: {
+        id: number;
+        name: string;
+        slug: string;
+        logo_url: string | null;
+        logoUrl: string | null;
+    };
+    created_at: string;
     createdAt: string;
 }
 
@@ -35,12 +60,76 @@ export interface ProductsResponse {
 }
 
 export interface ProductQueryParams {
-    category?: string;  // slug
-    q?: string;         // search query
+    category_id?: number;
+    brand_id?: number;
+    search?: string;
+    // Legacy filters retained for backward compatibility.
+    category?: string;
+    q?: string;
     sort?: 'popular' | 'new' | 'price_asc' | 'price_desc';
     page?: number;
     limit?: number;
 }
+
+const toNullableString = (value: unknown): string | null => {
+    const normalized = String(value ?? '').trim();
+    return normalized || null;
+};
+
+const mapCategory = (raw: any): StoreCategory => ({
+    id: Number(raw.id),
+    name: String(raw.name || ''),
+    slug: String(raw.slug || ''),
+    icon_key: toNullableString(raw.icon_key ?? raw.iconKey),
+    sort_order: Number(raw.sort_order ?? raw.sortOrder ?? 0),
+    iconKey: toNullableString(raw.icon_key ?? raw.iconKey),
+    sortOrder: Number(raw.sort_order ?? raw.sortOrder ?? 0),
+});
+
+const mapBrand = (raw: any): StoreBrand => ({
+    id: Number(raw.id),
+    name: String(raw.name || ''),
+    slug: String(raw.slug || ''),
+    logo_url: toNullableString(raw.logo_url ?? raw.logoUrl),
+    logoUrl: toNullableString(raw.logo_url ?? raw.logoUrl),
+});
+
+const mapProduct = (raw: any): StoreProduct => {
+    const imageUrlFull = toNullableString(raw.image_url_full ?? raw.imageUrlFull);
+    const imageUrlRaw = toNullableString(raw.image_url ?? raw.imageUrl);
+    const preferredImage = imageUrlFull || imageUrlRaw;
+
+    return {
+        id: Number(raw.id),
+        name: String(raw.name || ''),
+        description: toNullableString(raw.description),
+        price: Number(raw.price ?? 0),
+        mrp: raw.mrp != null ? Number(raw.mrp) : null,
+        stock_qty: Number(raw.stock_qty ?? raw.stockQty ?? 0),
+        stockQty: Number(raw.stock_qty ?? raw.stockQty ?? 0),
+        image_url: imageUrlRaw,
+        image_url_full: imageUrlFull,
+        imageUrl: preferredImage,
+        imageUrlFull: imageUrlFull,
+        sku: toNullableString(raw.sku),
+        category: {
+            id: Number(raw.category?.id ?? 0),
+            name: String(raw.category?.name || ''),
+            slug: String(raw.category?.slug || ''),
+            icon_key: toNullableString(raw.category?.icon_key ?? raw.category?.iconKey),
+            sort_order: Number(raw.category?.sort_order ?? raw.category?.sortOrder ?? 0),
+        },
+        brand: {
+            id: Number(raw.brand?.id ?? 0),
+            name: String(raw.brand?.name || ''),
+            slug: String(raw.brand?.slug || ''),
+            logo_url: toNullableString(raw.brand?.logo_url ?? raw.brand?.logoUrl),
+            logoUrl: toNullableString(raw.brand?.logo_url ?? raw.brand?.logoUrl),
+        },
+        created_at: String(raw.created_at ?? raw.createdAt ?? ''),
+        createdAt: String(raw.created_at ?? raw.createdAt ?? ''),
+    };
+};
 
 // API Methods
 export const storeService = {
@@ -49,7 +138,17 @@ export const storeService = {
      */
     async getCategories(): Promise<StoreCategory[]> {
         const response = await api.get('/store/categories');
-        return response.data.data;
+        const rows = Array.isArray(response.data.data) ? response.data.data : [];
+        return rows.map(mapCategory);
+    },
+
+    /**
+     * Get active brands that have products for a category
+     */
+    async getBrandsByCategory(categoryId: number): Promise<StoreBrand[]> {
+        const response = await api.get(`/store/categories/${categoryId}/brands`);
+        const rows = Array.isArray(response.data.data) ? response.data.data : [];
+        return rows.map(mapBrand);
     },
 
     /**
@@ -57,7 +156,15 @@ export const storeService = {
      */
     async getProducts(params?: ProductQueryParams): Promise<ProductsResponse> {
         const response = await api.get('/store/products', { params });
-        return response.data.data;
+        const data = response.data.data || {};
+        const items = Array.isArray(data.items) ? data.items.map(mapProduct) : [];
+
+        return {
+            items,
+            page: Number(data.page || 1),
+            limit: Number(data.limit || items.length || 20),
+            total: Number(data.total || items.length || 0),
+        };
     },
 
     /**
@@ -65,7 +172,7 @@ export const storeService = {
      */
     async getProductById(id: number): Promise<StoreProduct> {
         const response = await api.get(`/store/products/${id}`);
-        return response.data.data;
+        return mapProduct(response.data.data || {});
     },
 };
 
