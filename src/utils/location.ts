@@ -17,7 +17,7 @@ export async function requestLocationPermission(): Promise<boolean> {
     return new Promise((resolve) => {
         Alert.alert(
             'Location Access',
-            'AquaCare needs your location to find nearby technicians and auto-fill your address.',
+            'IonCare needs your location to find nearby technicians and auto-fill your address.',
             [
                 {
                     text: 'Not Now',

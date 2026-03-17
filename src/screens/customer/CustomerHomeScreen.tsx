@@ -264,7 +264,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                             </View>
                             <View style={styles.referralContent}>
                                 <Text style={styles.referralTitle}>Refer & Earn ₹500</Text>
-                                <Text style={styles.referralDesc}>Invite friends to AquaCare</Text>
+                                <Text style={styles.referralDesc}>Invite friends to IonCare</Text>
                             </View>
                             <View style={styles.referralArrow}>
                                 <Ionicons name="arrow-forward" size={18} color={'#7FA650'} />
@@ -301,7 +301,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     <View style={styles.whyChooseSection}>
                         <View style={styles.sectionTitleWrap}>
                             <View style={[styles.sectionAccent, { backgroundColor: '#7C4DFF' }]} />
-                            <Text style={styles.sectionTitle}>Why Choose AquaCare?</Text>
+                            <Text style={styles.sectionTitle}>Why Choose IonCare?</Text>
                         </View>
 
                         <View style={styles.featuresGrid}>

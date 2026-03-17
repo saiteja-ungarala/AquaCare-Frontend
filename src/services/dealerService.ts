@@ -13,6 +13,28 @@ type ApiSuccess<T> = {
     data: T;
 };
 
+export type DealerOrder = {
+    id: number;
+    status: string;
+    status_bucket: string;
+    payment_status: string;
+    total_amount: number;
+    item_count: number;
+    created_at: string;
+    first_item: { product_name: string | null; image_url: string | null } | null;
+};
+
+export type DealerCommission = {
+    id: number;
+    type: 'product_sale' | 'service_referral';
+    reference_type: string;
+    reference_id: number | null;
+    amount: number;
+    description: string | null;
+    status: 'paid' | 'pending';
+    created_at: string;
+};
+
 type DealerMeApiPayload = {
     profile: any;
     kyc?: {
@@ -223,6 +245,46 @@ export const dealerService = {
         return {
             verification_status: normalizeVerificationStatus(payload.verification_status),
             pricing: mapDealerPricingProduct(payload.pricing || {}),
+        };
+    },
+
+    async getOrders(): Promise<{ orders: DealerOrder[]; pagination: any }> {
+        const response = await api.get<ApiSuccess<{ orders: any[]; pagination: any }>>('/dealer/orders');
+        const payload = response.data.data || { orders: [], pagination: null };
+        const orders: DealerOrder[] = Array.isArray(payload.orders)
+            ? payload.orders.map((o: any) => ({
+                id: toNumber(o.id),
+                status: String(o.status || 'pending'),
+                status_bucket: String(o.status_bucket || o.statusBucket || 'active'),
+                payment_status: String(o.payment_status || o.paymentStatus || 'pending'),
+                total_amount: toNumber(o.total_amount ?? o.totalAmount),
+                item_count: toNumber(o.item_count ?? o.itemCount),
+                created_at: String(o.created_at ?? o.createdAt ?? ''),
+                first_item: o.first_item ?? o.firstItem ?? null,
+            }))
+            : [];
+        return { orders, pagination: payload.pagination ?? null };
+    },
+
+    async getCommissions(): Promise<{ total_amount: number; pending_amount: number; commissions: DealerCommission[] }> {
+        const response = await api.get<ApiSuccess<{ total_amount: number; pending_amount: number; commissions: any[] }>>('/dealer/commissions');
+        const payload = response.data.data || { total_amount: 0, pending_amount: 0, commissions: [] };
+        const commissions: DealerCommission[] = Array.isArray(payload.commissions)
+            ? payload.commissions.map((c: any) => ({
+                id: toNumber(c.id),
+                type: c.type === 'service_referral' ? 'service_referral' : 'product_sale',
+                reference_type: String(c.reference_type || ''),
+                reference_id: c.reference_id != null ? toNumber(c.reference_id) : null,
+                amount: toNumber(c.amount),
+                description: c.description ?? null,
+                status: c.status === 'pending' ? 'pending' : 'paid',
+                created_at: String(c.created_at ?? ''),
+            }))
+            : [];
+        return {
+            total_amount: toNumber(payload.total_amount),
+            pending_amount: toNumber(payload.pending_amount),
+            commissions,
         };
     },
 

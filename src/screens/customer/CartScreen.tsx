@@ -198,7 +198,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                 amount: finalTotal,
                 entityType: 'order',
                 entityId: createdOrderId,
-                description: 'AquaCare Order',
+                description: 'IonCare Order',
             });
         } catch (error: any) {
             console.error(error);

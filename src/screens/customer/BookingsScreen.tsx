@@ -381,7 +381,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation, rout
                                 <View style={styles.confirmNotice}>
                                     <Ionicons name="information-circle" size={18} color={customerColors.primary} />
                                     <Text style={styles.confirmNoticeText}>
-                                        If you've already paid, the amount will be refunded to your AquaCare wallet.
+                                        If you've already paid, the amount will be refunded to your IonCare wallet.
                                     </Text>
                                 </View>
 

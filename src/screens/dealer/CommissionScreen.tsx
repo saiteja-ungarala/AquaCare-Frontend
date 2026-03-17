@@ -1,19 +1,76 @@
 // Dealer Commission Screen
 
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
-import { mockCommissions } from '../../services/mockData';
+import { dealerService, DealerCommission } from '../../services/dealerService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type CommissionScreenProps = { navigation: NativeStackNavigationProp<any> };
 
 export const CommissionScreen: React.FC<CommissionScreenProps> = ({ navigation }) => {
-    const totalCommission = mockCommissions.reduce((sum, c) => sum + c.amount, 0);
-    const pendingAmount = mockCommissions.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0);
+    const [commissions, setCommissions] = useState<DealerCommission[]>([]);
+    const [totalAmount, setTotalAmount] = useState(0);
+    const [pendingAmount, setPendingAmount] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchCommissions();
+    }, []);
+
+    const fetchCommissions = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const result = await dealerService.getCommissions();
+            setCommissions(result.commissions);
+            setTotalAmount(result.total_amount);
+            setPendingAmount(result.pending_amount);
+        } catch (err: any) {
+            setError(dealerService.getApiErrorMessage(err, 'Failed to load commission data'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const paidAmount = totalAmount - pendingAmount;
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color={colors.text} /></TouchableOpacity>
+                    <Text style={styles.headerTitle}>Commission</Text>
+                    <View style={{ width: 24 }} />
+                </View>
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (error) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color={colors.text} /></TouchableOpacity>
+                    <Text style={styles.headerTitle}>Commission</Text>
+                    <View style={{ width: 24 }} />
+                </View>
+                <View style={styles.centered}>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={fetchCommissions}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -25,28 +82,33 @@ export const CommissionScreen: React.FC<CommissionScreenProps> = ({ navigation }
             <ScrollView showsVerticalScrollIndicator={false}>
                 <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.balanceCard}>
                     <Text style={styles.balanceLabel}>Total Commission Earned</Text>
-                    <Text style={styles.balanceAmount}>₹{totalCommission.toLocaleString()}</Text>
+                    <Text style={styles.balanceAmount}>₹{totalAmount.toLocaleString()}</Text>
                     <View style={styles.balanceRow}>
-                        <View style={styles.balanceItem}><Text style={styles.balanceItemLabel}>Pending</Text><Text style={styles.balanceItemValue}>₹{pendingAmount}</Text></View>
+                        <View style={styles.balanceItem}><Text style={styles.balanceItemLabel}>Pending</Text><Text style={styles.balanceItemValue}>₹{pendingAmount.toLocaleString()}</Text></View>
                         <View style={styles.balanceDivider} />
-                        <View style={styles.balanceItem}><Text style={styles.balanceItemLabel}>Paid</Text><Text style={styles.balanceItemValue}>₹{totalCommission - pendingAmount}</Text></View>
+                        <View style={styles.balanceItem}><Text style={styles.balanceItemLabel}>Paid</Text><Text style={styles.balanceItemValue}>₹{paidAmount.toLocaleString()}</Text></View>
                     </View>
                 </LinearGradient>
 
                 <View style={styles.content}>
                     <Text style={styles.sectionTitle}>Commission History</Text>
-                    {mockCommissions.map((commission) => (
+                    {commissions.length === 0 && (
+                        <Text style={styles.emptyText}>No commission history yet.</Text>
+                    )}
+                    {commissions.map((commission) => (
                         <View key={commission.id} style={styles.commissionItem}>
                             <View style={[styles.commissionIcon, { backgroundColor: commission.type === 'product_sale' ? colors.primary + '20' : colors.secondary + '20' }]}>
                                 <Ionicons name={commission.type === 'product_sale' ? 'cart' : 'people'} size={20} color={commission.type === 'product_sale' ? colors.primary : colors.secondary} />
                             </View>
                             <View style={styles.commissionInfo}>
                                 <Text style={styles.commissionType}>{commission.type === 'product_sale' ? 'Product Sale' : 'Service Referral'}</Text>
-                                <Text style={styles.commissionOrder}>Order #{commission.orderId}</Text>
-                                <Text style={styles.commissionDate}>{commission.date}</Text>
+                                {commission.reference_id != null && (
+                                    <Text style={styles.commissionOrder}>Order #{commission.reference_id}</Text>
+                                )}
+                                <Text style={styles.commissionDate}>{commission.created_at ? new Date(commission.created_at).toLocaleDateString() : ''}</Text>
                             </View>
                             <View style={styles.commissionRight}>
-                                <Text style={styles.commissionAmount}>+₹{commission.amount}</Text>
+                                <Text style={styles.commissionAmount}>+₹{commission.amount.toLocaleString()}</Text>
                                 <View style={[styles.commissionStatus, { backgroundColor: commission.status === 'paid' ? colors.success + '20' : colors.warning + '20' }]}>
                                     <Text style={[styles.commissionStatusText, { color: commission.status === 'paid' ? colors.success : colors.warning }]}>{commission.status}</Text>
                                 </View>
@@ -61,6 +123,11 @@ export const CommissionScreen: React.FC<CommissionScreenProps> = ({ navigation }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+    errorText: { ...typography.body, color: colors.error, textAlign: 'center', marginBottom: spacing.md },
+    retryButton: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.primary, borderRadius: borderRadius.md },
+    retryButtonText: { ...typography.body, color: colors.textOnPrimary, fontWeight: '600' },
+    emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
     headerTitle: { ...typography.h3, color: colors.text },
     balanceCard: { margin: spacing.md, borderRadius: borderRadius.xl, padding: spacing.lg, alignItems: 'center' },

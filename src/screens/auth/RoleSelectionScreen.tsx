@@ -91,7 +91,7 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
                     <View style={styles.logoBadge}>
                         <Ionicons name="water" size={32} color={customerColors.primary} />
                     </View>
-                    <Text style={styles.appName}>AquaCare</Text>
+                    <Text style={styles.appName}>IonCare</Text>
                     <Text style={styles.tagline}>Select your role to continue</Text>
                 </FadeInView>
 

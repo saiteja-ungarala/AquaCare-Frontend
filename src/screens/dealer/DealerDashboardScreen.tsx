@@ -1,19 +1,49 @@
 // Dealer Dashboard Screen
 
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
-import { mockOrders, mockCommissions } from '../../services/mockData';
+import { dealerService, DealerOrder, DealerCommission } from '../../services/dealerService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type DealerDashboardScreenProps = { navigation: NativeStackNavigationProp<any> };
 
+const ACTIVE_BUCKETS = new Set(['active']);
+
 export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ navigation }) => {
     const { user, logout } = useAuthStore();
+    const [orders, setOrders] = useState<DealerOrder[]>([]);
+    const [commissions, setCommissions] = useState<DealerCommission[]>([]);
+    const [totalCommission, setTotalCommission] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const [ordersResult, commissionsResult] = await Promise.all([
+                dealerService.getOrders(),
+                dealerService.getCommissions(),
+            ]);
+            setOrders(ordersResult.orders);
+            setCommissions(commissionsResult.commissions);
+            setTotalCommission(commissionsResult.total_amount);
+        } catch (err: any) {
+            setError(dealerService.getApiErrorMessage(err, 'Failed to load dashboard data'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleLogout = () => {
         if (Platform.OS === 'web') {
             const confirmed = window.confirm('Are you sure you want to logout?');
@@ -27,8 +57,32 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
             ]);
         }
     };
-    const totalCommission = mockCommissions.reduce((sum, c) => sum + c.amount, 0);
-    const pendingOrders = mockOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
+
+    const pendingOrders = orders.filter(o => o.status_bucket === 'active').length;
+    const referralCount = commissions.filter(c => c.type === 'service_referral').length;
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (error) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.centered}>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -48,7 +102,7 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
                 <View style={styles.statsGrid}>
                     <View style={styles.statCard}>
                         <Ionicons name="cart" size={28} color={colors.primary} />
-                        <Text style={styles.statValue}>{mockOrders.length}</Text>
+                        <Text style={styles.statValue}>{orders.length}</Text>
                         <Text style={styles.statLabel}>Total Orders</Text>
                     </View>
                     <View style={styles.statCard}>
@@ -58,12 +112,12 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
                     </View>
                     <View style={styles.statCard}>
                         <Ionicons name="cash" size={28} color={colors.success} />
-                        <Text style={styles.statValue}>₹{totalCommission}</Text>
+                        <Text style={styles.statValue}>₹{totalCommission.toLocaleString()}</Text>
                         <Text style={styles.statLabel}>Commission</Text>
                     </View>
                     <View style={styles.statCard}>
                         <Ionicons name="people" size={28} color={colors.accent} />
-                        <Text style={styles.statValue}>12</Text>
+                        <Text style={styles.statValue}>{referralCount}</Text>
                         <Text style={styles.statLabel}>Referrals</Text>
                     </View>
                 </View>
@@ -73,18 +127,18 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
                         <Text style={styles.sectionTitle}>Recent Orders</Text>
                         <TouchableOpacity onPress={() => navigation.navigate('ProductOrders')}><Text style={styles.viewAll}>View All</Text></TouchableOpacity>
                     </View>
-                    {mockOrders.slice(0, 3).map((order) => (
+                    {orders.slice(0, 3).map((order) => (
                         <View key={order.id} style={styles.orderCard}>
                             <View style={styles.orderHeader}>
                                 <Text style={styles.orderId}>#{order.id}</Text>
-                                <View style={[styles.statusBadge, { backgroundColor: order.status === 'delivered' ? colors.success + '20' : colors.warning + '20' }]}>
-                                    <Text style={[styles.statusText, { color: order.status === 'delivered' ? colors.success : colors.warning }]}>{order.status}</Text>
+                                <View style={[styles.statusBadge, { backgroundColor: order.status_bucket === 'delivered' ? colors.success + '20' : colors.warning + '20' }]}>
+                                    <Text style={[styles.statusText, { color: order.status_bucket === 'delivered' ? colors.success : colors.warning }]}>{order.status}</Text>
                                 </View>
                             </View>
-                            <Text style={styles.orderItems}>{order.items.length} item(s)</Text>
+                            <Text style={styles.orderItems}>{order.item_count} item(s)</Text>
                             <View style={styles.orderFooter}>
-                                <Text style={styles.orderAmount}>₹{order.totalAmount.toLocaleString()}</Text>
-                                <Text style={styles.orderDate}>{new Date(order.createdAt).toLocaleDateString()}</Text>
+                                <Text style={styles.orderAmount}>₹{order.total_amount.toLocaleString()}</Text>
+                                <Text style={styles.orderDate}>{order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}</Text>
                             </View>
                         </View>
                     ))}
@@ -114,6 +168,10 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+    errorText: { ...typography.body, color: colors.error, textAlign: 'center', marginBottom: spacing.md },
+    retryButton: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.primary, borderRadius: borderRadius.md },
+    retryButtonText: { ...typography.body, color: colors.textOnPrimary, fontWeight: '600' },
     header: { paddingTop: spacing.lg, paddingBottom: spacing.xl, paddingHorizontal: spacing.md, backgroundColor: colors.primary },
     headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     headerActions: { flexDirection: 'row', gap: spacing.sm },

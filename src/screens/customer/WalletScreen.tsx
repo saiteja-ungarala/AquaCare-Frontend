@@ -35,7 +35,7 @@ export const WalletScreen: React.FC = () => {
     const handleShare = async () => {
         try {
             await Share.share({
-                message: `Join AquaCare and get your first service FREE! Use my referral code: ${user?.referralCode || 'AQUA100'}`,
+                message: `Join IonCare and get your first service FREE! Use my referral code: ${user?.referralCode || 'ION100'}`,
                 title: 'Refer & Earn',
             });
         } catch (error) { }

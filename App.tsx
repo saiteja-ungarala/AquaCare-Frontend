@@ -41,7 +41,7 @@ import {
     DealerEntryScreen,
     DealerKycPendingScreen,
     DealerKycUploadScreen,
-    DealerOrdersPlaceholderScreen,
+    DealerOrdersScreen,
     DealerPricingScreen,
     DealerProfileScreen,
 } from './src/screens/dealer';
@@ -272,7 +272,7 @@ function DealerTabs() {
             })}
         >
             <Tab.Screen name="DealerPricing" component={DealerPricingScreen} options={{ title: 'Pricing' }} />
-            <Tab.Screen name="DealerOrders" component={DealerOrdersPlaceholderScreen} options={{ title: 'Orders' }} />
+            <Tab.Screen name="DealerOrders" component={DealerOrdersScreen} options={{ title: 'Orders' }} />
             <Tab.Screen name="DealerProfile" component={DealerProfileScreen} options={{ title: 'Profile' }} />
         </Tab.Navigator>
     );

@@ -1,4 +1,4 @@
-// Theme configuration for AquaCare (Vibrant Aqua + Mango)
+// Theme configuration for IonCare (Vibrant Aqua + Mango)
 // Goals: modern, clean, high-contrast, consistent across Service + Store
 
 import { Platform } from 'react-native';

@@ -10,6 +10,7 @@ import { profileService } from '../../services/profileService';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { customerColors } from '../../theme/customerTheme';
+import { isValidIndianMobile, normalizePhoneInput } from '../../utils/phoneValidator';
 
 type Props = { navigation: NativeStackNavigationProp<any> };
 
@@ -23,6 +24,10 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
     const handleSave = async () => {
         if (!fullName.trim()) {
             Alert.alert('Validation', 'Name is required');
+            return;
+        }
+        if (!isValidIndianMobile(phone)) {
+            Alert.alert('Validation', 'Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.');
             return;
         }
         setSaving(true);
@@ -82,7 +87,15 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 
                     <View style={styles.field}>
                         <Text style={styles.label}>Phone</Text>
-                        <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Enter phone number" placeholderTextColor={colors.textMuted} keyboardType="phone-pad" />
+                        <TextInput 
+                            style={styles.input} 
+                            value={phone} 
+                            onChangeText={(val) => setPhone(normalizePhoneInput(val))} 
+                            placeholder="Enter 10-digit phone number" 
+                            placeholderTextColor={colors.textMuted} 
+                            keyboardType="numeric" 
+                            maxLength={10} 
+                        />
                     </View>
 
                     <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>

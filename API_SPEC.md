@@ -1,10 +1,10 @@
-# AquaCare Backend API Specification
+# IonCare Backend API Specification
 
 This document describes the API endpoints that the mobile app expects. Use this as a reference when building the backend.
 
 ## Base URL
 ```
-Production: https://api.aquacare.com/api
+Production: https://api.ioncare.com/api
 Development: http://localhost:3000/api
 ```
 

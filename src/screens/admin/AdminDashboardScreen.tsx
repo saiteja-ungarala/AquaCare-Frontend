@@ -47,7 +47,7 @@ interface DashboardData {
 
 function relativeTime(dateStr: string): string {
     const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (diff < 60)   return `${diff}s ago`;
+    if (diff < 60) return `${diff}s ago`;
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return `${Math.floor(diff / 86400)}d ago`;
@@ -55,7 +55,7 @@ function relativeTime(dateStr: string): string {
 
 function formatRupees(amount: number): string {
     if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-    if (amount >= 1000)   return `₹${(amount / 1000).toFixed(1)}K`;
+    if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
     return `₹${amount}`;
 }
 
@@ -115,10 +115,10 @@ function ActivityRow({ item }: { item: ActivityItem }) {
 
 export default function AdminDashboardScreen() {
     const { logout, user } = useAuthStore();
-    const [data, setData]       = useState<DashboardData | null>(null);
+    const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [error, setError]     = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const handleLogout = () => {
         if (Platform.OS === 'web') {
@@ -166,20 +166,20 @@ export default function AdminDashboardScreen() {
 
     const rows: StatCardProps[][] = [
         [
-            { label: 'Total Customers', value: data.totalCustomers,   icon: 'people-outline',       color: '#2563EB' },
-            { label: 'Total Agents',    value: data.totalAgents,       icon: 'person-outline',       color: '#16A34A' },
+            { label: 'Total Customers', value: data.totalCustomers, icon: 'people-outline', color: '#2563EB' },
+            { label: 'Total Agents', value: data.totalAgents, icon: 'person-outline', color: '#16A34A' },
         ],
         [
-            { label: 'Pending Agent KYC',  value: data.pendingAgentKyc,  icon: 'document-text-outline', color: '#F59E0B', badge: true },
-            { label: 'Pending Dealer KYC', value: data.pendingDealerKyc, icon: 'storefront-outline',    color: '#F59E0B', badge: true },
+            { label: 'Pending Agent KYC', value: data.pendingAgentKyc, icon: 'document-text-outline', color: '#F59E0B', badge: true },
+            { label: 'Pending Dealer KYC', value: data.pendingDealerKyc, icon: 'storefront-outline', color: '#F59E0B', badge: true },
         ],
         [
-            { label: "Today's Bookings",   value: data.todayBookings,    icon: 'calendar-outline',      color: '#14B8A6' },
-            { label: "Today's Revenue",    value: formatRupees(data.todayRevenue), icon: 'cash-outline', color: '#14B8A6' },
+            { label: "Today's Bookings", value: data.todayBookings, icon: 'calendar-outline', color: '#14B8A6' },
+            { label: "Today's Revenue", value: formatRupees(data.todayRevenue), icon: 'cash-outline', color: '#14B8A6' },
         ],
         [
-            { label: 'Monthly Revenue',  value: formatRupees(data.monthlyRevenue), icon: 'stats-chart-outline', color: '#7C3AED' },
-            { label: 'Active Products',  value: data.activeProducts, icon: 'cube-outline',            color: '#6B7280' },
+            { label: 'Monthly Revenue', value: formatRupees(data.monthlyRevenue), icon: 'stats-chart-outline', color: '#7C3AED' },
+            { label: 'Active Products', value: data.activeProducts, icon: 'cube-outline', color: '#6B7280' },
         ],
     ];
 
@@ -188,7 +188,7 @@ export default function AdminDashboardScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
-                    <Text style={styles.headerBrand}>AquaCare</Text>
+                    <Text style={styles.headerBrand}>IonCare</Text>
                     <Text style={styles.headerTitle}>Admin Dashboard</Text>
                 </View>
                 <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>

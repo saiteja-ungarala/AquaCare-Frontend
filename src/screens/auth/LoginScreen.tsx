@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store';
 import { AuthErrorBanner, Button, Input } from '../../components';
 import { isValidEmail } from '../../utils/errorMapper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { isValidIndianMobile, cleanPhone, normalizePhoneInput } from '../../utils/phoneValidator';
 
 type LoginScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -132,8 +133,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         setPhoneError('');
         clearError();
 
-        if (!/^\d{10}$/.test(phone)) {
-            setPhoneError('Please enter a valid 10-digit mobile number');
+        if (!isValidIndianMobile(phone)) {
+            setPhoneError('Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9');
             return;
         }
 
@@ -261,7 +262,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                                 placeholder="Enter 10-digit mobile number"
                                                 value={phone}
                                                 onChangeText={(val) => {
-                                                    setPhone(val.replace(/\D/g, ''));
+                                                    setPhone(normalizePhoneInput(val));
                                                     if (phoneError) setPhoneError('');
                                                     if (errorMessage) clearError();
                                                 }}

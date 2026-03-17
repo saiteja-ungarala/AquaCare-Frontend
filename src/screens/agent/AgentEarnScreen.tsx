@@ -149,7 +149,7 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
         }
 
         await Share.share({
-            message: `Get AquaCare products - use my agent code ${referralCode} at checkout.`,
+            message: `Get IonCare products - use my agent code ${referralCode} at checkout.`,
         });
     };
 

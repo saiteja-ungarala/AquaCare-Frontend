@@ -12,7 +12,7 @@ import { customerColors } from '../../theme/customerTheme';
 // Configurable constants
 const SUPPORT = {
     phone: '+91-9876543210',
-    email: 'support@aquacare.in',
+    email: 'support@ioncare.in',
     whatsapp: '919876543210',
 };
 

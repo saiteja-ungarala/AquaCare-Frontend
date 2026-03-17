@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "AquaCare",
-    "slug": "aquacare",
+    "name": "IonCare",
+    "slug": "ioncare",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "bundleIdentifier": "com.aquacare.app",
+      "bundleIdentifier": "com.ioncare.app",
       "buildNumber": "1",
       "supportsTablet": false,
       "infoPlist": {
@@ -21,7 +21,7 @@
       }
     },
     "android": {
-      "package": "com.aquacare.app",
+      "package": "com.ioncare.app",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
