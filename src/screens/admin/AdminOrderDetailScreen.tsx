@@ -16,8 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { adminColors } from '../../theme/adminTheme';
 import { getOrderDetail, updateOrderStatus } from '../../services/adminService';
-
-const SERVER_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.9:3000/api').replace(/\/api$/, '');
+import { SERVER_BASE_URL } from '../../config/constants';
 
 type RouteParams = { orderId: number };
 
@@ -241,7 +240,7 @@ export default function AdminOrderDetailScreen() {
                         <View key={item.id} style={styles.itemRow}>
                             {item.product_image_url ? (
                                 <Image
-                                    source={{ uri: SERVER_BASE + item.product_image_url }}
+                                    source={{ uri: SERVER_BASE_URL + item.product_image_url }}
                                     style={styles.itemThumb}
                                     resizeMode="cover"
                                 />

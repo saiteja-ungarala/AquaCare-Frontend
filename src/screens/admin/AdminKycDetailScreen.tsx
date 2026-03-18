@@ -26,8 +26,7 @@ import {
     rejectAgent,
     rejectDealer,
 } from '../../services/adminService';
-
-const SERVER_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.9:3000/api').replace(/\/api$/, '');
+import { SERVER_BASE_URL } from '../../config/constants';
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 type RouteParams = {
@@ -172,7 +171,7 @@ export default function AdminKycDetailScreen() {
     };
 
     const openLightbox = (doc: KycDocument) => {
-        setLightboxUri(SERVER_BASE + doc.file_url);
+        setLightboxUri(SERVER_BASE_URL + doc.file_url);
         setLightboxLabel(formatDocType(doc.doc_type));
     };
 
@@ -245,7 +244,7 @@ export default function AdminKycDetailScreen() {
                                 {docs.map(doc => {
                                     const dSt   = doc.status || 'pending';
                                     const dChip = STATUS_CHIP[dSt] ?? STATUS_CHIP.pending;
-                                    const imgUri = SERVER_BASE + doc.file_url;
+                                    const imgUri = SERVER_BASE_URL + doc.file_url;
                                     return (
                                         <TouchableOpacity
                                             key={doc.id}

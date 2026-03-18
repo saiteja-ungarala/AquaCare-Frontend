@@ -112,7 +112,7 @@ export const updateBanner = async (id: number, data: Record<string, any>) => {
     return response.data.data;
 };
 
-export const reorderBanners = async (order: number[]) => {
+export const reorderBanners = async (order: { id: number; display_order: number }[]) => {
     const response = await api.patch('/admin/banners/reorder', { order });
     return response.data.data;
 };
@@ -123,9 +123,7 @@ export const deleteBanner = async (id: number) => {
 };
 
 export const uploadBannerImage = async (formData: FormData) => {
-    const response = await api.post('/admin/banners/upload-image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await api.post('/admin/banners/upload-image', formData);
     return response.data.data; // { image_url: '/uploads/banners/uuid.jpg' }
 };
 

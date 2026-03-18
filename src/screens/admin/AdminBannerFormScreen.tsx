@@ -21,8 +21,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { adminColors } from '../../theme/adminTheme';
 import { createBanner, updateBanner, uploadBannerImage } from '../../services/adminService';
-
-const SERVER_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.9:3000/api').replace(/\/api$/, '');
+import { SERVER_BASE_URL } from '../../config/constants';
 
 type RouteParams = {
     mode: 'create' | 'edit';
@@ -111,10 +110,45 @@ export default function AdminBannerFormScreen() {
     const [isActive,   setIsActive]  = useState(item ? Boolean(item.is_active) : true);
 
     // Image state
-    const [imageUri,    setImageUri]    = useState<string | null>(null);  // local picked URI
+    const [imageAsset,  setImageAsset]  = useState<ImagePicker.ImagePickerAsset | null>(null);
     const [existingUrl, setExistingUrl] = useState<string | null>(item?.image_url ?? null); // server path
 
     const [saving, setSaving] = useState(false);
+
+    const getBannerFilename = (asset: ImagePicker.ImagePickerAsset) => {
+        const uriFilename = asset.uri.split('/').pop()?.split('?')[0];
+        return asset.fileName ?? uriFilename ?? 'banner.jpg';
+    };
+
+    const getBannerMimeType = (asset: ImagePicker.ImagePickerAsset) => {
+        if (asset.mimeType) return asset.mimeType;
+
+        const filename = getBannerFilename(asset).toLowerCase();
+        if (filename.endsWith('.png')) return 'image/png';
+        if (filename.endsWith('.webp')) return 'image/webp';
+        return 'image/jpeg';
+    };
+
+    const createBannerUploadFormData = async (asset: ImagePicker.ImagePickerAsset) => {
+        const formData = new FormData();
+        const filename = getBannerFilename(asset);
+        const mimeType = getBannerMimeType(asset);
+
+        if (Platform.OS === 'web') {
+            if (asset.file) {
+                formData.append('image', asset.file);
+                return formData;
+            }
+
+            const response = await fetch(asset.uri);
+            const blob = await response.blob();
+            formData.append('image', blob, filename);
+            return formData;
+        }
+
+        formData.append('image', { uri: asset.uri, name: filename, type: mimeType } as any);
+        return formData;
+    };
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -123,13 +157,13 @@ export default function AdminBannerFormScreen() {
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             quality: 0.85,
             allowsEditing: true,
             aspect: [16, 6],
         });
         if (!result.canceled && result.assets.length > 0) {
-            setImageUri(result.assets[0].uri);
+            setImageAsset(result.assets[0]);
         }
     };
 
@@ -144,12 +178,8 @@ export default function AdminBannerFormScreen() {
             let image_url = existingUrl;
 
             // Upload new image if picked
-            if (imageUri) {
-                const fd = new FormData();
-                const filename = imageUri.split('/').pop() ?? 'banner.jpg';
-                const ext = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
-                const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-                fd.append('image', { uri: imageUri, name: filename, type: mime } as any);
+            if (imageAsset) {
+                const fd = await createBannerUploadFormData(imageAsset);
                 const uploaded = await uploadBannerImage(fd);
                 image_url = uploaded.image_url;
             }
@@ -180,7 +210,7 @@ export default function AdminBannerFormScreen() {
         }
     };
 
-    const previewUri = imageUri ?? (existingUrl ? SERVER_BASE + existingUrl : null);
+    const previewUri = imageAsset?.uri ?? (existingUrl ? SERVER_BASE_URL + existingUrl : null);
 
     return (
         <SafeAreaView style={styles.container}>

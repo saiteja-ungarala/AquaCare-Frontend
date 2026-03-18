@@ -75,6 +75,10 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
         return Object.keys(nextFieldErrors).length === 0;
     };
 
+    const shouldHideBannerForInlineErrors = Boolean(
+        clientFieldErrors.email || fieldErrors.email,
+    );
+
     const handleSubmit = async () => {
         setLocalErrorMessage(null);
         clearError();
@@ -125,7 +129,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
 
                         <View style={styles.form}>
                             <AuthErrorBanner
-                                message={localErrorMessage || errorMessage}
+                                message={localErrorMessage || (shouldHideBannerForInlineErrors ? null : errorMessage)}
                                 onClose={dismissErrorBanner}
                             />
 

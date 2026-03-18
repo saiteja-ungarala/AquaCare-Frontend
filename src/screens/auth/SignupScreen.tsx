@@ -31,7 +31,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
     const [password, setPassword] = useState('');
     const [phone, setPhone] = useState('');
     const [clientFieldErrors, setClientFieldErrors] = useState<Record<string, string>>({});
-    const { signup, isLoading, errorMessage, fieldErrors, clearError, clearFieldError } = useAuthStore();
+    const { signup, isLoading, errorMessage, fieldErrors, clearError, clearFieldError, selectedRole } = useAuthStore();
 
     const clearFieldState = (field: string) => {
         if (errorMessage) {
@@ -54,6 +54,10 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
         if (!fullName.trim()) {
             nextFieldErrors.fullName = 'Full name is required';
+        } else if (fullName.trim().length < 2) {
+            nextFieldErrors.fullName = 'Full name must be at least 2 characters';
+        } else if (fullName.trim().length > 100) {
+            nextFieldErrors.fullName = 'Full name must be 100 characters or fewer';
         }
 
         if (!email.trim()) {
@@ -70,17 +74,43 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
         if (!password) {
             nextFieldErrors.password = 'Password is required';
-        } else if (password.length < 6) {
-            nextFieldErrors.password = 'Password must be at least 6 characters';
+        } else if (password.length < 8) {
+            nextFieldErrors.password = 'Password must be at least 8 characters';
+        } else if (password.length > 72) {
+            nextFieldErrors.password = 'Password must be 72 characters or fewer';
+        } else if (!/[A-Z]/.test(password)) {
+            nextFieldErrors.password = 'Password must contain at least one uppercase letter';
+        } else if (!/[a-z]/.test(password)) {
+            nextFieldErrors.password = 'Password must contain at least one lowercase letter';
+        } else if (!/\d/.test(password)) {
+            nextFieldErrors.password = 'Password must contain at least one number';
+        } else if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password)) {
+            nextFieldErrors.password = 'Password must contain at least one special character';
         }
 
         setClientFieldErrors(nextFieldErrors);
         return Object.keys(nextFieldErrors).length === 0;
     };
 
+    const shouldHideBannerForInlineErrors = Boolean(
+        clientFieldErrors.fullName ||
+        clientFieldErrors.email ||
+        clientFieldErrors.phone ||
+        clientFieldErrors.password ||
+        fieldErrors.name ||
+        fieldErrors.email ||
+        fieldErrors.phone ||
+        fieldErrors.password,
+    );
+
     const handleSignup = async () => {
         clearError();
         if (!validateForm()) {
+            return;
+        }
+
+        if (!selectedRole) {
+            // Should theoretically never happen if navigating from role selection
             return;
         }
 
@@ -89,7 +119,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
             email: email.trim(),
             password,
             phone: phone.trim(),
-            role: 'customer'
+            role: selectedRole
         });
 
         if (success) {
@@ -97,14 +127,29 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         }
     };
 
+    const isCustomSignup = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
+    const isAgent = selectedRole === 'agent';
+    const Wrapper = (isCustomSignup ? ImageBackground : View) as React.ComponentType<any>;
+
+    const getBackgroundImage = () => {
+        if (selectedRole === 'customer') return require('../../../assets/customer-login.png');
+        if (selectedRole === 'agent') return require('../../../assets/technicain-login.jpg');
+        if (selectedRole === 'dealer') return require('../../../assets/dealer-login.png');
+        return undefined;
+    };
+
+    const activeThemeColor = selectedRole === 'agent' ? colors.accent : (selectedRole === 'dealer' ? colors.info : customerColors.primary);
+
+    const wrapperProps = isCustomSignup
+        ? { source: getBackgroundImage(), style: styles.backgroundImage, resizeMode: 'cover' as const }
+        : { style: styles.container };
+
     return (
-        <ImageBackground
-            source={require('../../../assets/customer-login.png')}
-            style={styles.backgroundImage}
-            resizeMode="cover"
-        >
-            <View style={styles.overlay} />
-            <SafeAreaView style={styles.safeArea}>
+        <Wrapper {...wrapperProps}>
+            {isCustomSignup && (
+                <View style={styles.overlay} />
+            )}
+            <SafeAreaView style={isCustomSignup ? styles.safeArea : styles.container}>
                 <KeyboardAvoidingView
                     style={styles.keyboardView}
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -116,21 +161,24 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                     >
                         <View style={styles.header}>
                             <TouchableOpacity
-                                style={styles.backButton}
+                                style={[styles.backButton, isCustomSignup && styles.glassButton]}
                                 onPress={() => navigation.goBack()}
                             >
                                 <Ionicons name="chevron-back" size={28} color={colors.text} />
                             </TouchableOpacity>
                         </View>
 
-                        <View style={styles.content}>
-                            <View style={styles.glassContent}>
-                                <Text style={styles.title}>Create Account</Text>
-                                <Text style={styles.subtitle}>Join IonCare today</Text>
+                        <View style={[
+                            styles.content,
+                            isCustomSignup && styles.bottomContent,
+                        ]}>
+                            <View style={isCustomSignup ? styles.glassContent : undefined}>
+                                <Text style={[styles.title, isAgent ? { color: colors.surface } : null]}>Create Account</Text>
+                                <Text style={[styles.subtitle, isAgent ? { color: 'rgba(255, 255, 255, 0.8)' } : null]}>Join IonCare today</Text>
 
                                 <View style={styles.form}>
                                     <AuthErrorBanner
-                                        message={errorMessage}
+                                        message={shouldHideBannerForInlineErrors ? null : errorMessage}
                                         onClose={clearError}
                                     />
 
@@ -143,6 +191,9 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                             clearFieldState('fullName');
                                         }}
                                         leftIcon="person-outline"
+                                        inputContainerStyle={isCustomSignup ? styles.transparentInput : undefined}
+                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                         error={clientFieldErrors.fullName || fieldErrors.name}
                                     />
 
@@ -157,6 +208,9 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                         keyboardType="email-address"
                                         autoCapitalize="none"
                                         leftIcon="mail-outline"
+                                        inputContainerStyle={isCustomSignup ? styles.transparentInput : undefined}
+                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                         error={clientFieldErrors.email || fieldErrors.email}
                                     />
 
@@ -171,12 +225,15 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                         keyboardType="numeric"
                                         maxLength={10}
                                         leftIcon="call-outline"
+                                        inputContainerStyle={isCustomSignup ? styles.transparentInput : undefined}
+                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                         error={clientFieldErrors.phone || fieldErrors.phone}
                                     />
 
                                     <Input
                                         label="Password"
-                                        placeholder="Create a password (min. 6 chars)"
+                                        placeholder="Create a password (min. 8 characters)"
                                         value={password}
                                         onChangeText={(value) => {
                                             setPassword(value);
@@ -184,6 +241,9 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                         }}
                                         secureTextEntry
                                         leftIcon="lock-closed-outline"
+                                        inputContainerStyle={isCustomSignup ? styles.transparentInput : undefined}
+                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                         error={clientFieldErrors.password || fieldErrors.password}
                                     />
 
@@ -193,8 +253,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                         loading={isLoading}
                                         fullWidth
                                         style={{
-                                            backgroundColor: customerColors.primary,
-                                            shadowColor: customerColors.primary,
+                                            backgroundColor: activeThemeColor,
+                                            shadowColor: activeThemeColor,
                                             marginTop: spacing.lg
                                         }}
                                     />
@@ -204,7 +264,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                     <View style={styles.footerRow}>
                                         <Text style={styles.footerText}>Already have an account? </Text>
                                         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                                            <Text style={[styles.footerLink, { color: customerColors.primary }]}>Login</Text>
+                                            <Text style={[styles.footerLink, { color: activeThemeColor }]}>Login</Text>
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -213,11 +273,15 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
-        </ImageBackground>
+        </Wrapper>
     );
 };
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
     backgroundImage: {
         flex: 1,
         width: '100%',
@@ -253,16 +317,28 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         paddingHorizontal: spacing.lg,
+        justifyContent: 'center',
+    },
+    bottomContent: {
         justifyContent: 'flex-end',
         paddingBottom: spacing.xxl,
     },
     glassContent: {
-        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderRadius: borderRadius.xl,
         padding: spacing.lg,
+        marginHorizontal: spacing.md,
         ...shadows.lg,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.5)',
+    },
+    transparentInput: {
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.5)',
+        borderWidth: 1,
+    },
+    glassButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
     },
     title: {
         ...typography.title,

@@ -4,6 +4,7 @@ import {
     Alert,
     FlatList,
     Image,
+    Platform,
     RefreshControl,
     StyleSheet,
     Text,
@@ -12,11 +13,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { adminColors } from '../../theme/adminTheme';
 import { deleteBanner, getBanners, reorderBanners } from '../../services/adminService';
-
-const SERVER_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.9:3000/api').replace(/\/api$/, '');
+import { SERVER_BASE_URL } from '../../config/constants';
 
 type AdminBanner = {
     id: number;
@@ -50,25 +50,40 @@ export default function AdminBannersScreen() {
         }
     }, []);
 
-    useEffect(() => { load(); }, [load]);
+    useFocusEffect(
+        useCallback(() => {
+            void load();
+        }, [load]),
+    );
+
+    const performDelete = useCallback(async (item: AdminBanner) => {
+        try {
+            await deleteBanner(item.id);
+            setBanners(prev => prev.filter(b => b.id !== item.id));
+        } catch {
+            Alert.alert('Error', 'Failed to delete banner.');
+        }
+    }, []);
 
     const handleDelete = (item: AdminBanner) => {
+        const message = `Delete "${item.title}"? This cannot be undone.`;
+
+        if (Platform.OS === 'web') {
+            if (typeof window !== 'undefined' && window.confirm(message)) {
+                void performDelete(item);
+            }
+            return;
+        }
+
         Alert.alert(
             'Delete Banner',
-            `Delete "${item.title}"? This cannot be undone.`,
+            message,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Delete',
                     style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteBanner(item.id);
-                            setBanners(prev => prev.filter(b => b.id !== item.id));
-                        } catch {
-                            Alert.alert('Error', 'Failed to delete banner.');
-                        }
-                    },
+                    onPress: () => { void performDelete(item); },
                 },
             ],
         );
@@ -81,7 +96,10 @@ export default function AdminBannersScreen() {
         [next[index], next[swapIdx]] = [next[swapIdx], next[index]];
         setBanners(next);
         try {
-            await reorderBanners(next.map(b => b.id));
+            await reorderBanners(next.map((banner, idx) => ({
+                id: banner.id,
+                display_order: idx + 1,
+            })));
         } catch {
             // revert on failure
             setBanners(banners);
@@ -95,7 +113,7 @@ export default function AdminBannersScreen() {
             <View style={styles.thumb}>
                 {item.image_url ? (
                     <Image
-                        source={{ uri: SERVER_BASE + item.image_url }}
+                        source={{ uri: SERVER_BASE_URL + item.image_url }}
                         style={styles.thumbImg}
                         resizeMode="cover"
                     />

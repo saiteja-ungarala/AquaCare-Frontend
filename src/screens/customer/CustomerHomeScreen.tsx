@@ -33,8 +33,7 @@ import { useCartStore, useAuthStore } from '../../store';
 import { catalogService } from '../../services/catalogService';
 import api from '../../services/api';
 import { Product, Service } from '../../models/types';
-
-const SERVER_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.9:3000/api').replace(/\/api$/, '');
+import { SERVER_BASE_URL } from '../../config/constants';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = spacing.md;
 const GRID_PAD = spacing.lg;
@@ -126,7 +125,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                         title: b.title,
                         subtitle: b.subtitle ?? undefined,
                         image: b.image_url
-                            ? { uri: SERVER_BASE + b.image_url }
+                            ? { uri: SERVER_BASE_URL + b.image_url }
                             : require('../../../assets/b1.jpg'),
                         backgroundColor: customerColors.primary,
                         ctaText: b.link_type && b.link_type !== 'none' ? 'View' : undefined,

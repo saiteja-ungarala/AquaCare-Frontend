@@ -20,7 +20,7 @@ import { useAuthStore } from '../../store';
 import { AuthErrorBanner, Button, Input } from '../../components';
 import { isValidEmail } from '../../utils/errorMapper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { isValidIndianMobile, cleanPhone, normalizePhoneInput } from '../../utils/phoneValidator';
+import { isValidIndianMobile, normalizePhoneInput } from '../../utils/phoneValidator';
 
 type LoginScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -98,11 +98,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
         if (!password) {
             nextFieldErrors.password = 'Password is required';
+        } else if (password.length < 6) {
+            nextFieldErrors.password = 'Password must be at least 6 characters';
         }
 
         setClientFieldErrors(nextFieldErrors);
         return Object.keys(nextFieldErrors).length === 0;
     };
+
+    const shouldHideBannerForInlineErrors = Boolean(
+        clientFieldErrors.email ||
+        clientFieldErrors.password ||
+        fieldErrors.email ||
+        fieldErrors.password,
+    );
 
     const handleLogin = async () => {
         setLocalErrorMessage(null);
@@ -172,7 +181,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             return;
         }
 
-        await requestOTP(email.trim());
+        setLocalErrorMessage('OTP login is available only with a mobile number. Use the Phone Login tab.');
     };
 
     const isCustomLogin = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
@@ -250,7 +259,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
                                 <View style={styles.form}>
                                     <AuthErrorBanner
-                                        message={localErrorMessage || errorMessage}
+                                        message={localErrorMessage || (shouldHideBannerForInlineErrors ? null : errorMessage)}
                                         onClose={dismissErrorBanner}
                                     />
 

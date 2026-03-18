@@ -51,6 +51,10 @@ const clearStoredTokens = async (): Promise<void> => {
 // Request interceptor to add auth token
 api.interceptors.request.use(
     async (config) => {
+        if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+            config.headers.delete('Content-Type');
+        }
+
         const token = await getStoredToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -66,13 +70,22 @@ api.interceptors.request.use(
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
 
+// Auth routes where 401 means "wrong credentials", NOT "expired token"
+const isAuthRoute = (url?: string): boolean => {
+    if (!url) return false;
+    return /\/(auth)\/(login|signup|send-otp|verify-otp|forgot-password|reset-password)(\/|$|\?)/i.test(url)
+        || url.endsWith('/auth/login')
+        || url.endsWith('/auth/signup');
+};
+
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
-        
+
         // Handle 401 Unauthorized - Attempt Token Refresh
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // SKIP for auth routes — 401 there means wrong credentials, not expired token
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute(originalRequest?.url)) {
             originalRequest._retry = true;
             console.log('[API] 401 received - attempting token refresh');
             
