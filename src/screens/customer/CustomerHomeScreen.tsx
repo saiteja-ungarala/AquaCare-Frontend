@@ -8,9 +8,9 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Alert,
     Dimensions,
     StatusBar,
+    Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,6 +59,8 @@ const homeBanners: BannerItem[] = [
         image: require('../../../assets/b1.jpg'),
         backgroundColor: customerColors.primary,
         ctaText: 'View Plans',
+        linkType: 'screen',
+        linkValue: 'Services',
     },
     {
         id: '2',
@@ -67,6 +69,8 @@ const homeBanners: BannerItem[] = [
         image: require('../../../assets/b2.jpg'),
         backgroundColor: customerColors.primaryDark,
         ctaText: 'Shop Now',
+        linkType: 'screen',
+        linkValue: 'Store',
     },
     {
         id: '3',
@@ -75,6 +79,8 @@ const homeBanners: BannerItem[] = [
         image: require('../../../assets/b3.jpg'),
         backgroundColor: '#7FA650',
         ctaText: 'Invite',
+        linkType: 'screen',
+        linkValue: 'Profile',
     },
     {
         id: '4',
@@ -83,6 +89,8 @@ const homeBanners: BannerItem[] = [
         image: require('../../../assets/b4.webp'),
         backgroundColor: customerColors.secondary,
         ctaText: 'Book Now',
+        linkType: 'screen',
+        linkValue: 'Services',
     },
 ];
 
@@ -129,6 +137,8 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                             : require('../../../assets/b1.jpg'),
                         backgroundColor: customerColors.primary,
                         ctaText: b.link_type && b.link_type !== 'none' ? 'View' : undefined,
+                        linkType: b.link_type ?? undefined,
+                        linkValue: b.link_value ?? null,
                     })));
                 }
             } catch {
@@ -139,6 +149,53 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
         loadHomeData();
         loadBanners();
     }, []);
+
+    const handleBannerPress = async (banner: BannerItem) => {
+        const linkType = banner.linkType?.toLowerCase();
+        const linkValue = banner.linkValue?.trim();
+
+        if (!linkType || linkType === 'none') {
+            return;
+        }
+
+        if (linkType === 'service') {
+            const service = services.find((item) => String(item.id) === linkValue);
+            if (service) {
+                navigation.navigate('ServiceDetails', { service });
+                return;
+            }
+            navigation.navigate('Services');
+            return;
+        }
+
+        if (linkType === 'product') {
+            const productId = Number(linkValue);
+            if (Number.isFinite(productId)) {
+                navigation.navigate('ProductDetails', { productId });
+                return;
+            }
+            navigation.navigate('Store');
+            return;
+        }
+
+        if (linkType === 'screen' && linkValue) {
+            const allowedScreens = new Set(['Services', 'Store', 'Bookings', 'Wallet', 'Profile', 'Notifications', 'Addresses', 'OrderHistory']);
+            if (allowedScreens.has(linkValue)) {
+                navigation.navigate(linkValue);
+                return;
+            }
+        }
+
+        if (linkType === 'url' && linkValue) {
+            const canOpen = await Linking.canOpenURL(linkValue);
+            if (canOpen) {
+                await Linking.openURL(linkValue);
+            }
+            return;
+        }
+
+        navigation.navigate('Services');
+    };
 
     const insets = useSafeAreaInsets();
 
@@ -158,7 +215,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     <Ionicons name="sparkles" size={50} color="rgba(255,255,255,0.06)" style={styles.headerBgDecor2} />
 
                     <View style={styles.headerTopRow}>
-                        <TouchableOpacity style={styles.headerLocationBtn} activeOpacity={0.7} onPress={() => Alert.alert('Location', 'Location selector coming soon!')}>
+                        <TouchableOpacity style={styles.headerLocationBtn} activeOpacity={0.7} onPress={() => navigation.navigate('Addresses')}>
                             <View style={styles.headerLocationIcon}>
                                 <Ionicons name="location" size={20} color={customerColors.primaryDark} />
                             </View>
@@ -175,12 +232,8 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                             <TouchableOpacity style={styles.headerIconBtn} onPress={() => navigation.navigate('Profile')}>
                                 <Ionicons name="person-outline" size={22} color="#FFFFFF" />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.headerIconBtn} onPress={() => Alert.alert('Notifications', 'No new notifications')}>
+                            <TouchableOpacity style={styles.headerIconBtn} onPress={() => navigation.navigate('Notifications')}>
                                 <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
-                                {/* Notification Badge */}
-                                <View style={styles.headerBadge}>
-                                    <Text style={styles.headerBadgeText}>2</Text>
-                                </View>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -219,7 +272,9 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     {/* Promotional Banners */}
                     <BannerCarousel
                         banners={banners}
-                        onBannerPress={(banner) => Alert.alert('Banner', `Pressed: ${banner.title}`)}
+                        onBannerPress={(banner) => {
+                            void handleBannerPress(banner);
+                        }}
                     />
 
                     {/* Book Service Section */}
@@ -251,7 +306,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     </View>
 
                     {/* Referral Banner */}
-                    <TouchableOpacity style={styles.referralBanner} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.referralBanner} activeOpacity={0.8} onPress={() => navigation.navigate('Profile')}>
                         <LinearGradient
                             colors={['#E8F5E9', '#F1F8E9']}
                             start={{ x: 0, y: 0 }}

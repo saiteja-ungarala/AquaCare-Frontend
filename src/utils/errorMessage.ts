@@ -30,7 +30,9 @@ const AUTH_MESSAGE_MAP: Array<{ match: RegExp; message: string }> = [
     { match: /(too many login|too many signup|too many password)/i, message: 'Too many attempts. Please wait a few minutes and try again.' },
     { match: /(too many otp requests)/i, message: 'Too many OTP requests. Please wait a while and try again.' },
     { match: /(otp login not yet implemented|otp not yet implemented)/i, message: 'OTP login is not available yet.' },
+    { match: /(otp login is temporarily unavailable|otp service is temporarily unavailable|sms service is temporarily unavailable)/i, message: 'OTP login is temporarily unavailable. Please use email login.' },
     { match: /(invalid or expired reset)/i, message: 'This reset link is invalid or has expired. Please request a new one.' },
+    { match: /(password reset is temporarily unavailable|unable to send the password reset email)/i, message: 'Password reset is temporarily unavailable. Please contact support.' },
 ];
 
 const normalizeFieldName = (field: string): string => {

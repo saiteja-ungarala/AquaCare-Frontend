@@ -18,9 +18,12 @@ import { useAuthStore } from '../../store';
 import { paymentService } from '../../services/paymentService';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// react-native-razorpay doesn't ship types; require to avoid TS errors
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const RazorpayCheckout = require('react-native-razorpay').default ?? require('react-native-razorpay');
+let RazorpayCheckout: { open: (options: Record<string, any>) => Promise<any> } | null = null;
+if (Platform.OS !== 'web') {
+    // react-native-razorpay doesn't ship types; require lazily so web builds don't hard-crash.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    RazorpayCheckout = require('react-native-razorpay').default ?? require('react-native-razorpay');
+}
 
 const TEAL = customerColors.primary;
 const TEAL_DARK = customerColors.primaryDark;
@@ -52,6 +55,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
         setErrorMsg('');
         setShowRetryModal(false);
 
+        if (Platform.OS === 'web' || !RazorpayCheckout?.open) {
+            setErrorMsg('Payments are available only in the Android/iOS app.');
+            setPayState('error');
+            setShowRetryModal(true);
+            return;
+        }
+
         // Step A: create Razorpay order on backend
         setPayState('creating_order');
         let order;
@@ -70,7 +80,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
         const options = {
             key: order.key,
             order_id: order.razorpay_order_id,
-            amount: amount * 100,          // paise
+            amount: order.amount,
             currency: order.currency || 'INR',
             name: 'IonCare',
             description,

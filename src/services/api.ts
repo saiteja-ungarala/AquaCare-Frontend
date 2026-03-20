@@ -5,20 +5,20 @@ import { API_BASE_URL, STORAGE_KEYS } from '../config/constants';
 import { authService } from './authService';
 
 const BASE_URL = API_BASE_URL;
-axios.defaults.timeout = 10000;
+axios.defaults.timeout = 15000;
 
-// Log API base URL at startup
-console.log('[API] Base URL:', BASE_URL);
+if (__DEV__) {
+    console.log('[API] Base URL:', BASE_URL);
+}
 
 const api = axios.create({
     baseURL: BASE_URL,
+    timeout: 15000,
     headers: {
-        'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'true',
     },
 });
 
-// Storage helper for cross-platform token retrieval
 const getStoredToken = async (): Promise<string | null> => {
     try {
         if (Platform.OS === 'web') {
@@ -26,12 +26,13 @@ const getStoredToken = async (): Promise<string | null> => {
         }
         return await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
     } catch (error) {
-        console.error('[API] Error getting auth token:', error);
+        if (__DEV__) {
+            console.error('[API] Error getting auth token:', error);
+        }
         return null;
     }
 };
 
-// Storage helper for clearing tokens
 const clearStoredTokens = async (): Promise<void> => {
     try {
         if (Platform.OS === 'web') {
@@ -44,15 +45,22 @@ const clearStoredTokens = async (): Promise<void> => {
             await SecureStore.deleteItemAsync(STORAGE_KEYS.USER);
         }
     } catch (error) {
-        console.error('[API] Error clearing tokens:', error);
+        if (__DEV__) {
+            console.error('[API] Error clearing tokens:', error);
+        }
     }
 };
 
-// Request interceptor to add auth token
 api.interceptors.request.use(
     async (config) => {
         if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
-            config.headers.delete('Content-Type');
+            const headers = config.headers as Record<string, any> & { delete?: (name: string) => void };
+            if (typeof headers?.delete === 'function') {
+                headers.delete('Content-Type');
+            } else if (headers) {
+                delete headers['Content-Type'];
+                delete headers['content-type'];
+            }
         }
 
         const token = await getStoredToken();
@@ -61,16 +69,12 @@ api.interceptors.request.use(
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling + Token Refresh + Network Error retry
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
 
-// Auth routes where 401 means "wrong credentials", NOT "expired token"
 const isAuthRoute = (url?: string): boolean => {
     if (!url) return false;
     return /\/(auth)\/(login|signup|send-otp|verify-otp|forgot-password|reset-password)(\/|$|\?)/i.test(url)
@@ -83,26 +87,31 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // Handle 401 Unauthorized - Attempt Token Refresh
-        // SKIP for auth routes — 401 there means wrong credentials, not expired token
         if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute(originalRequest?.url)) {
             originalRequest._retry = true;
-            console.log('[API] 401 received - attempting token refresh');
-            
+            if (__DEV__) {
+                console.log('[API] 401 received - attempting token refresh');
+            }
+
             try {
                 const newToken = await authService.refreshToken();
                 if (newToken) {
-                    console.log('[API] Refresh successful - retrying request');
+                    if (__DEV__) {
+                        console.log('[API] Refresh successful - retrying request');
+                    }
                     originalRequest.headers.Authorization = `Bearer ${newToken}`;
                     return api(originalRequest);
                 }
             } catch (refreshError) {
-                console.error('[API] Token refresh interceptor error:', refreshError);
+                if (__DEV__) {
+                    console.error('[API] Token refresh interceptor error:', refreshError);
+                }
             }
-            
-            // If refresh fails or no new token, clear and reject
+
             await clearStoredTokens();
-            console.log('[API] Refresh failed or unavailable - session cleared');
+            if (__DEV__) {
+                console.log('[API] Refresh failed or unavailable - session cleared');
+            }
             return Promise.reject(error);
         }
 
@@ -113,7 +122,9 @@ api.interceptors.response.use(
         if (isNetworkError && isGet && config) {
             config._retryCount = (config._retryCount ?? 0) + 1;
             if (config._retryCount <= MAX_RETRIES) {
-                console.log(`[API] Network error — retry ${config._retryCount}/${MAX_RETRIES}`);
+                if (__DEV__) {
+                    console.log(`[API] Network error retry ${config._retryCount}/${MAX_RETRIES}`);
+                }
                 await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
                 return api(config);
             }

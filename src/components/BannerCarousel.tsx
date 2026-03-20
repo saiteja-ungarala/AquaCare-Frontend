@@ -18,6 +18,8 @@ export interface BannerItem {
     image?: any;
     ctaText?: string;
     backgroundColor: string;
+    linkType?: string;
+    linkValue?: string | null;
 }
 
 interface BannerCarouselProps {

@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
 import { RoleSelectionScreen, LoginScreen, SignupScreen, ForgotPasswordScreen, OTPVerificationScreen } from './src/screens/auth';
 import { CustomerHomeScreen, ServiceDetailsScreen, ProductDetailsScreen, WalletScreen, ServicesScreen, PaymentScreen, BookingDetailScreen } from './src/screens/customer';
@@ -66,6 +68,7 @@ import {
     AdminBookingDetailScreen,
     AdminOrderDetailScreen,
 } from './src/screens/admin';
+import api from './src/services/api';
 
 const Stack    = createNativeStackNavigator<RootStackParamList>();
 const AdminNav = createNativeStackNavigator();
@@ -74,6 +77,15 @@ const Tab      = createBottomTabNavigator();
 type AppErrorBoundaryState = {
     hasError: boolean;
 };
+
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+    }),
+});
 
 class AppErrorBoundary extends React.Component<React.PropsWithChildren, AppErrorBoundaryState> {
     state: AppErrorBoundaryState = { hasError: false };
@@ -438,6 +450,62 @@ export default function App() {
         };
         init();
     }, [checkAuth]);
+
+    React.useEffect(() => {
+        if (!isAuthenticated || Platform.OS === 'web') {
+            return;
+        }
+
+        let cancelled = false;
+
+        const registerPushToken = async () => {
+            try {
+                if (Platform.OS === 'android') {
+                    await Notifications.setNotificationChannelAsync('default', {
+                        name: 'default',
+                        importance: Notifications.AndroidImportance.DEFAULT,
+                    });
+                }
+
+                const permissions = await Notifications.getPermissionsAsync();
+                let finalStatus = permissions.status;
+
+                if (finalStatus !== 'granted') {
+                    const requested = await Notifications.requestPermissionsAsync();
+                    finalStatus = requested.status;
+                }
+
+                if (finalStatus !== 'granted') {
+                    return;
+                }
+
+                const projectId =
+                    Constants.easConfig?.projectId ??
+                    Constants.expoConfig?.extra?.eas?.projectId;
+
+                const tokenResponse = projectId
+                    ? await Notifications.getExpoPushTokenAsync({ projectId })
+                    : await Notifications.getExpoPushTokenAsync();
+
+                if (cancelled) {
+                    return;
+                }
+
+                await api.post('/user/push-token', {
+                    token: tokenResponse.data,
+                    platform: Platform.OS,
+                });
+            } catch (error) {
+                console.warn('[Push] Registration skipped:', error);
+            }
+        };
+
+        void registerPushToken();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isAuthenticated, user?.id]);
 
     if (!isReady) {
         return null;

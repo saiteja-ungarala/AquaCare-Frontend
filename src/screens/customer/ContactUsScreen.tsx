@@ -1,5 +1,3 @@
-// Contact Us Screen
-
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,12 +6,13 @@ import { colors, spacing, typography, borderRadius, shadows } from '../../theme/
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { customerColors } from '../../theme/customerTheme';
+import { SUPPORT_CONFIG } from '../../config/constants';
 
-// Configurable constants
 const SUPPORT = {
-    phone: '+91-9876543210',
-    email: 'support@ioncare.in',
-    whatsapp: '919876543210',
+    phone: SUPPORT_CONFIG.phone,
+    email: SUPPORT_CONFIG.email,
+    whatsapp: SUPPORT_CONFIG.whatsapp,
+    hours: SUPPORT_CONFIG.hours || 'Support timings will be listed here once configured.',
 };
 
 type Props = { navigation: NativeStackNavigationProp<any> };
@@ -33,6 +32,18 @@ const ContactRow = ({ icon, label, value, onPress }: { icon: any; label: string;
 
 export const ContactUsScreen: React.FC<Props> = ({ navigation }) => {
     const insets = useSafeAreaInsets();
+    const supportItems = [
+        SUPPORT.phone
+            ? { icon: 'call-outline', label: 'Call Us', value: SUPPORT.phone, onPress: () => Linking.openURL(`tel:${SUPPORT.phone}`) }
+            : null,
+        SUPPORT.email
+            ? { icon: 'mail-outline', label: 'Email', value: SUPPORT.email, onPress: () => Linking.openURL(`mailto:${SUPPORT.email}`) }
+            : null,
+        SUPPORT.whatsapp
+            ? { icon: 'logo-whatsapp', label: 'WhatsApp', value: SUPPORT.whatsapp, onPress: () => Linking.openURL(`https://wa.me/${SUPPORT.whatsapp}`) }
+            : null,
+    ].filter(Boolean) as Array<{ icon: any; label: string; value: string; onPress: () => void }>;
+
     return (
         <View style={styles.container}>
             <LinearGradient
@@ -48,18 +59,26 @@ export const ContactUsScreen: React.FC<Props> = ({ navigation }) => {
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
                         <Text style={styles.headerTitle}>Contact Us</Text>
-                        <Text style={styles.headerSubtitle}>We're here to help you</Text>
+                        <Text style={styles.headerSubtitle}>We are here to help you</Text>
                     </View>
                 </View>
             </LinearGradient>
             <ScrollView style={styles.scroll}>
-                <Text style={styles.intro}>We're here to help! Reach out through any of the channels below.</Text>
-                <View style={styles.card}>
-                    <ContactRow icon="call-outline" label="Call Us" value={SUPPORT.phone} onPress={() => Linking.openURL(`tel:${SUPPORT.phone}`)} />
-                    <ContactRow icon="mail-outline" label="Email" value={SUPPORT.email} onPress={() => Linking.openURL(`mailto:${SUPPORT.email}`)} />
-                    <ContactRow icon="logo-whatsapp" label="WhatsApp" value={SUPPORT.phone} onPress={() => Linking.openURL(`https://wa.me/${SUPPORT.whatsapp}`)} />
-                </View>
-                <Text style={styles.hours}>Support Hours: Mon–Sat, 9 AM – 7 PM IST</Text>
+                <Text style={styles.intro}>Reach out through any available support channel below.</Text>
+                {supportItems.length > 0 ? (
+                    <View style={styles.card}>
+                        {supportItems.map((item) => (
+                            <ContactRow key={item.label} icon={item.icon} label={item.label} value={item.value} onPress={item.onPress} />
+                        ))}
+                    </View>
+                ) : (
+                    <View style={styles.emptyCard}>
+                        <Ionicons name="information-circle-outline" size={28} color={customerColors.primary} />
+                        <Text style={styles.emptyTitle}>Support contact details are not available right now.</Text>
+                        <Text style={styles.emptySubtitle}>Please update the app support configuration before release.</Text>
+                    </View>
+                )}
+                <Text style={styles.hours}>Support Hours: {SUPPORT.hours}</Text>
             </ScrollView>
         </View>
     );
@@ -108,6 +127,27 @@ const styles = StyleSheet.create({
     scroll: { flex: 1, padding: spacing.md },
     intro: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 22 },
     card: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, ...shadows.sm, overflow: 'hidden' },
+    emptyCard: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        ...shadows.sm,
+        padding: spacing.lg,
+        alignItems: 'center',
+    },
+    emptyTitle: {
+        ...typography.body,
+        color: colors.text,
+        fontWeight: '700',
+        textAlign: 'center',
+        marginTop: spacing.sm,
+    },
+    emptySubtitle: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginTop: spacing.xs,
+    },
     row: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
     iconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md },
     rowLabel: { ...typography.body, fontWeight: '600', color: colors.text, marginBottom: 2 },
