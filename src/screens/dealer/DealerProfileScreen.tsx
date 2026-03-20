@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { dealerTheme } from '../../theme/dealerTheme';
+import { DealerScreen } from '../../components/dealer/DealerScreen';
 import { useAuthStore, useDealerStore } from '../../store';
 
 const getStatusTone = (status: string): { bg: string; text: string } => {
@@ -50,89 +51,149 @@ export const DealerProfileScreen: React.FC = () => {
 
     const status = String(verificationStatus || me?.verification_status || 'unverified').toLowerCase();
     const tone = getStatusTone(status);
+    const displayName = user?.name || me?.full_name || 'Dealer User';
+    const initials = displayName
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() || '')
+        .join('') || 'DU';
+    const hasBaseLocation = me?.base_lat !== null && me?.base_lng !== null;
+    const pricingAccessLabel = status === 'approved' ? 'Unlocked' : 'Awaiting approval';
 
     return (
-        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>Dealer Profile</Text>
-            <Text style={styles.subtitle}>Business identity and verification details</Text>
+        <DealerScreen>
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+                <Text style={styles.title}>Dealer Profile</Text>
+                <Text style={styles.subtitle}>Business identity, settings, and account readiness</Text>
 
-            <View style={styles.card}>
-                <View style={styles.headerRow}>
-                    <View>
-                        <Text style={styles.name}>{user?.name || me?.full_name || 'Dealer User'}</Text>
-                        <Text style={styles.meta}>{user?.email || '-'}</Text>
-                        <Text style={styles.meta}>{me?.phone || '-'}</Text>
+                <View style={styles.heroCard}>
+                    <View style={styles.headerRow}>
+                        <View style={styles.heroIdentity}>
+                            <View style={styles.avatarBadge}>
+                                <Text style={styles.avatarText}>{initials}</Text>
+                            </View>
+                            <View style={styles.heroCopy}>
+                                <Text style={styles.name}>{displayName}</Text>
+                                <Text style={styles.meta}>{user?.email || '-'}</Text>
+                                <Text style={styles.meta}>{me?.phone || '-'}</Text>
+                            </View>
+                        </View>
+                        <View style={[styles.badge, { backgroundColor: tone.bg }]}>
+                            <Text style={[styles.badgeText, { color: tone.text }]}>{status.toUpperCase()}</Text>
+                        </View>
                     </View>
-                    <View style={[styles.badge, { backgroundColor: tone.bg }]}>
-                        <Text style={[styles.badgeText, { color: tone.text }]}>{status.toUpperCase()}</Text>
+
+                    <View style={styles.heroStats}>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statLabel}>Pricing Access</Text>
+                            <Text style={styles.statValue}>{pricingAccessLabel}</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statLabel}>Base Location</Text>
+                            <Text style={styles.statValue}>{hasBaseLocation ? 'Configured' : 'Pending'}</Text>
+                        </View>
                     </View>
                 </View>
-            </View>
 
-            <View style={styles.card}>
-                <View style={styles.headerRow}>
-                    <Text style={styles.sectionTitle}>Business Details</Text>
-                    <TouchableOpacity onPress={() => setEditing((v) => !v)}>
-                        <Text style={styles.editText}>{editing ? 'Cancel' : 'Edit'}</Text>
-                    </TouchableOpacity>
+                <View style={styles.card}>
+                    <View style={styles.headerRow}>
+                        <Text style={styles.sectionTitle}>Business Details</Text>
+                        <TouchableOpacity onPress={() => setEditing((v) => !v)}>
+                            <Text style={styles.editText}>{editing ? 'Cancel' : 'Edit'}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.fieldLabel}>Business Name</Text>
+                    <TextInput
+                        style={[styles.input, !editing ? styles.inputReadonly : null]}
+                        editable={editing}
+                        value={businessName}
+                        onChangeText={setBusinessName}
+                        placeholder="Enter business name"
+                        placeholderTextColor={dealerTheme.colors.dealerMuted}
+                    />
+
+                    <Text style={styles.fieldLabel}>GST Number</Text>
+                    <TextInput
+                        style={[styles.input, !editing ? styles.inputReadonly : null]}
+                        editable={editing}
+                        value={gstNumber}
+                        onChangeText={setGstNumber}
+                        placeholder="Enter GST number"
+                        placeholderTextColor={dealerTheme.colors.dealerMuted}
+                        autoCapitalize="characters"
+                    />
+
+                    <Text style={styles.fieldLabel}>Address</Text>
+                    <TextInput
+                        style={[styles.input, styles.textArea, !editing ? styles.inputReadonly : null]}
+                        editable={editing}
+                        value={addressText}
+                        onChangeText={setAddressText}
+                        placeholder="Enter business address"
+                        placeholderTextColor={dealerTheme.colors.dealerMuted}
+                        multiline
+                    />
+
+                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                    {editing ? (
+                        <TouchableOpacity style={[styles.primaryButton, loadingMe ? styles.buttonDisabled : null]} onPress={save} disabled={loadingMe}>
+                            <Text style={styles.primaryButtonText}>{loadingMe ? 'Saving...' : 'Save Changes'}</Text>
+                        </TouchableOpacity>
+                    ) : null}
                 </View>
 
-                <Text style={styles.fieldLabel}>Business Name</Text>
-                <TextInput
-                    style={[styles.input, !editing ? styles.inputReadonly : null]}
-                    editable={editing}
-                    value={businessName}
-                    onChangeText={setBusinessName}
-                    placeholder="Enter business name"
-                    placeholderTextColor={dealerTheme.colors.dealerMuted}
-                />
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>Operations</Text>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Business Address</Text>
+                        <Text style={styles.infoValue}>{me?.address_text || 'Not added yet'}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Base Coordinates</Text>
+                        <Text style={styles.infoValue}>
+                            {hasBaseLocation ? `${me?.base_lat}, ${me?.base_lng}` : 'Location not configured'}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Verification</Text>
+                        <Text style={styles.infoValue}>{status.toUpperCase()}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Pricing Access</Text>
+                        <Text style={styles.infoValue}>{pricingAccessLabel}</Text>
+                    </View>
+                </View>
 
-                <Text style={styles.fieldLabel}>GST Number</Text>
-                <TextInput
-                    style={[styles.input, !editing ? styles.inputReadonly : null]}
-                    editable={editing}
-                    value={gstNumber}
-                    onChangeText={setGstNumber}
-                    placeholder="Enter GST number"
-                    placeholderTextColor={dealerTheme.colors.dealerMuted}
-                    autoCapitalize="characters"
-                />
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>Additional Profile Info</Text>
+                    <Text style={styles.placeholderText}>
+                        Add billing contacts, payout preferences, warehouse notes, and dealer support preferences here as the profile expands.
+                    </Text>
+                </View>
 
-                <Text style={styles.fieldLabel}>Address</Text>
-                <TextInput
-                    style={[styles.input, styles.textArea, !editing ? styles.inputReadonly : null]}
-                    editable={editing}
-                    value={addressText}
-                    onChangeText={setAddressText}
-                    placeholder="Enter business address"
-                    placeholderTextColor={dealerTheme.colors.dealerMuted}
-                    multiline
-                />
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>Terms & Conditions</Text>
+                    <Text style={styles.placeholderText}>
+                        Dealer policy documents, payout terms, and compliance checklists can be surfaced in this section without changing the existing dealer flow.
+                    </Text>
+                </View>
 
-                <Text style={styles.meta}>Base Latitude: {me?.base_lat ?? '-'}</Text>
-                <Text style={styles.meta}>Base Longitude: {me?.base_lng ?? '-'}</Text>
-
-                {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                {editing ? (
-                    <TouchableOpacity style={[styles.primaryButton, loadingMe ? styles.buttonDisabled : null]} onPress={save} disabled={loadingMe}>
-                        <Text style={styles.primaryButtonText}>{loadingMe ? 'Saving...' : 'Save Changes'}</Text>
-                    </TouchableOpacity>
-                ) : null}
-            </View>
-
-            <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-                <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
-        </ScrollView>
+                <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                    <Text style={styles.logoutText}>Logout</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </DealerScreen>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         padding: dealerTheme.spacing.lg,
-        backgroundColor: dealerTheme.colors.dealerSurfaceAlt,
-        minHeight: '100%',
+        gap: dealerTheme.spacing.md,
+        paddingBottom: dealerTheme.spacing.xxl,
     },
     title: {
         ...dealerTheme.typography.h1,
@@ -142,7 +203,13 @@ const styles = StyleSheet.create({
         ...dealerTheme.typography.bodySmall,
         color: dealerTheme.colors.textSecondary,
         marginTop: 4,
-        marginBottom: dealerTheme.spacing.md,
+    },
+    heroCard: {
+        backgroundColor: dealerTheme.colors.dealerSurface,
+        borderRadius: dealerTheme.radius.lg,
+        borderWidth: 1,
+        borderColor: dealerTheme.colors.border,
+        padding: dealerTheme.spacing.md,
     },
     card: {
         backgroundColor: dealerTheme.colors.dealerSurface,
@@ -150,12 +217,56 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: dealerTheme.colors.border,
         padding: dealerTheme.spacing.md,
-        marginBottom: dealerTheme.spacing.md,
     },
     headerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: dealerTheme.spacing.sm,
+    },
+    heroIdentity: {
+        flexDirection: 'row',
         alignItems: 'center',
+        flex: 1,
+        gap: dealerTheme.spacing.sm,
+    },
+    avatarBadge: {
+        width: 54,
+        height: 54,
+        borderRadius: 18,
+        backgroundColor: '#E8F1FB',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    avatarText: {
+        ...dealerTheme.typography.h2,
+        color: dealerTheme.colors.dealerPrimary,
+    },
+    heroCopy: {
+        flex: 1,
+    },
+    heroStats: {
+        flexDirection: 'row',
+        gap: dealerTheme.spacing.sm,
+        marginTop: dealerTheme.spacing.md,
+    },
+    statCard: {
+        flex: 1,
+        backgroundColor: '#F5FAFE',
+        borderRadius: dealerTheme.radius.md,
+        borderWidth: 1,
+        borderColor: dealerTheme.colors.border,
+        padding: dealerTheme.spacing.sm,
+    },
+    statLabel: {
+        ...dealerTheme.typography.caption,
+        color: dealerTheme.colors.textSecondary,
+    },
+    statValue: {
+        ...dealerTheme.typography.bodySmall,
+        color: dealerTheme.colors.textPrimary,
+        marginTop: 4,
+        fontWeight: '700',
     },
     name: {
         ...dealerTheme.typography.h2,
@@ -210,6 +321,25 @@ const styles = StyleSheet.create({
         ...dealerTheme.typography.caption,
         color: dealerTheme.colors.danger,
         marginTop: dealerTheme.spacing.sm,
+    },
+    infoRow: {
+        marginTop: dealerTheme.spacing.sm,
+        paddingTop: dealerTheme.spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: dealerTheme.colors.border,
+    },
+    infoLabel: {
+        ...dealerTheme.typography.caption,
+        color: dealerTheme.colors.textSecondary,
+    },
+    infoValue: {
+        ...dealerTheme.typography.bodySmall,
+        color: dealerTheme.colors.textPrimary,
+        marginTop: 4,
+    },
+    placeholderText: {
+        ...dealerTheme.typography.bodySmall,
+        color: dealerTheme.colors.textSecondary,
     },
     primaryButton: {
         marginTop: dealerTheme.spacing.md,

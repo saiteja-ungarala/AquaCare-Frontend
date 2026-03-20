@@ -2,16 +2,16 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../models/types';
-import { agentTheme } from '../../theme/agentTheme';
-import { AgentScreen } from '../../components/agent';
-import { useAgentStore } from '../../store';
+import { technicianTheme } from '../../theme/technicianTheme';
+import { TechnicianScreen } from '../../components/technician';
+import { useTechnicianStore } from '../../store';
 
-type AgentEntryScreenProps = {
-    navigation: NativeStackNavigationProp<RootStackParamList, 'AgentEntry'>;
+type TechnicianEntryScreenProps = {
+    navigation: NativeStackNavigationProp<RootStackParamList, 'TechnicianEntry'>;
 };
 
-export const AgentEntryScreen: React.FC<AgentEntryScreenProps> = ({ navigation }) => {
-    const { fetchMe } = useAgentStore();
+export const TechnicianEntryScreen: React.FC<TechnicianEntryScreenProps> = ({ navigation }) => {
+    const { fetchMe } = useTechnicianStore();
 
     useEffect(() => {
         const bootstrap = async () => {
@@ -20,32 +20,32 @@ export const AgentEntryScreen: React.FC<AgentEntryScreenProps> = ({ navigation }
 
             const status = payload.profile.verification_status;
             if (status === 'approved') {
-                navigation.reset({ index: 0, routes: [{ name: 'AgentTabs' }] });
+                navigation.reset({ index: 0, routes: [{ name: 'TechnicianTabs' }] });
                 return;
             }
 
             if (status === 'pending') {
-                navigation.reset({ index: 0, routes: [{ name: 'AgentKycPending' }] });
+                navigation.reset({ index: 0, routes: [{ name: 'TechnicianKycPending' }] });
                 return;
             }
 
-            navigation.reset({ index: 0, routes: [{ name: 'AgentKycUpload' }] });
+            navigation.reset({ index: 0, routes: [{ name: 'TechnicianKycUpload' }] });
         };
 
         bootstrap();
     }, [fetchMe, navigation]);
 
     return (
-        <AgentScreen dark>
+        <TechnicianScreen dark>
             <View style={styles.container}>
                 <View style={styles.badge}>
-                    <Text style={styles.badgeText}>AGENT</Text>
+                    <Text style={styles.badgeText}>TECHNICIAN</Text>
                 </View>
                 <Text style={styles.title}>Preparing your field dashboard</Text>
                 <Text style={styles.subtitle}>Checking verification and syncing active jobs.</Text>
-                <ActivityIndicator color={agentTheme.colors.agentPrimary} size="large" style={{ marginTop: agentTheme.spacing.lg }} />
+                <ActivityIndicator color={technicianTheme.colors.agentPrimary} size="large" style={{ marginTop: technicianTheme.spacing.lg }} />
             </View>
-        </AgentScreen>
+        </TechnicianScreen>
     );
 };
 
@@ -54,31 +54,31 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: agentTheme.spacing.xl,
+        paddingHorizontal: technicianTheme.spacing.xl,
     },
     badge: {
-        borderRadius: agentTheme.radius.full,
+        borderRadius: technicianTheme.radius.full,
         backgroundColor: '#1A2E46',
         borderWidth: 1,
         borderColor: '#2A445F',
         paddingHorizontal: 12,
         paddingVertical: 4,
-        marginBottom: agentTheme.spacing.md,
+        marginBottom: technicianTheme.spacing.md,
     },
     badgeText: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.agentPrimary,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.agentPrimary,
         letterSpacing: 1,
     },
     title: {
-        ...agentTheme.typography.h1,
-        color: agentTheme.colors.textOnDark,
+        ...technicianTheme.typography.h1,
+        color: technicianTheme.colors.textOnDark,
         textAlign: 'center',
     },
     subtitle: {
-        ...agentTheme.typography.body,
+        ...technicianTheme.typography.body,
         color: '#AEB9C4',
         textAlign: 'center',
-        marginTop: agentTheme.spacing.sm,
+        marginTop: technicianTheme.spacing.sm,
     },
 });

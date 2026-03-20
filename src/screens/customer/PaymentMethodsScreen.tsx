@@ -27,7 +27,7 @@ const METHODS = [
     {
         icon: 'wallet-outline',
         title: 'Wallet Credits and Refunds',
-        subtitle: 'Refunds and credits appear in your IonCare wallet after processing.',
+        subtitle: 'Refunds and credits appear in your IONORA CARE wallet after processing.',
     },
 ];
 

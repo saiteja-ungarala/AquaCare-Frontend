@@ -12,14 +12,14 @@ import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentCampaign, AgentProductCommissionPreview, RootStackParamList } from '../../models/types';
-import { AgentButton, AgentCard, AgentChip, AgentScreen, AgentSectionHeader } from '../../components/agent';
-import { agentTheme } from '../../theme/agentTheme';
-import { useAgentEarnStore, useAgentStore } from '../../store';
-import { showAgentToast } from '../../utils/agentToast';
+import { TechnicianCampaign, TechnicianProductCommissionPreview, RootStackParamList } from '../../models/types';
+import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
+import { technicianTheme } from '../../theme/technicianTheme';
+import { useTechnicianEarnStore, useTechnicianStore } from '../../store';
+import { showTechnicianToast } from '../../utils/technicianToast';
 
-type AgentEarnScreenProps = {
-    navigation: NativeStackNavigationProp<RootStackParamList, 'AgentEarn'>;
+type TechnicianEarnScreenProps = {
+    navigation: NativeStackNavigationProp<RootStackParamList, 'TechnicianEarn'>;
 };
 
 const formatCurrency = (amount: number): string => {
@@ -35,14 +35,14 @@ const getDaysLeft = (endAt?: string): number | null => {
     return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
 };
 
-const getWhySellText = (item: AgentProductCommissionPreview): string => {
+const getWhySellText = (item: TechnicianProductCommissionPreview): string => {
     if ((item.commissionAmount || 0) >= 200) return 'High commission potential';
     if ((item.price || 0) <= 4000) return 'Budget-friendly for most customers';
     if (item.commissionType === 'percent') return 'Better earnings on premium sales';
     return 'Popular add-on for service visits';
 };
 
-const getCommissionText = (item: AgentProductCommissionPreview): string => {
+const getCommissionText = (item: TechnicianProductCommissionPreview): string => {
     if (!item.commissionType || item.commissionValue === null) {
         return 'Commission details available soon';
     }
@@ -56,9 +56,9 @@ const getCommissionText = (item: AgentProductCommissionPreview): string => {
 };
 
 const getActiveCampaign = (
-    campaigns: AgentCampaign[],
+    campaigns: TechnicianCampaign[],
     activeCampaignId: number | null
-): AgentCampaign | null => {
+): TechnicianCampaign | null => {
     if (activeCampaignId) {
         const matched = campaigns.find((campaign) => campaign.id === activeCampaignId);
         if (matched) return matched;
@@ -67,7 +67,7 @@ const getActiveCampaign = (
     return campaigns[0] || null;
 };
 
-export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) => {
+export const TechnicianEarnScreen: React.FC<TechnicianEarnScreenProps> = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
 
     const {
@@ -82,8 +82,8 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
         refreshAll,
         fetchSummary,
         clearError,
-    } = useAgentEarnStore();
-    const { isOnline } = useAgentStore();
+    } = useTechnicianEarnStore();
+    const { isOnline } = useTechnicianStore();
 
     const activeCampaign = useMemo(
         () => getActiveCampaign(campaigns, activeCampaignId),
@@ -110,7 +110,7 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
 
     useEffect(() => {
         if (!error) return;
-        showAgentToast(error);
+        showTechnicianToast(error);
         clearError();
     }, [clearError, error]);
 
@@ -144,57 +144,57 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
 
     const shareReferral = async () => {
         if (!referralCode) {
-            showAgentToast('Referral code not available yet.');
+            showTechnicianToast('Referral code not available yet.');
             return;
         }
 
         await Share.share({
-            message: `Get IonCare products - use my agent code ${referralCode} at checkout.`,
+            message: `Get IONORA CARE products - use my technician code ${referralCode} at checkout.`,
         });
     };
 
-    const shareProduct = async (item: AgentProductCommissionPreview) => {
+    const shareProduct = async (item: TechnicianProductCommissionPreview) => {
         if (!referralCode) {
-            showAgentToast('Referral code not available yet.');
+            showTechnicianToast('Referral code not available yet.');
             return;
         }
 
         await Share.share({
-            message: `Recommended: ${item.name}. Use my agent code ${referralCode} to support me.`,
+            message: `Recommended: ${item.name}. Use my technician code ${referralCode} to support me.`,
         });
     };
 
     const copyCode = async () => {
         if (!referralCode) {
-            showAgentToast('Referral code not available yet.');
+            showTechnicianToast('Referral code not available yet.');
             return;
         }
 
         await Clipboard.setStringAsync(referralCode);
-        showAgentToast('Referral code copied');
+        showTechnicianToast('Referral code copied');
     };
 
     return (
-        <AgentScreen>
+        <TechnicianScreen>
             <ScrollView
                 contentContainerStyle={styles.content}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing || loading.refresh}
                         onRefresh={onRefresh}
-                        tintColor={agentTheme.colors.agentPrimary}
+                        tintColor={technicianTheme.colors.agentPrimary}
                     />
                 }
             >
-                <AgentSectionHeader title="Earn" subtitle="Referral commissions and campaign bonuses" />
+                <TechnicianSectionHeader title="Earn" subtitle="Referral commissions and campaign bonuses" />
 
-                <AgentCard>
+                <TechnicianCard>
                     <View style={styles.summaryHeaderRow}>
                         <View>
                             <Text style={styles.summaryTitle}>Your Earnings</Text>
                             <Text style={styles.referralLabel}>Referral code</Text>
                         </View>
-                        <AgentChip label={referralCode || 'Loading'} tone="default" />
+                        <TechnicianChip label={referralCode || 'Loading'} tone="default" />
                     </View>
 
                     <View style={styles.summaryGrid}>
@@ -225,9 +225,9 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
                             <Text style={styles.inlineActionText}>Share code</Text>
                         </TouchableOpacity>
                     </View>
-                </AgentCard>
+                </TechnicianCard>
 
-                <AgentCard>
+                <TechnicianCard>
                     <View style={styles.campaignTopRow}>
                         <View style={styles.campaignTextWrap}>
                             <Text style={styles.summaryTitle}>{activeCampaign?.name || 'Campaign'}</Text>
@@ -235,7 +235,7 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
                                 {daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : 'No date window available'}
                             </Text>
                         </View>
-                        <Ionicons name="gift-outline" size={22} color={agentTheme.colors.agentPrimaryDark} />
+                        <Ionicons name="gift-outline" size={22} color={technicianTheme.colors.agentPrimaryDark} />
                     </View>
 
                     <Text style={styles.campaignMessage}>{campaignMessage}</Text>
@@ -260,26 +260,26 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
                         </View>
                     </View>
 
-                    <AgentButton
+                    <TechnicianButton
                         title="View milestones"
                         variant="secondary"
                         onPress={() => {
                             if (!activeCampaign) return;
-                            navigation.navigate('AgentCampaignMilestones', { campaignId: activeCampaign.id });
+                            navigation.navigate('TechnicianCampaignMilestones', { campaignId: activeCampaign.id });
                         }}
                     />
-                </AgentCard>
+                </TechnicianCard>
 
-                <AgentSectionHeader title="Top Products to Sell" subtitle={`${productsWithCommissionPreview.length} products`} />
+                <TechnicianSectionHeader title="Top Products to Sell" subtitle={`${productsWithCommissionPreview.length} products`} />
 
                 {productsWithCommissionPreview.map((item) => (
-                    <AgentCard key={item.id} style={styles.productCard}>
+                    <TechnicianCard key={item.id} style={styles.productCard}>
                         <View style={styles.productTop}>
                             <View style={styles.productTextWrap}>
                                 <Text style={styles.productName}>{item.name}</Text>
                                 <Text style={styles.productPrice}>{formatCurrency(item.price)}</Text>
                             </View>
-                            <AgentChip
+                            <TechnicianChip
                                 label={item.commissionType ? getCommissionText(item) : 'No active rule'}
                                 tone={item.commissionType ? 'success' : 'dark'}
                             />
@@ -288,7 +288,7 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
                         <Text style={styles.whySell}>Why sell: {getWhySellText(item)}</Text>
 
                         <View style={styles.actionsRow}>
-                            <AgentButton
+                            <TechnicianButton
                                 title="Share"
                                 variant="secondary"
                                 style={styles.actionButton}
@@ -296,7 +296,7 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
                                     void shareProduct(item);
                                 }}
                             />
-                            <AgentButton
+                            <TechnicianButton
                                 title="Copy Code"
                                 style={styles.actionButton}
                                 onPress={() => {
@@ -304,112 +304,112 @@ export const AgentEarnScreen: React.FC<AgentEarnScreenProps> = ({ navigation }) 
                                 }}
                             />
                         </View>
-                    </AgentCard>
+                    </TechnicianCard>
                 ))}
 
                 {productsWithCommissionPreview.length === 0 ? (
-                    <AgentCard>
+                    <TechnicianCard>
                         <Text style={styles.emptyTitle}>No products available right now</Text>
                         <Text style={styles.emptySubtitle}>Pull to refresh and check the latest commission previews.</Text>
-                    </AgentCard>
+                    </TechnicianCard>
                 ) : null}
             </ScrollView>
-        </AgentScreen>
+        </TechnicianScreen>
     );
 };
 
 const styles = StyleSheet.create({
     content: {
-        padding: agentTheme.spacing.lg,
-        gap: agentTheme.spacing.md,
-        paddingBottom: agentTheme.spacing.xxl,
+        padding: technicianTheme.spacing.lg,
+        gap: technicianTheme.spacing.md,
+        paddingBottom: technicianTheme.spacing.xxl,
     },
     summaryHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        gap: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
     },
     summaryTitle: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
     },
     referralLabel: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.textSecondary,
         marginTop: 4,
     },
     summaryGrid: {
         flexDirection: 'row',
-        gap: agentTheme.spacing.sm,
-        marginTop: agentTheme.spacing.md,
+        gap: technicianTheme.spacing.sm,
+        marginTop: technicianTheme.spacing.md,
     },
     summaryPill: {
         flex: 1,
-        borderRadius: agentTheme.radius.md,
+        borderRadius: technicianTheme.radius.md,
         borderWidth: 1,
         borderColor: '#F0E1B8',
         backgroundColor: '#FFF6E1',
-        padding: agentTheme.spacing.sm,
+        padding: technicianTheme.spacing.sm,
     },
     pillLabel: {
-        ...agentTheme.typography.caption,
+        ...technicianTheme.typography.caption,
         color: '#7D5A0A',
     },
     pillValue: {
-        ...agentTheme.typography.body,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.body,
+        color: technicianTheme.colors.textPrimary,
         marginTop: 4,
     },
     bonusRow: {
-        marginTop: agentTheme.spacing.md,
+        marginTop: technicianTheme.spacing.md,
         gap: 4,
     },
     bonusText: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
     },
     inlineActions: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: agentTheme.spacing.sm,
+        marginTop: technicianTheme.spacing.sm,
     },
     inlineActionText: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.agentPrimaryDark,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.agentPrimaryDark,
     },
     campaignTopRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        gap: agentTheme.spacing.md,
+        gap: technicianTheme.spacing.md,
     },
     campaignTextWrap: {
         flex: 1,
     },
     campaignMeta: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         marginTop: 4,
     },
     campaignMessage: {
-        ...agentTheme.typography.body,
-        color: agentTheme.colors.textPrimary,
-        marginTop: agentTheme.spacing.md,
+        ...technicianTheme.typography.body,
+        color: technicianTheme.colors.textPrimary,
+        marginTop: technicianTheme.spacing.md,
     },
     progressWrap: {
-        marginTop: agentTheme.spacing.md,
-        marginBottom: agentTheme.spacing.md,
+        marginTop: technicianTheme.spacing.md,
+        marginBottom: technicianTheme.spacing.md,
     },
     progressTrack: {
         height: 10,
-        borderRadius: agentTheme.radius.full,
+        borderRadius: technicianTheme.radius.full,
         backgroundColor: '#E7EBEF',
         overflow: 'hidden',
     },
     progressFill: {
         height: '100%',
-        backgroundColor: agentTheme.colors.agentPrimary,
+        backgroundColor: technicianTheme.colors.agentPrimary,
     },
     progressMeta: {
         marginTop: 8,
@@ -417,50 +417,50 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     progressMetaText: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.textSecondary,
     },
     productCard: {
-        gap: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
     },
     productTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        gap: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
     },
     productTextWrap: {
         flex: 1,
     },
     productName: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
     },
     productPrice: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         marginTop: 2,
     },
     whySell: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
     },
     actionsRow: {
         flexDirection: 'row',
-        gap: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
         marginTop: 4,
     },
     actionButton: {
         flex: 1,
     },
     emptyTitle: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
         textAlign: 'center',
     },
     emptySubtitle: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         textAlign: 'center',
         marginTop: 6,
     },

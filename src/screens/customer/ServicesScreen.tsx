@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -6,7 +6,8 @@ import {
     FlatList,
     TouchableOpacity,
     ActivityIndicator,
-    StatusBar
+    StatusBar,
+    RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -53,34 +54,29 @@ export const ServicesScreen = () => {
     const navigation = useNavigation<ServicesScreenNavigationProp>();
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadServices = useCallback(async () => {
+        try {
+            const list = await catalogService.getServices();
+            setServices(list);
+        } catch (error) {
+            console.error('[ServicesScreen] Failed to load services:', error);
+            setServices([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await loadServices();
+        setRefreshing(false);
+    }, [loadServices]);
 
     useEffect(() => {
-        let isMounted = true;
-
-        const loadServices = async () => {
-            try {
-                const list = await catalogService.getServices();
-                if (isMounted) {
-                    setServices(list);
-                }
-            } catch (error) {
-                console.error('[ServicesScreen] Failed to load services:', error);
-                if (isMounted) {
-                    setServices([]);
-                }
-            } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
-            }
-        };
-
         loadServices();
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
+    }, [loadServices]);
 
     const handleServicePress = (service: Service) => {
         navigation.navigate('ServiceDetails', { service });
@@ -153,6 +149,14 @@ export const ServicesScreen = () => {
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
                 numColumns={1}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[customerColors.primary]}
+                        tintColor={customerColors.primary}
+                    />
+                }
             />
         </View>
     );

@@ -1,15 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { agentTheme } from '../../theme/agentTheme';
+import { technicianTheme } from '../../theme/technicianTheme';
 
-type AgentSectionHeaderProps = {
+type TechnicianSectionHeaderProps = {
     title: string;
     subtitle?: string;
     actionLabel?: string;
     onActionPress?: () => void;
 };
 
-export const AgentSectionHeader: React.FC<AgentSectionHeaderProps> = ({
+export const TechnicianSectionHeader: React.FC<TechnicianSectionHeaderProps> = ({
     title,
     subtitle,
     actionLabel,
@@ -35,22 +35,22 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-end',
         justifyContent: 'space-between',
-        gap: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
     },
     textWrap: {
         flex: 1,
     },
     title: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
     },
     subtitle: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         marginTop: 2,
     },
     action: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.agentPrimaryDark,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.agentPrimaryDark,
     },
 });

@@ -11,7 +11,7 @@ import {
     RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { DealerScreen } from '../../components/dealer/DealerScreen';
 import { dealerService, DealerOrder } from '../../services/dealerService';
 import { dealerTheme } from '../../theme/dealerTheme';
 
@@ -145,7 +145,7 @@ export const DealerOrdersScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <DealerScreen>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>My Orders</Text>
                 {!loading && !error && orders.length > 0 && (
@@ -155,7 +155,7 @@ export const DealerOrdersScreen: React.FC = () => {
                 )}
             </View>
             {renderContent()}
-        </SafeAreaView>
+        </DealerScreen>
     );
 };
 
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: spacing.xl,
-        paddingTop: spacing.lg,
+        paddingTop: spacing.md,
         paddingBottom: spacing.md,
         backgroundColor: colors.dealerSurface,
         borderBottomWidth: 1,

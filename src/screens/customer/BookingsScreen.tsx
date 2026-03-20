@@ -204,7 +204,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation, rout
                         <View style={styles.agentBlock}>
                             <View style={styles.bookingRow}>
                                 <Ionicons name="person-circle-outline" size={15} color={customerColors.primary} />
-                                <Text style={styles.agentName} numberOfLines={1}>Agent: {booking.agent.name}</Text>
+                                <Text style={styles.agentName} numberOfLines={1}>Technician: {booking.agent.name}</Text>
                             </View>
                             {booking.agent.phone ? (
                                 <View style={styles.bookingRow}>
@@ -381,7 +381,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation, rout
                                 <View style={styles.confirmNotice}>
                                     <Ionicons name="information-circle" size={18} color={customerColors.primary} />
                                     <Text style={styles.confirmNoticeText}>
-                                        If you've already paid, the amount will be refunded to your IonCare wallet.
+                                        If you've already paid, the amount will be refunded to your IONORA CARE wallet.
                                     </Text>
                                 </View>
 
@@ -451,7 +451,10 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation, rout
                     <ActivityIndicator size="large" color={customerColors.primary} />
                 </View>
             ) : bookings.length === 0 ? (
-                <View style={styles.emptyContainer}>
+                <ScrollView
+                    contentContainerStyle={styles.emptyContainer}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[customerColors.primary]} tintColor={customerColors.primary} />}
+                >
                     <View style={styles.emptyIconWrap}>
                         <Ionicons name="calendar-outline" size={56} color={customerColors.primary} />
                     </View>
@@ -459,12 +462,12 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation, rout
                     <Text style={styles.emptyDesc}>
                         {activeTab === 'active' ? 'Book a service to get started' : `No ${activeTab} bookings yet`}
                     </Text>
-                </View>
+                </ScrollView>
             ) : (
                 <ScrollView
                     style={styles.scrollView}
                     showsVerticalScrollIndicator={false}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[customerColors.primary]} />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[customerColors.primary]} tintColor={customerColors.primary} />}
                 >
                     {bookings.map(renderBookingCard)}
                     <View style={{ height: spacing.lg }} />

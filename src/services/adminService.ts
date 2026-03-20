@@ -134,23 +134,23 @@ export const getKycStats = async () => {
     return response.data.data;
 };
 
-export const getKycAgents = async (params?: Record<string, any>) => {
+export const getKycTechnicians = async (params?: Record<string, any>) => {
     const response = await api.get('/admin/kyc/agents', { params });
     return response.data.data;
 };
 
-export const getKycAgentDetail = async (agentId: number) => {
-    const response = await api.get(`/admin/kyc/agents/${agentId}`);
+export const getKycTechnicianDetail = async (technicianId: number) => {
+    const response = await api.get(`/admin/kyc/agents/${technicianId}`);
     return response.data.data;
 };
 
-export const approveAgent = async (agentId: number, notes?: string) => {
-    const response = await api.post(`/admin/kyc/agents/${agentId}/approve`, { notes });
+export const approveTechnician = async (technicianId: number, notes?: string) => {
+    const response = await api.post(`/admin/kyc/agents/${technicianId}/approve`, { notes });
     return response.data.data;
 };
 
-export const rejectAgent = async (agentId: number, notes: string) => {
-    const response = await api.post(`/admin/kyc/agents/${agentId}/reject`, { notes });
+export const rejectTechnician = async (technicianId: number, notes: string) => {
+    const response = await api.post(`/admin/kyc/agents/${technicianId}/reject`, { notes });
     return response.data.data;
 };
 

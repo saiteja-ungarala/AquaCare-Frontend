@@ -2,18 +2,18 @@ import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentKycDocType, RootStackParamList } from '../../models/types';
-import { agentTheme } from '../../theme/agentTheme';
-import { AgentButton, AgentCard, AgentChip, AgentScreen, AgentSectionHeader } from '../../components/agent';
-import { useAgentStore } from '../../store';
-import { agentService } from '../../services/agentService';
-import { showAgentToast } from '../../utils/agentToast';
+import { TechnicianKycDocType, RootStackParamList } from '../../models/types';
+import { technicianTheme } from '../../theme/technicianTheme';
+import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
+import { useTechnicianStore } from '../../store';
+import { technicianService } from '../../services/technicianService';
+import { showTechnicianToast } from '../../utils/technicianToast';
 
-type AgentKycUploadScreenProps = {
-    navigation: NativeStackNavigationProp<RootStackParamList, 'AgentKycUpload'>;
+type TechnicianKycUploadScreenProps = {
+    navigation: NativeStackNavigationProp<RootStackParamList, 'TechnicianKycUpload'>;
 };
 
-const DOC_LABELS: Record<AgentKycDocType, string> = {
+const DOC_LABELS: Record<TechnicianKycDocType, string> = {
     aadhaar: 'Aadhaar',
     pan: 'PAN',
     driving_license: 'Driving License',
@@ -23,18 +23,18 @@ const DOC_LABELS: Record<AgentKycDocType, string> = {
 
 const stepDone = (currentStep: number, step: number) => currentStep > step;
 
-export const AgentKycUploadScreen: React.FC<AgentKycUploadScreenProps> = ({ navigation }) => {
-    const [docType, setDocType] = useState<AgentKycDocType>('aadhaar');
+export const TechnicianKycUploadScreen: React.FC<TechnicianKycUploadScreenProps> = ({ navigation }) => {
+    const [docType, setDocType] = useState<TechnicianKycDocType>('aadhaar');
     const [documents, setDocuments] = useState<ImagePicker.ImagePickerAsset[]>([]);
     const [step, setStep] = useState(1);
 
-    const { uploadKyc, loading, error } = useAgentStore();
-    const supportedDocTypes = useMemo(() => agentService.getSupportedDocTypes(), []);
+    const { uploadKyc, loading, error } = useTechnicianStore();
+    const supportedDocTypes = useMemo(() => technicianService.getSupportedDocTypes(), []);
 
     const pickDocuments = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
-            showAgentToast('Please allow photo access to upload KYC documents.');
+            showTechnicianToast('Please allow photo access to upload KYC documents.');
             return;
         }
 
@@ -53,7 +53,7 @@ export const AgentKycUploadScreen: React.FC<AgentKycUploadScreenProps> = ({ navi
 
     const submit = async () => {
         if (documents.length === 0) {
-            showAgentToast('Pick at least one image to continue.');
+            showTechnicianToast('Pick at least one image to continue.');
             return;
         }
 
@@ -63,7 +63,7 @@ export const AgentKycUploadScreen: React.FC<AgentKycUploadScreenProps> = ({ navi
         documents.forEach((asset, index) => {
             formData.append('documents', {
                 uri: asset.uri,
-                name: asset.fileName || `agent-kyc-${Date.now()}-${index}.jpg`,
+                name: asset.fileName || `technician-kyc-${Date.now()}-${index}.jpg`,
                 type: asset.mimeType || 'image/jpeg',
             } as any);
         });
@@ -71,12 +71,12 @@ export const AgentKycUploadScreen: React.FC<AgentKycUploadScreenProps> = ({ navi
         const success = await uploadKyc(formData);
         if (!success) return;
 
-        showAgentToast('KYC submitted successfully.');
-        navigation.reset({ index: 0, routes: [{ name: 'AgentKycPending' }] });
+        showTechnicianToast('KYC submitted successfully.');
+        navigation.reset({ index: 0, routes: [{ name: 'TechnicianKycPending' }] });
     };
 
     return (
-        <AgentScreen dark>
+        <TechnicianScreen dark>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 <Text style={styles.pageTitle}>KYC Verification</Text>
                 <Text style={styles.pageSubtitle}>Complete all 3 steps to activate your technician account.</Text>
@@ -98,8 +98,8 @@ export const AgentKycUploadScreen: React.FC<AgentKycUploadScreenProps> = ({ navi
                     ))}
                 </View>
 
-                <AgentCard>
-                    <AgentSectionHeader title="Step 1" subtitle="Select document type" />
+                <TechnicianCard>
+                    <TechnicianSectionHeader title="Step 1" subtitle="Select document type" />
                     <View style={styles.chipsWrap}>
                         {supportedDocTypes.map((type) => (
                             <TouchableOpacity
@@ -109,16 +109,16 @@ export const AgentKycUploadScreen: React.FC<AgentKycUploadScreenProps> = ({ navi
                                     setStep(2);
                                 }}
                             >
-                                <AgentChip label={DOC_LABELS[type]} tone={docType === type ? 'dark' : 'default'} />
+                                <TechnicianChip label={DOC_LABELS[type]} tone={docType === type ? 'dark' : 'default'} />
                             </TouchableOpacity>
                         ))}
                     </View>
-                </AgentCard>
+                </TechnicianCard>
 
-                <AgentCard>
-                    <AgentSectionHeader title="Step 2" subtitle="Pick clear images" />
+                <TechnicianCard>
+                    <TechnicianSectionHeader title="Step 2" subtitle="Pick clear images" />
                     <Text style={styles.metaText}>Selected: {documents.length} file(s)</Text>
-                    <AgentButton title="Choose Images" variant="secondary" onPress={pickDocuments} />
+                    <TechnicianButton title="Choose Images" variant="secondary" onPress={pickDocuments} />
 
                     {documents.length > 0 ? (
                         <View style={styles.fileList}>
@@ -129,38 +129,38 @@ export const AgentKycUploadScreen: React.FC<AgentKycUploadScreenProps> = ({ navi
                             ))}
                         </View>
                     ) : null}
-                </AgentCard>
+                </TechnicianCard>
 
-                <AgentCard>
-                    <AgentSectionHeader title="Step 3" subtitle="Submit for review" />
+                <TechnicianCard>
+                    <TechnicianSectionHeader title="Step 3" subtitle="Submit for review" />
                     <Text style={styles.metaText}>Document type: {DOC_LABELS[docType]}</Text>
                     {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                    <AgentButton title="Submit KYC" onPress={submit} loading={loading.kyc} />
-                </AgentCard>
+                    <TechnicianButton title="Submit KYC" onPress={submit} loading={loading.kyc} />
+                </TechnicianCard>
             </ScrollView>
-        </AgentScreen>
+        </TechnicianScreen>
     );
 };
 
 const styles = StyleSheet.create({
     content: {
-        padding: agentTheme.spacing.lg,
-        gap: agentTheme.spacing.md,
+        padding: technicianTheme.spacing.lg,
+        gap: technicianTheme.spacing.md,
     },
     pageTitle: {
-        ...agentTheme.typography.h1,
-        color: agentTheme.colors.textOnDark,
+        ...technicianTheme.typography.h1,
+        color: technicianTheme.colors.textOnDark,
     },
     pageSubtitle: {
-        ...agentTheme.typography.bodySmall,
+        ...technicianTheme.typography.bodySmall,
         color: '#B4BFCA',
         marginTop: 2,
-        marginBottom: agentTheme.spacing.sm,
+        marginBottom: technicianTheme.spacing.sm,
     },
     stepRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: agentTheme.spacing.sm,
+        marginBottom: technicianTheme.spacing.sm,
     },
     stepItem: {
         alignItems: 'center',
@@ -177,48 +177,48 @@ const styles = StyleSheet.create({
         backgroundColor: '#11273F',
     },
     stepCircleActive: {
-        borderColor: agentTheme.colors.agentPrimary,
+        borderColor: technicianTheme.colors.agentPrimary,
         backgroundColor: '#3A2B0A',
     },
     stepCircleDone: {
-        borderColor: agentTheme.colors.agentPrimary,
-        backgroundColor: agentTheme.colors.agentPrimary,
+        borderColor: technicianTheme.colors.agentPrimary,
+        backgroundColor: technicianTheme.colors.agentPrimary,
     },
     stepNumber: {
-        ...agentTheme.typography.caption,
+        ...technicianTheme.typography.caption,
         color: '#FFF4DE',
     },
     stepText: {
-        ...agentTheme.typography.caption,
+        ...technicianTheme.typography.caption,
         color: '#A9B5C1',
         marginTop: 6,
     },
     chipsWrap: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: agentTheme.spacing.sm,
-        marginTop: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
+        marginTop: technicianTheme.spacing.sm,
     },
     metaText: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
-        marginTop: agentTheme.spacing.sm,
-        marginBottom: agentTheme.spacing.sm,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
+        marginTop: technicianTheme.spacing.sm,
+        marginBottom: technicianTheme.spacing.sm,
     },
     fileList: {
-        marginTop: agentTheme.spacing.sm,
-        padding: agentTheme.spacing.sm,
-        borderRadius: agentTheme.radius.md,
-        backgroundColor: agentTheme.colors.agentSurfaceAlt,
+        marginTop: technicianTheme.spacing.sm,
+        padding: technicianTheme.spacing.sm,
+        borderRadius: technicianTheme.radius.md,
+        backgroundColor: technicianTheme.colors.agentSurfaceAlt,
     },
     fileItem: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.textSecondary,
         marginBottom: 4,
     },
     errorText: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.danger,
-        marginBottom: agentTheme.spacing.sm,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.danger,
+        marginBottom: technicianTheme.spacing.sm,
     },
 });

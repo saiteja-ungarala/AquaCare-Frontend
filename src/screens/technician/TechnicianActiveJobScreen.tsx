@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { AgentJob } from '../../models/types';
-import { agentTheme } from '../../theme/agentTheme';
-import { AgentButton, AgentCard, AgentChip, AgentScreen, AgentSectionHeader } from '../../components/agent';
-import { useAgentStore } from '../../store';
-import { showAgentToast } from '../../utils/agentToast';
+import { TechnicianJob } from '../../models/types';
+import { technicianTheme } from '../../theme/technicianTheme';
+import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
+import { useTechnicianStore } from '../../store';
+import { showTechnicianToast } from '../../utils/technicianToast';
 
 const formatJobTime = (date: string, time: string) => {
     const parsed = new Date(`${date}T${time || '00:00:00'}`);
@@ -19,8 +19,8 @@ const formatJobTime = (date: string, time: string) => {
     });
 };
 
-export const AgentActiveJobScreen: React.FC = () => {
-    const { jobs, loading, fetchJobs, updateStatus } = useAgentStore();
+export const TechnicianActiveJobScreen: React.FC = () => {
+    const { jobs, loading, fetchJobs, updateStatus } = useTechnicianStore();
     const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
     useFocusEffect(
@@ -47,21 +47,21 @@ export const AgentActiveJobScreen: React.FC = () => {
 
     const selectedJob = activeJobs.find((job) => job.id === selectedJobId) || null;
 
-    const callCustomer = async (job: AgentJob) => {
+    const callCustomer = async (job: TechnicianJob) => {
         if (!job.customer_phone) return;
         const telUrl = `tel:${job.customer_phone}`;
         const canOpen = await Linking.canOpenURL(telUrl);
         if (!canOpen) {
-            showAgentToast('Calling is not available on this device.');
+            showTechnicianToast('Calling is not available on this device.');
             return;
         }
         await Linking.openURL(telUrl);
     };
 
-    const openInMaps = async (job: AgentJob) => {
+    const openInMaps = async (job: TechnicianJob) => {
         const address = [job.address_line1, job.address_city, job.address_state, job.address_postal_code].filter(Boolean).join(', ');
         if (!address) {
-            showAgentToast('Address is not available for maps.');
+            showTechnicianToast('Address is not available for maps.');
             return;
         }
 
@@ -75,39 +75,39 @@ export const AgentActiveJobScreen: React.FC = () => {
         const ok = await updateStatus(selectedJob.id, status);
         if (!ok) return;
 
-        showAgentToast(status === 'in_progress' ? 'Job started' : 'Job completed');
+        showTechnicianToast(status === 'in_progress' ? 'Job started' : 'Job completed');
         fetchJobs();
     };
 
-    const renderJob = ({ item }: { item: AgentJob }) => {
+    const renderJob = ({ item }: { item: TechnicianJob }) => {
         const isSelected = item.id === selectedJobId;
         const location = [item.address_city, item.address_line1].filter(Boolean).join(', ');
 
         return (
             <TouchableOpacity onPress={() => setSelectedJobId(item.id)} activeOpacity={0.85}>
-                <AgentCard style={[styles.card, isSelected ? styles.cardSelected : null]}>
+                <TechnicianCard style={[styles.card, isSelected ? styles.cardSelected : null]}>
                     <View style={styles.cardTop}>
                         <Text style={styles.jobTitle}>{item.service_name}</Text>
-                        <AgentChip label={item.status.replace('_', ' ')} tone="warning" />
+                        <TechnicianChip label={item.status.replace('_', ' ')} tone="warning" />
                     </View>
                     <Text style={styles.metaLine}>{formatJobTime(item.scheduled_date, item.scheduled_time)}</Text>
                     <Text style={styles.metaLine} numberOfLines={1}>{location || 'Address not available'}</Text>
 
                     <View style={styles.quickActions}>
                         {item.customer_phone ? (
-                            <AgentButton title="Call Customer" variant="secondary" onPress={() => callCustomer(item)} style={styles.quickBtn} />
+                            <TechnicianButton title="Call Customer" variant="secondary" onPress={() => callCustomer(item)} style={styles.quickBtn} />
                         ) : null}
-                        <AgentButton title="Open In Maps" variant="secondary" onPress={() => openInMaps(item)} style={styles.quickBtn} />
+                        <TechnicianButton title="Open In Maps" variant="secondary" onPress={() => openInMaps(item)} style={styles.quickBtn} />
                     </View>
-                </AgentCard>
+                </TechnicianCard>
             </TouchableOpacity>
         );
     };
 
     return (
-        <AgentScreen>
+        <TechnicianScreen>
             <View style={styles.header}>
-                <AgentSectionHeader title="Active Job" subtitle="Assigned and in-progress work" />
+                <TechnicianSectionHeader title="Active Job" subtitle="Assigned and in-progress work" />
             </View>
 
             <FlatList
@@ -116,17 +116,17 @@ export const AgentActiveJobScreen: React.FC = () => {
                 renderItem={renderJob}
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
-                    <AgentCard>
+                    <TechnicianCard>
                         <Text style={styles.emptyTitle}>No active jobs</Text>
                         <Text style={styles.emptySubtitle}>Accept a job from the Jobs tab to start work.</Text>
-                    </AgentCard>
+                    </TechnicianCard>
                 }
             />
 
             {selectedJob ? (
                 <View style={styles.bottomBar}>
                     {selectedJob.status === 'assigned' ? (
-                        <AgentButton
+                        <TechnicianButton
                             title="Start Job"
                             onPress={() => handleUpdateStatus('in_progress')}
                             loading={loading.action}
@@ -135,7 +135,7 @@ export const AgentActiveJobScreen: React.FC = () => {
                     ) : null}
 
                     {selectedJob.status === 'in_progress' ? (
-                        <AgentButton
+                        <TechnicianButton
                             title="Complete Job"
                             onPress={() => handleUpdateStatus('completed')}
                             loading={loading.action}
@@ -144,25 +144,25 @@ export const AgentActiveJobScreen: React.FC = () => {
                     ) : null}
 
                     <View style={styles.bottomHint}>
-                        <Ionicons name="flash" size={14} color={agentTheme.colors.agentPrimary} />
+                        <Ionicons name="flash" size={14} color={technicianTheme.colors.agentPrimary} />
                         <Text style={styles.bottomHintText}>Selected job #{selectedJob.id}</Text>
                     </View>
                 </View>
             ) : null}
-        </AgentScreen>
+        </TechnicianScreen>
     );
 };
 
 const styles = StyleSheet.create({
     header: {
-        paddingHorizontal: agentTheme.spacing.lg,
-        paddingTop: agentTheme.spacing.lg,
-        paddingBottom: agentTheme.spacing.sm,
+        paddingHorizontal: technicianTheme.spacing.lg,
+        paddingTop: technicianTheme.spacing.lg,
+        paddingBottom: technicianTheme.spacing.sm,
     },
     listContent: {
-        paddingHorizontal: agentTheme.spacing.lg,
+        paddingHorizontal: technicianTheme.spacing.lg,
         paddingBottom: 130,
-        gap: agentTheme.spacing.md,
+        gap: technicianTheme.spacing.md,
     },
     card: {
         gap: 6,
@@ -175,33 +175,33 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        gap: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
     },
     jobTitle: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
         flex: 1,
     },
     metaLine: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
     },
     quickActions: {
         flexDirection: 'row',
-        gap: agentTheme.spacing.sm,
-        marginTop: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
+        marginTop: technicianTheme.spacing.sm,
     },
     quickBtn: {
         flex: 1,
     },
     emptyTitle: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
         textAlign: 'center',
     },
     emptySubtitle: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         textAlign: 'center',
         marginTop: 6,
     },
@@ -210,26 +210,26 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: agentTheme.colors.agentDark,
-        paddingHorizontal: agentTheme.spacing.lg,
-        paddingTop: agentTheme.spacing.md,
-        paddingBottom: agentTheme.spacing.lg,
-        borderTopLeftRadius: agentTheme.radius.lg,
-        borderTopRightRadius: agentTheme.radius.lg,
-        ...agentTheme.shadows.bar,
+        backgroundColor: technicianTheme.colors.agentDark,
+        paddingHorizontal: technicianTheme.spacing.lg,
+        paddingTop: technicianTheme.spacing.md,
+        paddingBottom: technicianTheme.spacing.lg,
+        borderTopLeftRadius: technicianTheme.radius.lg,
+        borderTopRightRadius: technicianTheme.radius.lg,
+        ...technicianTheme.shadows.bar,
     },
     bottomButton: {
         minHeight: 52,
     },
     bottomHint: {
-        marginTop: agentTheme.spacing.sm,
+        marginTop: technicianTheme.spacing.sm,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
     },
     bottomHintText: {
-        ...agentTheme.typography.caption,
+        ...technicianTheme.typography.caption,
         color: '#D2D9E1',
     },
 });

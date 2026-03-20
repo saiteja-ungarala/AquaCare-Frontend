@@ -1,16 +1,16 @@
 import { create } from 'zustand';
 import { Alert } from 'react-native';
 import {
-    AgentJob,
-    AgentJobsMeta,
-    AgentKycDocument,
-    AgentMePayload,
-    AgentProfile,
+    TechnicianJob,
+    TechnicianJobsMeta,
+    TechnicianKycDocument,
+    TechnicianMePayload,
+    TechnicianProfile,
 } from '../models/types';
-import { agentService } from '../services/agentService';
+import { technicianService } from '../services/technicianService';
 import { getCurrentLocation } from '../utils/location';
 
-interface AgentLoadingState {
+interface TechnicianLoadingState {
     me: boolean;
     jobs: boolean;
     kyc: boolean;
@@ -18,19 +18,19 @@ interface AgentLoadingState {
     action: boolean;
 }
 
-interface AgentState {
-    me: AgentProfile | null;
+interface TechnicianState {
+    me: TechnicianProfile | null;
     kycStatus: string | null;
-    latestKycDocument: AgentKycDocument | null;
+    latestKycDocument: TechnicianKycDocument | null;
     isOnline: boolean;
-    jobs: AgentJob[];
-    jobsMeta: AgentJobsMeta | null;
-    loading: AgentLoadingState;
+    jobs: TechnicianJob[];
+    jobsMeta: TechnicianJobsMeta | null;
+    loading: TechnicianLoadingState;
     error: string | null;
 }
 
-interface AgentActions {
-    fetchMe: () => Promise<AgentMePayload | null>;
+interface TechnicianActions {
+    fetchMe: () => Promise<TechnicianMePayload | null>;
     uploadKyc: (formData: FormData) => Promise<boolean>;
     toggleOnline: (isOnline: boolean) => Promise<boolean>;
     fetchJobs: () => Promise<void>;
@@ -44,9 +44,9 @@ interface AgentActions {
     reset: () => void;
 }
 
-type AgentStore = AgentState & AgentActions;
+type TechnicianStore = TechnicianState & TechnicianActions;
 
-const initialLoadingState: AgentLoadingState = {
+const initialLoadingState: TechnicianLoadingState = {
     me: false,
     jobs: false,
     kyc: false,
@@ -55,13 +55,13 @@ const initialLoadingState: AgentLoadingState = {
 };
 
 const extractErrorMessage = (error: any, fallback: string): string => {
-    return agentService.getApiErrorMessage(error, fallback);
+    return technicianService.getApiErrorMessage(error, fallback);
 };
 
-const mergeJobs = (incomingJobs: AgentJob[], existingJobs: AgentJob[]): AgentJob[] => {
-    const jobMap = new Map<string, AgentJob>();
+const mergeJobs = (incomingJobs: TechnicianJob[], existingJobs: TechnicianJob[]): TechnicianJob[] => {
+    const jobMap = new Map<string, TechnicianJob>();
 
-    // Keep jobs already accepted by this agent in local state so status actions remain available.
+    // Keep jobs already accepted by this technician in local state so status actions remain available.
     existingJobs
         .filter((job) => ['assigned', 'in_progress', 'completed'].includes(job.status))
         .forEach((job) => {
@@ -80,7 +80,7 @@ const mergeJobs = (incomingJobs: AgentJob[], existingJobs: AgentJob[]): AgentJob
     });
 };
 
-export const useAgentStore = create<AgentStore>((set, get) => ({
+export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
     me: null,
     kycStatus: null,
     latestKycDocument: null,
@@ -97,7 +97,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         }));
 
         try {
-            const payload = await agentService.getMe();
+            const payload = await technicianService.getMe();
             set((state) => ({
                 me: payload.profile,
                 kycStatus: payload.profile.verification_status,
@@ -109,7 +109,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         } catch (error: any) {
             set((state) => ({
                 loading: { ...state.loading, me: false },
-                error: extractErrorMessage(error, 'Failed to load agent profile.'),
+                error: extractErrorMessage(error, 'Failed to load technician profile.'),
             }));
             return null;
         }
@@ -122,7 +122,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         }));
 
         try {
-            await agentService.submitKyc(formData);
+            await technicianService.submitKyc(formData);
             set((state) => ({
                 loading: { ...state.loading, kyc: false },
                 kycStatus: 'pending',
@@ -155,14 +155,14 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                 return false;
             }
             try {
-                await agentService.updateLocation(position.latitude, position.longitude);
+                await technicianService.updateLocation(position.latitude, position.longitude);
             } catch {
                 // location patch failed — proceed anyway, backend will gate if needed
             }
         }
 
         try {
-            await agentService.setOnline(isOnline);
+            await technicianService.setOnline(isOnline);
             set((state) => ({
                 isOnline,
                 me: state.me ? { ...state.me, is_online: isOnline } : state.me,
@@ -189,7 +189,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         }));
 
         try {
-            const payload = await agentService.getAvailableJobs();
+            const payload = await technicianService.getAvailableJobs();
             set((state) => ({
                 jobs: mergeJobs(payload.jobs, state.jobs),
                 jobsMeta: payload.meta || null,
@@ -210,7 +210,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         }));
 
         try {
-            await agentService.acceptJob(bookingId);
+            await technicianService.acceptJob(bookingId);
             set((state) => ({
                 jobs: state.jobs.map((job) =>
                     job.id === bookingId ? { ...job, status: 'assigned' } : job
@@ -234,7 +234,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         }));
 
         try {
-            await agentService.rejectJob(bookingId);
+            await technicianService.rejectJob(bookingId);
             set((state) => ({
                 jobs: state.jobs.filter((job) => job.id !== bookingId),
                 loading: { ...state.loading, action: false },
@@ -256,7 +256,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         }));
 
         try {
-            await agentService.updateJobStatus(bookingId, status);
+            await technicianService.updateJobStatus(bookingId, status);
             set((state) => ({
                 jobs: state.jobs.map((job) => (job.id === bookingId ? { ...job, status } : job)),
                 loading: { ...state.loading, action: false },

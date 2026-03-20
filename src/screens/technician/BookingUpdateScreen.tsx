@@ -15,9 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { RootStackParamList } from '../../models/types';
-import { agentTheme } from '../../theme/agentTheme';
-import { agentService } from '../../services/agentService';
-import { showAgentToast } from '../../utils/agentToast';
+import { technicianTheme } from '../../theme/technicianTheme';
+import { technicianService } from '../../services/technicianService';
+import { showTechnicianToast } from '../../utils/technicianToast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BookingUpdate'>;
@@ -32,16 +32,16 @@ interface UpdateTypeOption {
 
 const UPDATE_TYPES: UpdateTypeOption[] = [
     { value: 'arrived', label: 'Arrived', icon: 'location', color: '#F97316' },
-    { value: 'diagnosed', label: 'Diagnosed', icon: 'search', color: agentTheme.colors.agentPrimary },
+    { value: 'diagnosed', label: 'Diagnosed', icon: 'search', color: technicianTheme.colors.agentPrimary },
     { value: 'in_progress', label: 'In Progress', icon: 'construct', color: '#3B82F6' },
-    { value: 'completed', label: 'Completed', icon: 'checkmark-circle', color: agentTheme.colors.success },
-    { value: 'note', label: 'Add Note', icon: 'document-text', color: agentTheme.colors.textSecondary },
+    { value: 'completed', label: 'Completed', icon: 'checkmark-circle', color: technicianTheme.colors.success },
+    { value: 'note', label: 'Add Note', icon: 'document-text', color: technicianTheme.colors.textSecondary },
 ];
 
-const C = agentTheme.colors;
-const S = agentTheme.spacing;
-const R = agentTheme.radius;
-const T = agentTheme.typography;
+const C = technicianTheme.colors;
+const S = technicianTheme.spacing;
+const R = technicianTheme.radius;
+const T = technicianTheme.typography;
 
 export const BookingUpdateScreen: React.FC<Props> = ({ navigation, route }) => {
     const { bookingId } = route.params;
@@ -74,12 +74,12 @@ export const BookingUpdateScreen: React.FC<Props> = ({ navigation, route }) => {
         if (!selectedType) return;
         setSubmitting(true);
         try {
-            await agentService.postJobUpdate(bookingId, {
+            await technicianService.postJobUpdate(bookingId, {
                 update_type: selectedType,
                 note: note.trim() || undefined,
                 media_url: photoUri || undefined,
             });
-            showAgentToast('Update posted!');
+            showTechnicianToast('Update posted!');
             navigation.goBack();
         } catch (err: any) {
             const msg = err?.response?.data?.message || err?.message || 'Failed to post update';
@@ -174,7 +174,7 @@ export const BookingUpdateScreen: React.FC<Props> = ({ navigation, route }) => {
                     </View>
                 ) : (
                     <TouchableOpacity style={styles.photoBtn} onPress={pickPhoto} activeOpacity={0.75}>
-                        <Ionicons name="camera-outline" size={22} color={agentTheme.colors.agentPrimary} />
+                        <Ionicons name="camera-outline" size={22} color={technicianTheme.colors.agentPrimary} />
                         <Text style={styles.photoBtnText}>Add Photo</Text>
                     </TouchableOpacity>
                 )}
@@ -243,7 +243,7 @@ export const BookingUpdateScreen: React.FC<Props> = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: agentTheme.colors.agentSurface },
+    container: { flex: 1, backgroundColor: technicianTheme.colors.agentSurface },
 
     header: {
         flexDirection: 'row',

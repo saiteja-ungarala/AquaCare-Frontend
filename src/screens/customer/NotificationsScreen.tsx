@@ -71,7 +71,7 @@ export const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
                         <Text style={styles.headerTitle}>Notifications</Text>
-                        <Text style={styles.headerSubtitle}>Stay updated with IonCare</Text>
+                        <Text style={styles.headerSubtitle}>Stay updated with IONORA CARE</Text>
                     </View>
                 </View>
             </LinearGradient>

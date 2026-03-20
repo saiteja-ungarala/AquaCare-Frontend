@@ -77,9 +77,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const getRoleLabel = () => {
         switch (selectedRole) {
             case 'customer':
-                return 'Customer';
+                return 'Customer & Referrals';
             case 'agent':
-                return 'Service Agent';
+                return 'Technician';
             case 'dealer':
                 return 'Dealer';
             default:
@@ -185,7 +185,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     };
 
     const isCustomLogin = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
-    const isAgent = selectedRole === 'agent';
+    const isTechnician = selectedRole === 'agent';
     const Wrapper = (isCustomLogin ? ImageBackground : View) as React.ComponentType<any>;
 
     const getBackgroundImage = () => {
@@ -230,13 +230,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                             isCustomLogin && styles.bottomContent,
                         ]}>
                             <View style={isCustomLogin ? styles.glassContent : undefined}>
-                                <Text style={[styles.title, isAgent ? { color: colors.surface } : null]}>Welcome Back</Text>
-                                <Text style={[styles.subtitle, isAgent ? { color: 'rgba(255, 255, 255, 0.8)' } : null]}>
+                                <Text style={[styles.title, isTechnician ? { color: colors.surface } : null]}>Welcome Back</Text>
+                                <Text style={[styles.subtitle, isTechnician ? { color: 'rgba(255, 255, 255, 0.8)' } : null]}>
                                     Login as <Text style={[styles.roleText, { color: activeThemeColor }]}>{getRoleLabel()}</Text>
                                 </Text>
 
                                 {/* Tab toggle */}
-                                <View style={[styles.tabToggle, isAgent ? styles.tabToggleDark : undefined]}>
+                                <View style={[styles.tabToggle, isTechnician ? styles.tabToggleDark : undefined]}>
                                     <TouchableOpacity
                                         style={[styles.tabBtn, activeTab === 'email' && { backgroundColor: activeThemeColor }]}
                                         onPress={() => { setActiveTab('email'); setPhoneError(''); clearError(); }}
@@ -279,8 +279,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                                 maxLength={10}
                                                 leftIcon="phone-portrait-outline"
                                                 inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
-                                                labelStyle={isAgent ? { color: colors.surface } : undefined}
-                                                placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                                labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                                placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                             />
                                             {phoneError ? (
                                                 <Text style={styles.phoneError}>{phoneError}</Text>
@@ -310,8 +310,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                             autoCapitalize="none"
                                             leftIcon="mail-outline"
                                             inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
-                                            labelStyle={isAgent ? { color: colors.surface } : undefined}
-                                            placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                            labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                            placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                             error={clientFieldErrors.email || fieldErrors.email}
                                         />
 
@@ -326,8 +326,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                             secureTextEntry
                                             leftIcon="lock-closed-outline"
                                             inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
-                                            labelStyle={isAgent ? { color: colors.surface } : undefined}
-                                            placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                            labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                            placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                             error={clientFieldErrors.password || fieldErrors.password}
                                         />
 

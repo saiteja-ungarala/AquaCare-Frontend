@@ -1,9 +1,9 @@
 import api from './api';
 import {
-    AgentJob,
-    AgentJobsMeta,
-    AgentKycDocType,
-    AgentMePayload,
+    TechnicianJob,
+    TechnicianJobsMeta,
+    TechnicianKycDocType,
+    TechnicianMePayload,
 } from '../models/types';
 
 type ApiSuccess<T> = {
@@ -12,9 +12,9 @@ type ApiSuccess<T> = {
     data: T;
 };
 
-type AgentJobsPayload = {
-    jobs: AgentJob[];
-    meta?: AgentJobsMeta;
+type TechnicianJobsPayload = {
+    jobs: TechnicianJob[];
+    meta?: TechnicianJobsMeta;
 };
 
 const toNumber = (value: unknown): number | null => {
@@ -23,14 +23,14 @@ const toNumber = (value: unknown): number | null => {
     return Number.isFinite(num) ? num : null;
 };
 
-const mapAgentJob = (job: any): AgentJob => ({
+const mapTechnicianJob = (job: any): TechnicianJob => ({
     id: String(job.id),
     user_id: Number(job.user_id || 0),
     service_id: Number(job.service_id || 0),
     address_id: toNumber(job.address_id),
     scheduled_date: job.scheduled_date || '',
     scheduled_time: job.scheduled_time || '',
-    status: (job.status || 'pending') as AgentJob['status'],
+    status: (job.status || 'pending') as TechnicianJob['status'],
     price: Number(job.price || 0),
     notes: job.notes || null,
     created_at: job.created_at || '',
@@ -59,9 +59,9 @@ const getApiErrorMessage = (error: any, fallback: string): string => {
     );
 };
 
-export const agentService = {
-    async getMe(): Promise<AgentMePayload> {
-        const response = await api.get<ApiSuccess<AgentMePayload>>('/agent/me');
+export const technicianService = {
+    async getMe(): Promise<TechnicianMePayload> {
+        const response = await api.get<ApiSuccess<TechnicianMePayload>>('/agent/me');
         return response.data.data;
     },
 
@@ -85,11 +85,11 @@ export const agentService = {
         return response.data.data;
     },
 
-    async getAvailableJobs(): Promise<AgentJobsPayload> {
-        const response = await api.get<ApiSuccess<AgentJobsPayload>>('/agent/jobs/available');
+    async getAvailableJobs(): Promise<TechnicianJobsPayload> {
+        const response = await api.get<ApiSuccess<TechnicianJobsPayload>>('/agent/jobs/available');
         const payload = response.data.data;
         return {
-            jobs: Array.isArray(payload.jobs) ? payload.jobs.map(mapAgentJob) : [],
+            jobs: Array.isArray(payload.jobs) ? payload.jobs.map(mapTechnicianJob) : [],
             meta: payload.meta,
         };
     },
@@ -115,7 +115,7 @@ export const agentService = {
     },
 
     getApiErrorMessage,
-    getSupportedDocTypes(): AgentKycDocType[] {
+    getSupportedDocTypes(): TechnicianKycDocType[] {
         return ['aadhaar', 'pan', 'driving_license', 'selfie', 'other'];
     },
 };

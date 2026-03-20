@@ -1,9 +1,9 @@
 import api from './api';
 import {
-    AgentCampaign,
-    AgentEarnProgress,
-    AgentEarnSummary,
-    AgentProductCommissionPreview,
+    TechnicianCampaign,
+    TechnicianEarnProgress,
+    TechnicianEarnSummary,
+    TechnicianProductCommissionPreview,
 } from '../models/types';
 
 type ApiSuccess<T> = {
@@ -33,7 +33,7 @@ const toNumber = (value: unknown): number => {
     return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const mapSummary = (payload: SummaryApiPayload): AgentEarnSummary => {
+const mapSummary = (payload: SummaryApiPayload): TechnicianEarnSummary => {
     const combined = payload.totals?.combined || {};
     const bonuses = payload.totals?.bonuses || {};
 
@@ -46,7 +46,7 @@ const mapSummary = (payload: SummaryApiPayload): AgentEarnSummary => {
     };
 };
 
-const mapProgress = (payload?: SummaryApiPayload['campaign_progress'] | null): AgentEarnProgress | null => {
+const mapProgress = (payload?: SummaryApiPayload['campaign_progress'] | null): TechnicianEarnProgress | null => {
     if (!payload) {
         return null;
     }
@@ -72,7 +72,7 @@ const mapProgress = (payload?: SummaryApiPayload['campaign_progress'] | null): A
     };
 };
 
-const mapCampaign = (campaign: any): AgentCampaign => ({
+const mapCampaign = (campaign: any): TechnicianCampaign => ({
     id: toNumber(campaign.id),
     name: campaign.name || 'Campaign',
     description: campaign.description || '',
@@ -86,7 +86,7 @@ const mapCampaign = (campaign: any): AgentCampaign => ({
         : [],
 });
 
-const mapProduct = (product: any): AgentProductCommissionPreview => {
+const mapProduct = (product: any): TechnicianProductCommissionPreview => {
     const preview = product.commission_preview || null;
 
     return {
@@ -111,13 +111,13 @@ const getApiErrorMessage = (error: any, fallback: string): string => {
     );
 };
 
-export const agentEarnService = {
+export const technicianEarnService = {
     async fetchReferral(): Promise<string> {
         const response = await api.get<ApiSuccess<{ referral_code?: string }>>('/agent/earn/referral');
         return String(response.data.data?.referral_code || '');
     },
 
-    async fetchSummary(): Promise<{ summary: AgentEarnSummary; progress: AgentEarnProgress | null; campaignId: number | null }> {
+    async fetchSummary(): Promise<{ summary: TechnicianEarnSummary; progress: TechnicianEarnProgress | null; campaignId: number | null }> {
         const response = await api.get<ApiSuccess<SummaryApiPayload>>('/agent/earn/summary');
         const payload = response.data.data || {};
 
@@ -133,19 +133,19 @@ export const agentEarnService = {
         };
     },
 
-    async fetchCampaigns(): Promise<AgentCampaign[]> {
+    async fetchCampaigns(): Promise<TechnicianCampaign[]> {
         const response = await api.get<ApiSuccess<any[]>>('/agent/earn/campaigns');
         const list = Array.isArray(response.data.data) ? response.data.data : [];
         return list.map(mapCampaign);
     },
 
-    async fetchProducts(): Promise<AgentProductCommissionPreview[]> {
+    async fetchProducts(): Promise<TechnicianProductCommissionPreview[]> {
         const response = await api.get<ApiSuccess<any[]>>('/agent/earn/products');
         const list = Array.isArray(response.data.data) ? response.data.data : [];
         return list.map(mapProduct);
     },
 
-    async fetchProgress(campaignId: number): Promise<AgentEarnProgress> {
+    async fetchProgress(campaignId: number): Promise<TechnicianEarnProgress> {
         const response = await api.get<ApiSuccess<any>>(`/agent/earn/progress/${campaignId}`);
         const payload = response.data.data || {};
 

@@ -19,7 +19,7 @@ const BOOKING_REASONS = [
     'Scheduled date/time no longer works',
     'Booked by mistake',
     'Service no longer needed',
-    'Waiting too long for agent assignment',
+    'Waiting too long for technician assignment',
     'Other',
 ];
 

@@ -110,8 +110,8 @@ export default function AdminBookingDetailScreen() {
     const [loading,      setLoading]      = useState(true);
     const [actionBusy,   setActionBusy]   = useState(false);
 
-    // Assign agent
-    const [agentInput,     setAgentInput]     = useState('');
+    // Assign technician
+    const [technicianInput, setTechnicianInput] = useState('');
     const [showAssignInput, setShowAssignInput] = useState(false);
 
     // Cancel
@@ -134,20 +134,20 @@ export default function AdminBookingDetailScreen() {
     useFocusEffect(useCallback(() => { loadDetail(); }, [loadDetail]));
 
     const handleAssign = async () => {
-        const agentId = parseInt(agentInput.trim(), 10);
-        if (!agentInput.trim() || isNaN(agentId)) {
-            Alert.alert('Validation', 'Please enter a valid agent ID.');
+        const technicianId = parseInt(technicianInput.trim(), 10);
+        if (!technicianInput.trim() || Number.isNaN(technicianId)) {
+            Alert.alert('Validation', 'Please enter a valid technician ID.');
             return;
         }
         setActionBusy(true);
         try {
-            await assignBooking(bookingId, agentId);
-            toast.show('Agent assigned!');
+            await assignBooking(bookingId, technicianId);
+            toast.show('Technician assigned!');
             setShowAssignInput(false);
-            setAgentInput('');
+            setTechnicianInput('');
             setTimeout(loadDetail, 1000);
         } catch (e: any) {
-            Alert.alert('Error', e?.response?.data?.message ?? 'Failed to assign agent.');
+            Alert.alert('Error', e?.response?.data?.message ?? 'Failed to assign technician.');
         } finally {
             setActionBusy(false);
         }
@@ -218,8 +218,8 @@ export default function AdminBookingDetailScreen() {
                         <InfoRow icon="location-outline"   label="Address"   value={addressStr} />
                     </Section>
 
-                    {/* ── Agent ────────────────────────────────────────────── */}
-                    <Section title="Agent">
+                    {/* ── Technician ────────────────────────────────────────────── */}
+                    <Section title="Technician">
                         {detail.agent ? (
                             <>
                                 <InfoRow icon="person-circle-outline" label="Name"  value={detail.agent.name} />
@@ -234,24 +234,24 @@ export default function AdminBookingDetailScreen() {
                         {canAssign && !showAssignInput && (
                             <TouchableOpacity style={styles.assignBtn} onPress={() => setShowAssignInput(true)}>
                                 <Ionicons name="person-add-outline" size={16} color={adminColors.primary} />
-                                <Text style={styles.assignBtnText}>Assign Agent</Text>
+                                <Text style={styles.assignBtnText}>Assign Technician</Text>
                             </TouchableOpacity>
                         )}
                         {showAssignInput && (
                             <View style={styles.assignBox}>
-                                <Text style={styles.assignLabel}>Agent ID</Text>
+                                <Text style={styles.assignLabel}>Technician ID</Text>
                                 <TextInput
                                     style={styles.assignInput}
-                                    value={agentInput}
-                                    onChangeText={setAgentInput}
-                                    placeholder="Enter agent user ID"
+                                    value={technicianInput}
+                                    onChangeText={setTechnicianInput}
+                                    placeholder="Enter technician user ID"
                                     placeholderTextColor={adminColors.textLight}
                                     keyboardType="numeric"
                                 />
                                 <View style={styles.assignBtns}>
                                     <TouchableOpacity
                                         style={styles.assignCancelBtn}
-                                        onPress={() => { setShowAssignInput(false); setAgentInput(''); }}
+                                        onPress={() => { setShowAssignInput(false); setTechnicianInput(''); }}
                                     >
                                         <Text style={styles.assignCancelText}>Cancel</Text>
                                     </TouchableOpacity>

@@ -89,18 +89,16 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
                 {/* Header Section */}
                 <FadeInView delay={100} duration={600} direction="down" distance={20} style={styles.header}>
                     <View style={styles.logoBadge}>
-                        <Ionicons name="water" size={32} color={customerColors.primary} />
+                        <Image source={require('../../../assets/icon.png')} style={styles.logoImage} resizeMode="contain" />
                     </View>
-                    <Text style={styles.appName}>IonCare</Text>
-                    <Text style={styles.tagline}>Select your role to continue</Text>
                 </FadeInView>
 
                 {/* Role Selection Cards */}
                 <View style={styles.content}>
                     <RoleCard
                         role="customer"
-                        title="Customer"
-                        description="Book services & buy products"
+                        title="Customer & Referrals"
+                        description="Book services, shop products, and share referrals"
                         icon="person"
                         color={customerColors.primary}
                         onPress={() => handleRoleSelect('customer')}
@@ -109,7 +107,7 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
 
                     <RoleCard
                         role="agent"
-                        title="Service Agent"
+                        title="Technician"
                         description="Accept jobs & manage earnings"
                         icon="construct"
                         color={colors.accent}
@@ -154,18 +152,19 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        paddingVertical: spacing.xl,
-        marginTop: spacing.xl,
+        paddingVertical: 0,
+        marginTop: -20,
     },
     logoBadge: {
-        width: 64,
-        height: 64,
-        borderRadius: 24,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', // Keep white for logo
+        width: 300,
+        height: 300,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.md,
-        ...shadows.md,
+    },
+    logoImage: {
+        width: 300,
+        height: 300,
     },
     appName: {
         ...typography.h1,

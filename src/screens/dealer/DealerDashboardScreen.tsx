@@ -8,7 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { useAuthStore } from '../../store';
 import { dealerService, DealerOrder, DealerCommission } from '../../services/dealerService';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { DealerScreen } from '../../components/dealer/DealerScreen';
 
 type DealerDashboardScreenProps = { navigation: NativeStackNavigationProp<any> };
 
@@ -63,29 +63,29 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container}>
+            <DealerScreen>
                 <View style={styles.centered}>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>
-            </SafeAreaView>
+            </DealerScreen>
         );
     }
 
     if (error) {
         return (
-            <SafeAreaView style={styles.container}>
+            <DealerScreen>
                 <View style={styles.centered}>
                     <Text style={styles.errorText}>{error}</Text>
                     <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
                         <Text style={styles.retryButtonText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
-            </SafeAreaView>
+            </DealerScreen>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <DealerScreen>
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.header}>
                     <View style={styles.headerContent}>
@@ -162,7 +162,7 @@ export const DealerDashboardScreen: React.FC<DealerDashboardScreenProps> = ({ na
                     </View>
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </DealerScreen>
     );
 };
 

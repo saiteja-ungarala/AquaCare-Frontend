@@ -7,20 +7,20 @@ import {
     TouchableOpacity,
     ViewStyle,
 } from 'react-native';
-import { agentTheme } from '../../theme/agentTheme';
+import { technicianTheme } from '../../theme/technicianTheme';
 
-type AgentButtonVariant = 'primary' | 'secondary';
+type TechnicianButtonVariant = 'primary' | 'secondary';
 
-type AgentButtonProps = {
+type TechnicianButtonProps = {
     title: string;
     onPress: () => void;
-    variant?: AgentButtonVariant;
+    variant?: TechnicianButtonVariant;
     loading?: boolean;
     disabled?: boolean;
     style?: StyleProp<ViewStyle>;
 };
 
-export const AgentButton: React.FC<AgentButtonProps> = ({
+export const TechnicianButton: React.FC<TechnicianButtonProps> = ({
     title,
     onPress,
     variant = 'primary',
@@ -43,7 +43,7 @@ export const AgentButton: React.FC<AgentButtonProps> = ({
             ]}
         >
             {loading ? (
-                <ActivityIndicator size="small" color={variant === 'primary' ? agentTheme.colors.textOnPrimary : agentTheme.colors.agentPrimary} />
+                <ActivityIndicator size="small" color={variant === 'primary' ? technicianTheme.colors.textOnPrimary : technicianTheme.colors.agentPrimary} />
             ) : (
                 <Text style={[styles.text, variant === 'primary' ? styles.textPrimary : styles.textSecondary]}>{title}</Text>
             )}
@@ -54,30 +54,30 @@ export const AgentButton: React.FC<AgentButtonProps> = ({
 const styles = StyleSheet.create({
     base: {
         minHeight: 46,
-        borderRadius: agentTheme.radius.md,
+        borderRadius: technicianTheme.radius.md,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: agentTheme.spacing.md,
+        paddingHorizontal: technicianTheme.spacing.md,
         borderWidth: 1,
     },
     primary: {
-        backgroundColor: agentTheme.colors.agentPrimary,
-        borderColor: agentTheme.colors.agentPrimary,
+        backgroundColor: technicianTheme.colors.agentPrimary,
+        borderColor: technicianTheme.colors.agentPrimary,
     },
     secondary: {
         backgroundColor: 'transparent',
-        borderColor: agentTheme.colors.agentMuted,
+        borderColor: technicianTheme.colors.agentMuted,
     },
     disabled: {
         opacity: 0.6,
     },
     text: {
-        ...agentTheme.typography.button,
+        ...technicianTheme.typography.button,
     },
     textPrimary: {
-        color: agentTheme.colors.textOnPrimary,
+        color: technicianTheme.colors.textOnPrimary,
     },
     textSecondary: {
-        color: agentTheme.colors.textPrimary,
+        color: technicianTheme.colors.textPrimary,
     },
 });

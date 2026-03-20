@@ -11,14 +11,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentJob, RootStackParamList } from '../../models/types';
-import { agentTheme } from '../../theme/agentTheme';
-import { AgentButton, AgentCard, AgentChip, AgentScreen, AgentSectionHeader } from '../../components/agent';
-import { useAgentEarnStore, useAgentStore } from '../../store';
-import { showAgentToast } from '../../utils/agentToast';
+import { TechnicianJob, RootStackParamList } from '../../models/types';
+import { technicianTheme } from '../../theme/technicianTheme';
+import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
+import { useTechnicianEarnStore, useTechnicianStore } from '../../store';
+import { showTechnicianToast } from '../../utils/technicianToast';
 
-type AgentJobsScreenProps = {
-    navigation: NativeStackNavigationProp<RootStackParamList, 'AgentJobs'>;
+type TechnicianJobsScreenProps = {
+    navigation: NativeStackNavigationProp<RootStackParamList, 'TechnicianJobs'>;
 };
 
 type FilterType = 'all' | 'nearby' | 'today' | 'urgent';
@@ -60,7 +60,7 @@ const statusTone = (status: string): 'default' | 'success' | 'warning' | 'danger
     return 'default';
 };
 
-export const AgentJobsScreen: React.FC<AgentJobsScreenProps> = ({ navigation }) => {
+export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navigation }) => {
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
     const [refreshing, setRefreshing] = useState(false);
 
@@ -76,21 +76,21 @@ export const AgentJobsScreen: React.FC<AgentJobsScreenProps> = ({ navigation }) 
         accept,
         reject,
         clearError,
-    } = useAgentStore();
+    } = useTechnicianStore();
     const {
         campaigns,
         activeCampaignId,
         progress,
         fetchSummary,
         fetchCampaigns,
-    } = useAgentEarnStore();
+    } = useTechnicianEarnStore();
 
     const loadData = useCallback(async () => {
         const profile = await fetchMe();
         if (!profile) return;
 
         if (profile.profile.verification_status !== 'approved') {
-            navigation.reset({ index: 0, routes: [{ name: 'AgentEntry' }] });
+            navigation.reset({ index: 0, routes: [{ name: 'TechnicianEntry' }] });
             return;
         }
 
@@ -118,7 +118,7 @@ export const AgentJobsScreen: React.FC<AgentJobsScreenProps> = ({ navigation }) 
 
     useEffect(() => {
         if (!error) return;
-        showAgentToast(error);
+        showTechnicianToast(error);
         clearError();
     }, [clearError, error]);
 
@@ -170,15 +170,15 @@ export const AgentJobsScreen: React.FC<AgentJobsScreenProps> = ({ navigation }) 
     const handleAccept = async (bookingId: string) => {
         const ok = await accept(bookingId);
         if (!ok) return;
-        showAgentToast('Job accepted');
+        showTechnicianToast('Job accepted');
         await fetchJobs();
-        navigation.navigate('AgentActiveJob');
+        navigation.navigate('TechnicianActiveJob');
     };
 
     const handleReject = async (bookingId: string) => {
         const ok = await reject(bookingId);
         if (!ok) return;
-        showAgentToast('Job rejected');
+        showTechnicianToast('Job rejected');
         await fetchJobs();
     };
 
@@ -186,47 +186,47 @@ export const AgentJobsScreen: React.FC<AgentJobsScreenProps> = ({ navigation }) 
         void toggleOnline(nextValue);
     };
 
-    const renderJob = ({ item }: { item: AgentJob }) => {
+    const renderJob = ({ item }: { item: TechnicianJob }) => {
         const location = [item.address_city, item.address_line1].filter(Boolean).join(', ');
 
         return (
-            <AgentCard style={styles.jobCard}>
+            <TechnicianCard style={styles.jobCard}>
                 <View style={styles.topRow}>
                     <Text style={styles.serviceName}>{item.service_name || 'Service job'}</Text>
-                    <AgentChip label={item.status.replace('_', ' ')} tone={statusTone(item.status)} />
+                    <TechnicianChip label={item.status.replace('_', ' ')} tone={statusTone(item.status)} />
                 </View>
 
                 <View style={styles.infoRow}>
-                    <Ionicons name="time-outline" size={14} color={agentTheme.colors.textSecondary} />
+                    <Ionicons name="time-outline" size={14} color={technicianTheme.colors.textSecondary} />
                     <Text style={styles.infoText}>{formatSlot(item.scheduled_date, item.scheduled_time)}</Text>
                 </View>
 
                 <View style={styles.infoRow}>
-                    <Ionicons name="location-outline" size={14} color={agentTheme.colors.textSecondary} />
+                    <Ionicons name="location-outline" size={14} color={technicianTheme.colors.textSecondary} />
                     <Text style={styles.infoText} numberOfLines={1}>{location || 'Address not available'}</Text>
                 </View>
 
                 <View style={styles.actions}>
-                    <AgentButton
+                    <TechnicianButton
                         title="Reject"
                         variant="secondary"
                         onPress={() => handleReject(item.id)}
                         disabled={loading.action}
                         style={styles.actionBtn}
                     />
-                    <AgentButton
+                    <TechnicianButton
                         title="Accept"
                         onPress={() => handleAccept(item.id)}
                         disabled={loading.action}
                         style={styles.actionBtn}
                     />
                 </View>
-            </AgentCard>
+            </TechnicianCard>
         );
     };
 
     return (
-        <AgentScreen>
+        <TechnicianScreen>
             <View style={styles.header}>
                 <View>
                     <Text style={styles.headerTitle}>Jobs</Text>
@@ -237,7 +237,7 @@ export const AgentJobsScreen: React.FC<AgentJobsScreenProps> = ({ navigation }) 
                     <Switch
                         value={isOnline}
                         onValueChange={handleOnlineToggle}
-                        trackColor={{ false: '#D1D7DE', true: agentTheme.colors.agentPrimary }}
+                        trackColor={{ false: '#D1D7DE', true: technicianTheme.colors.agentPrimary }}
                         thumbColor={isOnline ? '#3D2A00' : '#6B7885'}
                         disabled={loading.online}
                     />
@@ -259,13 +259,13 @@ export const AgentJobsScreen: React.FC<AgentJobsScreenProps> = ({ navigation }) 
             <TouchableOpacity
                 activeOpacity={0.9}
                 style={styles.earnBanner}
-                onPress={() => navigation.navigate('AgentEarn')}
+                onPress={() => navigation.navigate('TechnicianEarn')}
             >
                 <View style={styles.earnBannerLeft}>
                     <Text style={styles.earnBannerTitle}>{activeCampaign?.name || 'Earn More'}</Text>
                     <Text style={styles.earnBannerText}>{earnBannerMessage}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={agentTheme.colors.agentPrimary} />
+                <Ionicons name="chevron-forward" size={18} color={technicianTheme.colors.agentPrimary} />
             </TouchableOpacity>
 
             <FlatList
@@ -273,35 +273,35 @@ export const AgentJobsScreen: React.FC<AgentJobsScreenProps> = ({ navigation }) 
                 keyExtractor={(item) => item.id}
                 renderItem={renderJob}
                 contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={refreshing || loading.jobs} onRefresh={onRefresh} tintColor={agentTheme.colors.agentPrimary} />}
-                ListHeaderComponent={<AgentSectionHeader title="Available Jobs" subtitle={`${filteredJobs.length} jobs`} />}
+                refreshControl={<RefreshControl refreshing={refreshing || loading.jobs} onRefresh={onRefresh} tintColor={technicianTheme.colors.agentPrimary} />}
+                ListHeaderComponent={<TechnicianSectionHeader title="Available Jobs" subtitle={`${filteredJobs.length} jobs`} />}
                 ListEmptyComponent={
-                    <AgentCard style={styles.emptyCard}>
+                    <TechnicianCard style={styles.emptyCard}>
                         <Text style={styles.emptyTitle}>No jobs right now</Text>
                         <Text style={styles.emptySubtitle}>Keep online mode enabled and pull to refresh.</Text>
-                    </AgentCard>
+                    </TechnicianCard>
                 }
             />
-        </AgentScreen>
+        </TechnicianScreen>
     );
 };
 
 const styles = StyleSheet.create({
     header: {
-        backgroundColor: agentTheme.colors.agentDark,
-        paddingHorizontal: agentTheme.spacing.lg,
-        paddingTop: agentTheme.spacing.md,
-        paddingBottom: agentTheme.spacing.lg,
+        backgroundColor: technicianTheme.colors.agentDark,
+        paddingHorizontal: technicianTheme.spacing.lg,
+        paddingTop: technicianTheme.spacing.md,
+        paddingBottom: technicianTheme.spacing.lg,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     headerTitle: {
-        ...agentTheme.typography.h1,
-        color: agentTheme.colors.textOnDark,
+        ...technicianTheme.typography.h1,
+        color: technicianTheme.colors.textOnDark,
     },
     headerSubtitle: {
-        ...agentTheme.typography.bodySmall,
+        ...technicianTheme.typography.bodySmall,
         color: '#AAB6C2',
         marginTop: 2,
     },
@@ -310,65 +310,65 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     onlineText: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.agentPrimary,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.agentPrimary,
     },
     filterRow: {
         flexDirection: 'row',
-        gap: agentTheme.spacing.sm,
-        paddingHorizontal: agentTheme.spacing.lg,
+        gap: technicianTheme.spacing.sm,
+        paddingHorizontal: technicianTheme.spacing.lg,
         marginTop: -14,
     },
     earnBanner: {
-        marginTop: agentTheme.spacing.md,
-        marginHorizontal: agentTheme.spacing.lg,
-        borderRadius: agentTheme.radius.md,
+        marginTop: technicianTheme.spacing.md,
+        marginHorizontal: technicianTheme.spacing.lg,
+        borderRadius: technicianTheme.radius.md,
         borderWidth: 1,
         borderColor: '#F6D485',
         backgroundColor: '#FFF4D6',
-        paddingHorizontal: agentTheme.spacing.md,
-        paddingVertical: agentTheme.spacing.sm,
+        paddingHorizontal: technicianTheme.spacing.md,
+        paddingVertical: technicianTheme.spacing.sm,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
     },
     earnBannerLeft: {
         flex: 1,
     },
     earnBannerTitle: {
-        ...agentTheme.typography.caption,
+        ...technicianTheme.typography.caption,
         color: '#6E4C00',
     },
     earnBannerText: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textPrimary,
         marginTop: 2,
     },
     filterPill: {
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderRadius: agentTheme.radius.full,
-        backgroundColor: agentTheme.colors.agentSurface,
+        borderRadius: technicianTheme.radius.full,
+        backgroundColor: technicianTheme.colors.agentSurface,
         borderWidth: 1,
-        borderColor: agentTheme.colors.border,
+        borderColor: technicianTheme.colors.border,
     },
     filterPillActive: {
-        borderColor: agentTheme.colors.agentPrimary,
+        borderColor: technicianTheme.colors.agentPrimary,
         backgroundColor: '#FFEBC1',
     },
     filterText: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.textSecondary,
     },
     filterTextActive: {
         color: '#815900',
     },
     listContent: {
-        paddingHorizontal: agentTheme.spacing.lg,
-        paddingTop: agentTheme.spacing.md,
-        paddingBottom: agentTheme.spacing.xxl,
-        gap: agentTheme.spacing.md,
+        paddingHorizontal: technicianTheme.spacing.lg,
+        paddingTop: technicianTheme.spacing.md,
+        paddingBottom: technicianTheme.spacing.xxl,
+        gap: technicianTheme.spacing.md,
     },
     jobCard: {
         gap: 8,
@@ -377,11 +377,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        gap: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
     },
     serviceName: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
         flex: 1,
     },
     infoRow: {
@@ -390,29 +390,29 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     infoText: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         flex: 1,
     },
     actions: {
         flexDirection: 'row',
-        gap: agentTheme.spacing.sm,
-        marginTop: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
+        marginTop: technicianTheme.spacing.sm,
     },
     actionBtn: {
         flex: 1,
     },
     emptyCard: {
-        marginTop: agentTheme.spacing.md,
+        marginTop: technicianTheme.spacing.md,
     },
     emptyTitle: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
         textAlign: 'center',
     },
     emptySubtitle: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         textAlign: 'center',
         marginTop: 6,
     },

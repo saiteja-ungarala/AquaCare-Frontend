@@ -83,7 +83,7 @@ const CATEGORY_CARD_PALETTES = [
     },
 ];
 
-export function StoreHomeScreen({ navigation }: any) {
+export function StoreHomeScreen({ navigation, route }: any) {
     const [categories, setCategories] = React.useState<StoreCategory[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
@@ -108,6 +108,11 @@ export function StoreHomeScreen({ navigation }: any) {
     React.useEffect(() => {
         loadCategories();
     }, [loadCategories]);
+
+    React.useEffect(() => {
+        const nextSearch = String(route?.params?.initialSearchQuery || '').trim();
+        setSearchQuery(nextSearch);
+    }, [route?.params?.initialSearchQuery]);
 
     useFocusEffect(
         React.useCallback(() => {

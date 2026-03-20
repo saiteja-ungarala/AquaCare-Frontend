@@ -1,9 +1,10 @@
 // Service Details Screen — with Address Selection + Booking
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { RootStackScreenProps, Address } from '../../models/types';
 import { spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { Button } from '../../components';
@@ -29,6 +30,18 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
     const [bookingSuccess, setBookingSuccess] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
     const createBooking = useBookingsStore((s) => s.createBooking);
+
+    // When user adds an address and returns, re-open picker with fresh list
+    const shouldReopenModal = useRef(false);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (shouldReopenModal.current) {
+                shouldReopenModal.current = false;
+                void openAddressPicker();
+            }
+        }, [])
+    );
 
     // Generate next 5 days
     const dates = Array.from({ length: 5 }, (_, i) => {
@@ -332,7 +345,18 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                             <View style={styles.emptyAddr}>
                                 <Ionicons name="location-outline" size={48} color={customerColors.textLight} />
                                 <Text style={styles.emptyAddrText}>No addresses found</Text>
-                                <Text style={styles.emptyAddrSub}>Add one from your Profile → Addresses</Text>
+                                <Text style={styles.emptyAddrSub}>Add a delivery address to continue</Text>
+                                <TouchableOpacity
+                                    style={styles.addAddrBtn}
+                                    onPress={() => {
+                                        setShowAddressPicker(false);
+                                        shouldReopenModal.current = true;
+                                        navigation.navigate('AddEditAddress', {});
+                                    }}
+                                >
+                                    <Ionicons name="add-circle-outline" size={18} color={customerColors.textOnPrimary} />
+                                    <Text style={styles.addAddrBtnText}>Add Address</Text>
+                                </TouchableOpacity>
                             </View>
                         ) : (
                             <ScrollView style={{ maxHeight: 400 }}>
@@ -369,6 +393,18 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                                         </TouchableOpacity>
                                     );
                                 })}
+                                {/* Always-visible Add Address button */}
+                                <TouchableOpacity
+                                    style={styles.addMoreAddrBtn}
+                                    onPress={() => {
+                                        setShowAddressPicker(false);
+                                        shouldReopenModal.current = true;
+                                        navigation.navigate('AddEditAddress', {});
+                                    }}
+                                >
+                                    <Ionicons name="add-circle-outline" size={18} color={customerColors.primary} />
+                                    <Text style={styles.addMoreAddrText}>Add New Address</Text>
+                                </TouchableOpacity>
                             </ScrollView>
                         )}
                     </View>
@@ -459,7 +495,11 @@ const styles = StyleSheet.create({
     modalTitle: { ...typography.h2, fontSize: 18, color: customerColors.text },
     emptyAddr: { alignItems: 'center', padding: spacing.xl },
     emptyAddrText: { ...typography.body, color: customerColors.text, fontWeight: '600', marginTop: spacing.md },
-    emptyAddrSub: { ...typography.caption, color: customerColors.textSecondary, marginTop: spacing.xs },
+    emptyAddrSub: { ...typography.caption, color: customerColors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg },
+    addAddrBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: customerColors.primary, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.xl, borderRadius: borderRadius.lg },
+    addAddrBtnText: { ...typography.body, color: customerColors.textOnPrimary, fontWeight: '700' },
+    addMoreAddrBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.md, marginTop: spacing.xs, borderTopWidth: 1, borderTopColor: customerColors.border },
+    addMoreAddrText: { ...typography.body, color: customerColors.primary, fontWeight: '600' },
     addrItem: { flexDirection: 'row', alignItems: 'flex-start', borderBottomWidth: 1, borderBottomColor: customerColors.border, paddingVertical: spacing.md },
     addrItemSelected: { backgroundColor: customerColors.primaryLight, borderRadius: borderRadius.md, paddingHorizontal: spacing.sm },
     addrLabel: { ...typography.body, fontWeight: '700', color: customerColors.text },

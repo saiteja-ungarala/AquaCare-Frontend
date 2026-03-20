@@ -30,9 +30,9 @@ interface ActivityItem {
 
 interface DashboardData {
     totalCustomers: number;
-    totalAgents: number;
+    totalTechnicians: number;
     totalDealers: number;
-    pendingAgentKyc: number;
+    pendingTechnicianKyc: number;
     pendingDealerKyc: number;
     todayBookings: number;
     todayRevenue: number;
@@ -167,10 +167,10 @@ export default function AdminDashboardScreen() {
     const rows: StatCardProps[][] = [
         [
             { label: 'Total Customers', value: data.totalCustomers, icon: 'people-outline', color: '#2563EB' },
-            { label: 'Total Agents', value: data.totalAgents, icon: 'person-outline', color: '#16A34A' },
+            { label: 'Total Technicians', value: data.totalTechnicians, icon: 'person-outline', color: '#16A34A' },
         ],
         [
-            { label: 'Pending Agent KYC', value: data.pendingAgentKyc, icon: 'document-text-outline', color: '#F59E0B', badge: true },
+            { label: 'Pending Technician KYC', value: data.pendingTechnicianKyc, icon: 'document-text-outline', color: '#F59E0B', badge: true },
             { label: 'Pending Dealer KYC', value: data.pendingDealerKyc, icon: 'storefront-outline', color: '#F59E0B', badge: true },
         ],
         [
@@ -188,7 +188,7 @@ export default function AdminDashboardScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
-                    <Text style={styles.headerBrand}>IonCare</Text>
+                    <Text style={styles.headerBrand}>IONORA CARE</Text>
                     <Text style={styles.headerTitle}>Admin Dashboard</Text>
                 </View>
                 <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>

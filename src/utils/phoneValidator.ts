@@ -1,5 +1,5 @@
 /**
- * Validation utilities for IonCare
+ * Validation utilities for IONORA CARE
  */
 
 /**

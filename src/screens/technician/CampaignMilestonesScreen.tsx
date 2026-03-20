@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackScreenProps } from '../../models/types';
-import { AgentButton, AgentCard, AgentChip, AgentScreen, AgentSectionHeader } from '../../components/agent';
-import { agentTheme } from '../../theme/agentTheme';
-import { useAgentEarnStore } from '../../store';
-import { showAgentToast } from '../../utils/agentToast';
+import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
+import { technicianTheme } from '../../theme/technicianTheme';
+import { useTechnicianEarnStore } from '../../store';
+import { showTechnicianToast } from '../../utils/technicianToast';
 
-type CampaignMilestonesScreenProps = RootStackScreenProps<'AgentCampaignMilestones'>;
+type CampaignMilestonesScreenProps = RootStackScreenProps<'TechnicianCampaignMilestones'>;
 
 const formatCurrency = (amount: number): string => {
     return `Rs ${Number(amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
@@ -25,7 +25,7 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
         fetchCampaigns,
         fetchProgress,
         clearError,
-    } = useAgentEarnStore();
+    } = useTechnicianEarnStore();
 
     useFocusEffect(
         useCallback(() => {
@@ -36,7 +36,7 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
 
     useEffect(() => {
         if (!error) return;
-        showAgentToast(error);
+        showTechnicianToast(error);
         clearError();
     }, [clearError, error]);
 
@@ -58,29 +58,29 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
     const hasMilestones = (campaign?.tiers || []).length > 0;
 
     return (
-        <AgentScreen>
+        <TechnicianScreen>
             <ScrollView
                 contentContainerStyle={styles.content}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing || loading.progress || loading.campaigns}
                         onRefresh={onRefresh}
-                        tintColor={agentTheme.colors.agentPrimary}
+                        tintColor={technicianTheme.colors.agentPrimary}
                     />
                 }
             >
-                <AgentSectionHeader
+                <TechnicianSectionHeader
                     title="Campaign Milestones"
                     subtitle={campaign?.name || 'Current campaign'}
                     actionLabel="Back"
                     onActionPress={() => navigation.goBack()}
                 />
 
-                <AgentCard>
+                <TechnicianCard>
                     <Text style={styles.metaLine}>Sold quantity: {progress?.soldQty ?? 0}</Text>
                     <Text style={styles.metaLine}>Next threshold: {progress?.nextThreshold ?? '-'}</Text>
                     <Text style={styles.metaLine}>Bonuses earned: {formatCurrency(progress?.bonusesEarned ?? 0)}</Text>
-                </AgentCard>
+                </TechnicianCard>
 
                 {hasMilestones ? (
                     campaign!.tiers.map((tier) => {
@@ -88,13 +88,13 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
                         const remaining = Math.max(0, tier.thresholdQty - (progress?.soldQty ?? 0));
 
                         return (
-                            <AgentCard key={`${campaignId}-${tier.thresholdQty}`}>
+                            <TechnicianCard key={`${campaignId}-${tier.thresholdQty}`}>
                                 <View style={styles.tierRow}>
                                     <View style={styles.tierTextWrap}>
                                         <Text style={styles.tierTitle}>{tier.thresholdQty} sold</Text>
                                         <Text style={styles.tierSubtitle}>Bonus {formatCurrency(tier.bonusAmount)}</Text>
                                     </View>
-                                    <AgentChip
+                                    <TechnicianChip
                                         label={isReached ? 'achieved' : 'upcoming'}
                                         tone={isReached ? 'success' : 'warning'}
                                     />
@@ -104,64 +104,64 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
                                         {remaining} more to unlock this bonus
                                     </Text>
                                 ) : null}
-                            </AgentCard>
+                            </TechnicianCard>
                         );
                     })
                 ) : (
-                    <AgentCard>
+                    <TechnicianCard>
                         <Text style={styles.emptyTitle}>No milestone tiers found</Text>
                         <Text style={styles.emptySubtitle}>Campaign milestone details will appear once available.</Text>
-                    </AgentCard>
+                    </TechnicianCard>
                 )}
 
-                <AgentButton title="Back to Earn" variant="secondary" onPress={() => navigation.goBack()} />
+                <TechnicianButton title="Back to Earn" variant="secondary" onPress={() => navigation.goBack()} />
             </ScrollView>
-        </AgentScreen>
+        </TechnicianScreen>
     );
 };
 
 const styles = StyleSheet.create({
     content: {
-        padding: agentTheme.spacing.lg,
-        gap: agentTheme.spacing.md,
-        paddingBottom: agentTheme.spacing.xxl,
+        padding: technicianTheme.spacing.lg,
+        gap: technicianTheme.spacing.md,
+        paddingBottom: technicianTheme.spacing.xxl,
     },
     metaLine: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         marginBottom: 6,
     },
     tierRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        gap: agentTheme.spacing.sm,
+        gap: technicianTheme.spacing.sm,
     },
     tierTextWrap: {
         flex: 1,
     },
     tierTitle: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
     },
     tierSubtitle: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         marginTop: 4,
     },
     remainingText: {
-        ...agentTheme.typography.caption,
+        ...technicianTheme.typography.caption,
         color: '#7A5B13',
         marginTop: 8,
     },
     emptyTitle: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
         textAlign: 'center',
     },
     emptySubtitle: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         textAlign: 'center',
         marginTop: 6,
     },

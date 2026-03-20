@@ -266,7 +266,7 @@ export const BookingDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                     </View>
                 </View>
 
-                {/* Agent card */}
+                {/* Technician card */}
                 {booking.agent?.name ? (
                     <View style={[styles.card, styles.agentCard]}>
                         <View style={styles.agentRow}>

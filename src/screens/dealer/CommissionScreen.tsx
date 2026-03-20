@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { dealerService, DealerCommission } from '../../services/dealerService';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { DealerScreen } from '../../components/dealer/DealerScreen';
 
 type CommissionScreenProps = { navigation: NativeStackNavigationProp<any> };
 
@@ -41,7 +41,7 @@ export const CommissionScreen: React.FC<CommissionScreenProps> = ({ navigation }
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container}>
+            <DealerScreen>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color={colors.text} /></TouchableOpacity>
                     <Text style={styles.headerTitle}>Commission</Text>
@@ -50,13 +50,13 @@ export const CommissionScreen: React.FC<CommissionScreenProps> = ({ navigation }
                 <View style={styles.centered}>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>
-            </SafeAreaView>
+            </DealerScreen>
         );
     }
 
     if (error) {
         return (
-            <SafeAreaView style={styles.container}>
+            <DealerScreen>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color={colors.text} /></TouchableOpacity>
                     <Text style={styles.headerTitle}>Commission</Text>
@@ -68,12 +68,12 @@ export const CommissionScreen: React.FC<CommissionScreenProps> = ({ navigation }
                         <Text style={styles.retryButtonText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
-            </SafeAreaView>
+            </DealerScreen>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <DealerScreen>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color={colors.text} /></TouchableOpacity>
                 <Text style={styles.headerTitle}>Commission</Text>
@@ -117,7 +117,7 @@ export const CommissionScreen: React.FC<CommissionScreenProps> = ({ navigation }
                     ))}
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </DealerScreen>
     );
 };
 

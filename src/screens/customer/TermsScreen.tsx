@@ -12,12 +12,12 @@ import { customerColors } from '../../theme/customerTheme';
 type Props = { navigation: NativeStackNavigationProp<any> };
 
 const SECTIONS = [
-    { title: '1. Acceptance of Terms', body: 'By accessing or using IonCare services, you agree to be bound by these Terms & Conditions. If you do not agree, please do not use the application.' },
-    { title: '2. Services', body: 'IonCare provides water purifier installation, maintenance, and repair services, as well as an e-commerce platform for water care products. Service availability may vary by location.' },
+    { title: '1. Acceptance of Terms', body: 'By accessing or using IONORA CARE services, you agree to be bound by these Terms & Conditions. If you do not agree, please do not use the application.' },
+    { title: '2. Services', body: 'IONORA CARE provides water purifier installation, maintenance, and repair services, as well as an e-commerce platform for water care products. Service availability may vary by location.' },
     { title: '3. User Accounts', body: 'You are responsible for maintaining the confidentiality of your account credentials. You must provide accurate information during registration and keep it updated.' },
-    { title: '4. Bookings & Cancellations', body: 'Bookings are subject to service agent availability. Cancellations made less than 2 hours before the scheduled time may incur a cancellation fee.' },
-    { title: '5. Payments & Refunds', body: 'All payments are processed securely. Refunds for cancelled services will be credited to your IonCare wallet within 3–5 business days.' },
-    { title: '6. Limitation of Liability', body: 'IonCare shall not be liable for any indirect, incidental, or consequential damages arising from the use of our services.' },
+    { title: '4. Bookings & Cancellations', body: 'Bookings are subject to service technician availability. Cancellations made less than 2 hours before the scheduled time may incur a cancellation fee.' },
+    { title: '5. Payments & Refunds', body: 'All payments are processed securely. Refunds for cancelled services will be credited to your IONORA CARE wallet within 3–5 business days.' },
+    { title: '6. Limitation of Liability', body: 'IONORA CARE shall not be liable for any indirect, incidental, or consequential damages arising from the use of our services.' },
     { title: '7. Changes to Terms', body: 'We reserve the right to modify these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms.' },
 ];
 

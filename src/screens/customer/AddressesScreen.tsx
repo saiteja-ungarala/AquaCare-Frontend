@@ -1,7 +1,7 @@
 // Addresses Screen — List, delete, set default
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -18,6 +18,7 @@ export const AddressesScreen: React.FC<Props> = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     const fetchAddresses = useCallback(async () => {
         setLoading(true);
@@ -32,6 +33,12 @@ export const AddressesScreen: React.FC<Props> = ({ navigation }) => {
     }, []);
 
     useFocusEffect(useCallback(() => { fetchAddresses(); }, [fetchAddresses]));
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await fetchAddresses();
+        setRefreshing(false);
+    }, [fetchAddresses]);
 
     const handleDelete = async (id: string) => {
         // Optimistic: remove from list immediately
@@ -116,11 +123,32 @@ export const AddressesScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.center}><ActivityIndicator size="large" color={customerColors.primaryDark} /></View>
             ) : addresses.length === 0 ? (
                 <View style={styles.center}>
-                    <Ionicons name="location-outline" size={56} color={colors.textMuted} />
+                    <Ionicons name="location-outline" size={64} color={colors.textMuted} />
                     <Text style={styles.emptyText}>No addresses yet</Text>
+                    <Text style={styles.emptySubText}>Add a delivery address for seamless booking</Text>
+                    <TouchableOpacity
+                        style={styles.emptyAddBtn}
+                        onPress={() => navigation.navigate('AddEditAddress', {})}
+                    >
+                        <Ionicons name="add-circle-outline" size={18} color={customerColors.textOnPrimary} />
+                        <Text style={styles.emptyAddBtnText}>Add Address</Text>
+                    </TouchableOpacity>
                 </View>
             ) : (
-                <FlatList data={addresses} keyExtractor={(a) => a.id} renderItem={renderItem} contentContainerStyle={{ padding: spacing.md }} />
+                <FlatList
+                    data={addresses}
+                    keyExtractor={(a) => a.id}
+                    renderItem={renderItem}
+                    contentContainerStyle={{ padding: spacing.md }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={[customerColors.primaryDark]}
+                            tintColor={customerColors.primaryDark}
+                        />
+                    }
+                />
             )}
             <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddEditAddress', {})}>
                 <Ionicons name="add" size={28} color={colors.textOnPrimary} />
@@ -168,8 +196,11 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginTop: 2,
     },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    emptyText: { ...typography.body, color: colors.textMuted, marginTop: spacing.md },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
+    emptyText: { ...typography.h3, color: colors.text, marginTop: spacing.md, fontWeight: '700' },
+    emptySubText: { ...typography.bodySmall, color: colors.textMuted, marginTop: spacing.xs, textAlign: 'center', marginBottom: spacing.lg },
+    emptyAddBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: customerColors.primaryDark, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.xl, borderRadius: borderRadius.lg },
+    emptyAddBtnText: { ...typography.body, color: colors.textOnPrimary, fontWeight: '700' },
     card: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, ...shadows.sm },
     cardTop: { flexDirection: 'row', justifyContent: 'space-between' },
     label: { ...typography.bodySmall, fontWeight: '700', color: colors.text, marginBottom: 4 },

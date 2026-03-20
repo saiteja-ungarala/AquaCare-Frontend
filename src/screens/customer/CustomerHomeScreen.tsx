@@ -1,7 +1,7 @@
 // Customer Home Screen - Premium Modern Dashboard
 // Clean, vibrant, high-contrast with responsive layout
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
     Dimensions,
     StatusBar,
     Linking,
+    RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,11 +30,12 @@ import {
     type CategoryItem,
     type BannerItem,
 } from '../../components';
-import { useCartStore, useAuthStore } from '../../store';
+import { useCartStore, useAuthStore, useLocationStore } from '../../store';
 import { catalogService } from '../../services/catalogService';
 import api from '../../services/api';
 import { Product, Service } from '../../models/types';
 import { SERVER_BASE_URL } from '../../config/constants';
+import { navigateToStoreCategories } from '../../navigation/storeNavigation';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = spacing.md;
 const GRID_PAD = spacing.lg;
@@ -104,50 +106,60 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
     const [services, setServices] = useState<Service[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [banners, setBanners] = useState<BannerItem[]>(homeBanners);
+    const [refreshing, setRefreshing] = useState(false);
     const { showLoginCelebration, setShowLoginCelebration } = useAuthStore();
     const { items: cartItems } = useCartStore();
+    const { locationName, loadCached, fetchAndSet } = useLocationStore();
+
+    const loadHomeData = useCallback(async () => {
+        try {
+            const [serviceList, productList] = await Promise.all([
+                catalogService.getServices(),
+                catalogService.getProducts(),
+            ]);
+            setServices(serviceList);
+            setProducts(productList);
+        } catch (error) {
+            console.error('[CustomerHome] Failed to load data:', error);
+            setServices([]);
+            setProducts([]);
+        }
+    }, []);
+
+    const loadBannersData = useCallback(async () => {
+        try {
+            const res = await api.get('/banners/active');
+            const data: any[] = res.data?.data ?? [];
+            if (data.length > 0) {
+                setBanners(data.map((b: any) => ({
+                    id: String(b.id),
+                    title: b.title,
+                    subtitle: b.subtitle ?? undefined,
+                    image: b.image_url
+                        ? { uri: SERVER_BASE_URL + b.image_url }
+                        : require('../../../assets/b1.jpg'),
+                    backgroundColor: customerColors.primary,
+                    ctaText: b.link_type && b.link_type !== 'none' ? 'View' : undefined,
+                    linkType: b.link_type ?? undefined,
+                    linkValue: b.link_value ?? null,
+                })));
+            }
+        } catch {
+            // keep default homeBanners on failure
+        }
+    }, []);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await Promise.all([loadHomeData(), loadBannersData()]);
+        setRefreshing(false);
+    }, [loadHomeData, loadBannersData]);
 
     useEffect(() => {
-        const loadHomeData = async () => {
-            try {
-                const [serviceList, productList] = await Promise.all([
-                    catalogService.getServices(),
-                    catalogService.getProducts(),
-                ]);
-                setServices(serviceList);
-                setProducts(productList);
-            } catch (error) {
-                console.error('[CustomerHome] Failed to load data:', error);
-                setServices([]);
-                setProducts([]);
-            }
-        };
-
-        const loadBanners = async () => {
-            try {
-                const res = await api.get('/banners/active');
-                const data: any[] = res.data?.data ?? [];
-                if (data.length > 0) {
-                    setBanners(data.map((b: any) => ({
-                        id: String(b.id),
-                        title: b.title,
-                        subtitle: b.subtitle ?? undefined,
-                        image: b.image_url
-                            ? { uri: SERVER_BASE_URL + b.image_url }
-                            : require('../../../assets/b1.jpg'),
-                        backgroundColor: customerColors.primary,
-                        ctaText: b.link_type && b.link_type !== 'none' ? 'View' : undefined,
-                        linkType: b.link_type ?? undefined,
-                        linkValue: b.link_value ?? null,
-                    })));
-                }
-            } catch {
-                // keep default homeBanners on failure
-            }
-        };
-
         loadHomeData();
-        loadBanners();
+        loadBannersData();
+        // Restore cached location instantly, then refresh in background
+        void loadCached().then(() => fetchAndSet());
     }, []);
 
     const handleBannerPress = async (banner: BannerItem) => {
@@ -199,6 +211,14 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
 
     const insets = useSafeAreaInsets();
 
+    const handleCategorySelect = (categoryId: string) => {
+        setSelectedCategory(categoryId);
+        const category = categories.find((item) => item.id === categoryId);
+        navigateToStoreCategories(navigation, {
+            initialSearchQuery: categoryId === 'all' ? '' : category?.name,
+        });
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={customerColors.primary} />
@@ -222,7 +242,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                             <View style={styles.headerLocationTextWrap}>
                                 <Text style={styles.headerLocationLabel}>DELIVER TO</Text>
                                 <View style={styles.headerLocationRow}>
-                                    <Text style={styles.headerLocationText} numberOfLines={1}>Select Location</Text>
+                                    <Text style={styles.headerLocationText} numberOfLines={1}>{locationName || 'Select Location'}</Text>
                                     <Ionicons name="chevron-down" size={16} color="#FFFFFF" style={{ marginLeft: 4, marginTop: 1 }} />
                                 </View>
                             </View>
@@ -259,13 +279,21 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     style={styles.scrollView}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.scrollContent}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={[customerColors.primary]}
+                            tintColor={customerColors.primary}
+                        />
+                    }
                 >
 
                     {/* Category Chips */}
                     <CategoryChip
                         categories={categories}
                         selectedId={selectedCategory}
-                        onSelect={setSelectedCategory}
+                        onSelect={handleCategorySelect}
                         customColors={customerColors}
                     />
 
@@ -318,7 +346,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                             </View>
                             <View style={styles.referralContent}>
                                 <Text style={styles.referralTitle}>Refer & Earn ₹500</Text>
-                                <Text style={styles.referralDesc}>Invite friends to IonCare</Text>
+                                <Text style={styles.referralDesc}>Invite friends to IONORA CARE</Text>
                             </View>
                             <View style={styles.referralArrow}>
                                 <Ionicons name="arrow-forward" size={18} color={'#7FA650'} />
@@ -333,7 +361,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                                 <View style={[styles.sectionAccent, { backgroundColor: '#FF7043' }]} />
                                 <Text style={styles.sectionTitle}>Water Products</Text>
                             </View>
-                            <TouchableOpacity onPress={() => navigation.navigate('Store')} style={styles.viewAllBtn}>
+                            <TouchableOpacity onPress={() => navigateToStoreCategories(navigation)} style={styles.viewAllBtn}>
                                 <Text style={styles.viewAll}>View All</Text>
                                 <Ionicons name="arrow-forward" size={14} color={customerColors.primary} />
                             </TouchableOpacity>
@@ -355,7 +383,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     <View style={styles.whyChooseSection}>
                         <View style={styles.sectionTitleWrap}>
                             <View style={[styles.sectionAccent, { backgroundColor: '#7C4DFF' }]} />
-                            <Text style={styles.sectionTitle}>Why Choose IonCare?</Text>
+                            <Text style={styles.sectionTitle}>Why Choose IONORA CARE?</Text>
                         </View>
 
                         <View style={styles.featuresGrid}>

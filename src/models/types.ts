@@ -79,7 +79,7 @@ export interface Booking {
     scheduledDate: string;
     scheduledTime: string;
     address: Address;
-    agent?: Agent;
+    agent?: Technician;
     totalAmount: number;
     createdAt: string;
     completedAt?: string;
@@ -106,12 +106,12 @@ export type BookingStatus =
     | 'completed'
     | 'cancelled';
 
-export type AgentVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
-export type AgentKycDocType = 'aadhaar' | 'pan' | 'driving_license' | 'selfie' | 'other';
+export type TechnicianVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
+export type TechnicianKycDocType = 'aadhaar' | 'pan' | 'driving_license' | 'selfie' | 'other';
 export type DealerVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
 export type DealerKycDocType = 'gst_certificate' | 'shop_license' | 'pan' | 'aadhaar' | 'bank_proof' | 'selfie' | 'other';
 
-export interface Agent {
+export interface Technician {
     id: string;
     name: string;
     phone: string;
@@ -120,11 +120,11 @@ export interface Agent {
     totalJobs: number;
 }
 
-export interface AgentProfile {
+export interface TechnicianProfile {
     user_id: string;
     full_name: string;
     phone: string | null;
-    verification_status: AgentVerificationStatus | string;
+    verification_status: TechnicianVerificationStatus | string;
     is_online: boolean;
     service_radius_km: number;
     base_lat: number | null;
@@ -132,9 +132,9 @@ export interface AgentProfile {
     last_online_at: string | null;
 }
 
-export interface AgentKycDocument {
+export interface TechnicianKycDocument {
     id: number;
-    doc_type: AgentKycDocType | string;
+    doc_type: TechnicianKycDocType | string;
     file_url: string;
     status: string;
     review_notes?: string | null;
@@ -142,15 +142,15 @@ export interface AgentKycDocument {
     reviewed_at?: string | null;
 }
 
-export interface AgentKycSummary {
-    verification_status: AgentVerificationStatus | string;
-    latest_document: AgentKycDocument | null;
+export interface TechnicianKycSummary {
+    verification_status: TechnicianVerificationStatus | string;
+    latest_document: TechnicianKycDocument | null;
     counts: Record<string, number>;
 }
 
-export interface AgentMePayload {
-    profile: AgentProfile;
-    kyc: AgentKycSummary;
+export interface TechnicianMePayload {
+    profile: TechnicianProfile;
+    kyc: TechnicianKycSummary;
 }
 
 export interface DealerProfile {
@@ -196,7 +196,7 @@ export interface DealerPricingProduct {
     earning_preview: number | null;
 }
 
-export interface AgentJob {
+export interface TechnicianJob {
     id: string;
     user_id: number;
     service_id: number;
@@ -223,7 +223,7 @@ export interface AgentJob {
     distance_km: number | null;
 }
 
-export interface AgentJobsMeta {
+export interface TechnicianJobsMeta {
     distance_filter_applied: boolean;
     note?: string;
     base_lat?: number;
@@ -231,7 +231,7 @@ export interface AgentJobsMeta {
     service_radius_km?: number;
 }
 
-export interface AgentEarnSummary {
+export interface TechnicianEarnSummary {
     totalsPending: number;
     totalsApproved: number;
     totalsPaid: number;
@@ -239,29 +239,29 @@ export interface AgentEarnSummary {
     bonusPaid: number;
 }
 
-export interface AgentCampaignTier {
+export interface TechnicianCampaignTier {
     thresholdQty: number;
     bonusAmount: number;
 }
 
-export interface AgentCampaign {
+export interface TechnicianCampaign {
     id: number;
     name: string;
     description?: string;
     startAt: string;
     endAt: string;
-    tiers: AgentCampaignTier[];
+    tiers: TechnicianCampaignTier[];
 }
 
-export interface AgentEarnProgress {
+export interface TechnicianEarnProgress {
     soldQty: number;
     nextThreshold: number | null;
     remainingToNextThreshold: number;
     bonusesEarned: number;
-    tiersReached: AgentCampaignTier[];
+    tiersReached: TechnicianCampaignTier[];
 }
 
-export interface AgentProductCommissionPreview {
+export interface TechnicianProductCommissionPreview {
     id: number;
     name: string;
     price: number;
@@ -376,16 +376,16 @@ export type RootStackParamList = {
     ContactUs: undefined;
     Terms: undefined;
     Privacy: undefined;
-    AgentEntry: undefined;
-    AgentKycUpload: undefined;
-    AgentKycPending: undefined;
-    AgentTabs: undefined;
-    AgentJobs: undefined;
-    AgentActiveJob: undefined;
-    AgentEarn: undefined;
-    AgentHistory: undefined;
-    AgentProfile: undefined;
-    AgentCampaignMilestones: { campaignId: number };
+    TechnicianEntry: undefined;
+    TechnicianKycUpload: undefined;
+    TechnicianKycPending: undefined;
+    TechnicianTabs: undefined;
+    TechnicianJobs: undefined;
+    TechnicianActiveJob: undefined;
+    TechnicianEarn: undefined;
+    TechnicianHistory: undefined;
+    TechnicianProfile: undefined;
+    TechnicianCampaignMilestones: { campaignId: number };
     DealerEntry: undefined;
     DealerKycUpload: undefined;
     DealerKycPending: undefined;
@@ -395,7 +395,7 @@ export type RootStackParamList = {
     DealerOrders: undefined;
     DealerComingSoon: undefined;
     // Store navigation
-    StoreHome: undefined;
+    StoreHome: { initialSearchQuery?: string } | undefined;
     StoreBrands: { categoryId: number; categoryName: string };
     ProductListing: { categoryId: number; brandId: number; categoryName?: string; brandName?: string };
 };

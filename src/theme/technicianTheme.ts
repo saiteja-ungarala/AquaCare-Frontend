@@ -1,4 +1,4 @@
-export const agentTheme = {
+export const technicianTheme = {
     colors: {
         agentPrimary: '#FFB000',
         agentPrimaryDark: '#D79600',
@@ -57,4 +57,4 @@ export const agentTheme = {
     },
 } as const;
 
-export type AgentTheme = typeof agentTheme;
+export type TechnicianTheme = typeof technicianTheme;

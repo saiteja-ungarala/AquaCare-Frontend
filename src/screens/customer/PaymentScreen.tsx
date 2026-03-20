@@ -82,7 +82,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
             order_id: order.razorpay_order_id,
             amount: order.amount,
             currency: order.currency || 'INR',
-            name: 'IonCare',
+            name: 'IONORA CARE',
             description,
             prefill: {
                 name: user?.name ?? '',

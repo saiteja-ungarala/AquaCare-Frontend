@@ -46,7 +46,7 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
             selectedRole === 'dealer' ? colors.info :
                 customerColors.primary;
 
-    const isAgent = selectedRole === 'agent';
+    const isTechnician = selectedRole === 'agent';
     const isCustomLogin = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
 
     const getBackgroundImage = () => {
@@ -163,10 +163,10 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
                         {/* Content */}
                         <View style={[styles.content, isCustomLogin && styles.bottomContent]}>
                             <View style={isCustomLogin ? styles.glassContent : undefined}>
-                                <Text style={[styles.title, isAgent ? { color: colors.surface } : null]}>
+                                <Text style={[styles.title, isTechnician ? { color: colors.surface } : null]}>
                                     Verify Your Number
                                 </Text>
-                                <Text style={[styles.subtitle, isAgent ? { color: 'rgba(255,255,255,0.8)' } : null]}>
+                                <Text style={[styles.subtitle, isTechnician ? { color: 'rgba(255,255,255,0.8)' } : null]}>
                                     Enter the 6-digit OTP sent to{' '}
                                     <Text style={[styles.phoneHighlight, { color: activeThemeColor }]}>
                                         +91 {phone}
@@ -220,7 +220,7 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
 
                                 {/* Resend button */}
                                 <View style={styles.resendRow}>
-                                    <Text style={[styles.resendLabel, isAgent ? { color: 'rgba(255,255,255,0.7)' } : null]}>
+                                    <Text style={[styles.resendLabel, isTechnician ? { color: 'rgba(255,255,255,0.7)' } : null]}>
                                         Didn't receive the code?{' '}
                                     </Text>
                                     <TouchableOpacity onPress={handleResend} disabled={!canResend || isBusy}>

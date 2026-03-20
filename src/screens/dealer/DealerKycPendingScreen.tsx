@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../models/types';
 import { dealerTheme } from '../../theme/dealerTheme';
+import { DealerScreen } from '../../components/dealer/DealerScreen';
 import { useDealerStore } from '../../store';
 
 type DealerKycPendingScreenProps = {
@@ -40,48 +41,50 @@ export const DealerKycPendingScreen: React.FC<DealerKycPendingScreenProps> = ({ 
     const isRejected = verificationStatus === 'rejected';
 
     return (
-        <ScrollView
-            contentContainerStyle={styles.container}
-            refreshControl={<RefreshControl refreshing={refreshing || loadingMe} onRefresh={refresh} tintColor={dealerTheme.colors.dealerPrimary} />}
-        >
-            <View style={styles.card}>
-                <Text style={styles.statusBadge}>{isRejected ? 'REJECTED' : 'PENDING REVIEW'}</Text>
-                <Text style={styles.title}>{isRejected ? 'Verification Rejected' : 'Verification In Progress'}</Text>
-                <Text style={styles.subtitle}>
-                    {isRejected
-                        ? 'Please check review notes and re-upload corrected documents.'
-                        : 'Our team is reviewing your documents. Pull down to refresh your status.'}
-                </Text>
+        <DealerScreen>
+            <ScrollView
+                contentContainerStyle={styles.container}
+                refreshControl={<RefreshControl refreshing={refreshing || loadingMe} onRefresh={refresh} tintColor={dealerTheme.colors.dealerPrimary} />}
+            >
+                <View style={styles.card}>
+                    <Text style={styles.statusBadge}>{isRejected ? 'REJECTED' : 'PENDING REVIEW'}</Text>
+                    <Text style={styles.title}>{isRejected ? 'Verification Rejected' : 'Verification In Progress'}</Text>
+                    <Text style={styles.subtitle}>
+                        {isRejected
+                            ? 'Please check review notes and re-upload corrected documents.'
+                            : 'Our team is reviewing your documents. Pull down to refresh your status.'}
+                    </Text>
 
-                <View style={styles.metricsRow}>
-                    <View style={styles.metricBox}>
-                        <Text style={styles.metricValue}>{docsSummary?.pendingCount || 0}</Text>
-                        <Text style={styles.metricLabel}>Pending</Text>
+                    <View style={styles.metricsRow}>
+                        <View style={styles.metricBox}>
+                            <Text style={styles.metricValue}>{docsSummary?.pendingCount || 0}</Text>
+                            <Text style={styles.metricLabel}>Pending</Text>
+                        </View>
+                        <View style={styles.metricBox}>
+                            <Text style={styles.metricValue}>{docsSummary?.approvedCount || 0}</Text>
+                            <Text style={styles.metricLabel}>Approved</Text>
+                        </View>
+                        <View style={styles.metricBox}>
+                            <Text style={styles.metricValue}>{docsSummary?.rejectedCount || 0}</Text>
+                            <Text style={styles.metricLabel}>Rejected</Text>
+                        </View>
                     </View>
-                    <View style={styles.metricBox}>
-                        <Text style={styles.metricValue}>{docsSummary?.approvedCount || 0}</Text>
-                        <Text style={styles.metricLabel}>Approved</Text>
-                    </View>
-                    <View style={styles.metricBox}>
-                        <Text style={styles.metricValue}>{docsSummary?.rejectedCount || 0}</Text>
-                        <Text style={styles.metricLabel}>Rejected</Text>
-                    </View>
+
+                    {latestDocument?.review_notes ? (
+                        <View style={styles.noteBox}>
+                            <Text style={styles.noteLabel}>Review Note</Text>
+                            <Text style={styles.noteText}>{latestDocument.review_notes}</Text>
+                        </View>
+                    ) : null}
+
+                    {isRejected ? (
+                        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('DealerKycUpload')}>
+                            <Text style={styles.primaryButtonText}>Re-upload Documents</Text>
+                        </TouchableOpacity>
+                    ) : null}
                 </View>
-
-                {latestDocument?.review_notes ? (
-                    <View style={styles.noteBox}>
-                        <Text style={styles.noteLabel}>Review Note</Text>
-                        <Text style={styles.noteText}>{latestDocument.review_notes}</Text>
-                    </View>
-                ) : null}
-
-                {isRejected ? (
-                    <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('DealerKycUpload')}>
-                        <Text style={styles.primaryButtonText}>Re-upload Documents</Text>
-                    </TouchableOpacity>
-                ) : null}
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </DealerScreen>
     );
 };
 

@@ -14,11 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useDebounce } from 'use-debounce';
 import { adminColors } from '../../theme/adminTheme';
-import { getKycAgents, getKycDealers, getKycStats } from '../../services/adminService';
+import { getKycTechnicians, getKycDealers, getKycStats } from '../../services/adminService';
 
 const STATUS_TABS   = ['pending', 'approved', 'rejected'] as const;
 const STATUS_LABELS = ['Pending', 'Approved', 'Rejected'];
-const ENTITY_TABS   = ['Agents', 'Dealers'] as const;
+const ENTITY_TABS   = ['Technicians', 'Dealers'] as const;
 const PAGE_LIMIT    = 20;
 
 type KycUser = {
@@ -113,7 +113,7 @@ export default function AdminKycScreen() {
         }
 
         try {
-            const fn   = entityTabRef.current === 0 ? getKycAgents : getKycDealers;
+            const fn   = entityTabRef.current === 0 ? getKycTechnicians : getKycDealers;
             const data = await fn(params);
             const newItems: KycUser[] = data?.items ?? [];
             setTotal(data?.total ?? 0);
@@ -208,7 +208,7 @@ export default function AdminKycScreen() {
         );
     };
 
-    const pendingAgents  = stats?.agents?.pending  ?? 0;
+    const pendingTechnicians  = stats?.agents?.pending  ?? 0;
     const pendingDealers = stats?.dealers?.pending ?? 0;
 
     return (
@@ -225,11 +225,11 @@ export default function AdminKycScreen() {
                     onPress={() => { setEntityTab(0); setStatusTab(0); }}
                 >
                     <Text style={[styles.statPillLabel, entityTab === 0 && styles.statPillLabelActive]}>
-                        Agents
+                        Technicians
                     </Text>
-                    {pendingAgents > 0 && (
+                    {pendingTechnicians > 0 && (
                         <View style={styles.pendingBadge}>
-                            <Text style={styles.pendingBadgeText}>{pendingAgents}</Text>
+                            <Text style={styles.pendingBadgeText}>{pendingTechnicians}</Text>
                         </View>
                     )}
                 </TouchableOpacity>

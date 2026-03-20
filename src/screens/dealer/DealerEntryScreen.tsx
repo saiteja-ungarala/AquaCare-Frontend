@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../models/types';
 import { dealerTheme } from '../../theme/dealerTheme';
+import { DealerScreen } from '../../components/dealer/DealerScreen';
 import { useAuthStore, useDealerStore } from '../../store';
 
 type DealerEntryScreenProps = {
@@ -42,19 +43,19 @@ export const DealerEntryScreen: React.FC<DealerEntryScreenProps> = ({ navigation
 
     if (bootstrapping) {
         return (
-            <View style={styles.container}>
+            <DealerScreen dark contentStyle={styles.container}>
                 <View style={styles.badge}>
                     <Text style={styles.badgeText}>DEALER PORTAL</Text>
                 </View>
                 <Text style={styles.title}>Setting up your dealer workspace</Text>
                 <Text style={styles.subtitle}>Checking KYC status and syncing pricing access.</Text>
                 <ActivityIndicator color={dealerTheme.colors.dealerAccent} size="large" style={{ marginTop: dealerTheme.spacing.lg }} />
-            </View>
+            </DealerScreen>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <DealerScreen dark contentStyle={styles.container}>
             <View style={styles.badge}>
                 <Text style={styles.badgeText}>DEALER PORTAL</Text>
             </View>
@@ -66,7 +67,7 @@ export const DealerEntryScreen: React.FC<DealerEntryScreenProps> = ({ navigation
             <TouchableOpacity style={styles.secondaryBtn} onPress={logout}>
                 <Text style={styles.secondaryBtnText}>Logout</Text>
             </TouchableOpacity>
-        </View>
+        </DealerScreen>
     );
 };
 

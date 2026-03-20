@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DealerKycDocType, RootStackParamList } from '../../models/types';
 import { dealerTheme } from '../../theme/dealerTheme';
+import { DealerScreen } from '../../components/dealer/DealerScreen';
 import { useDealerStore } from '../../store';
 
 type DealerKycUploadScreenProps = {
@@ -66,55 +67,57 @@ export const DealerKycUploadScreen: React.FC<DealerKycUploadScreenProps> = ({ na
     };
 
     return (
-        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>Dealer KYC Verification</Text>
-            <Text style={styles.subtitle}>Upload your business documents to unlock dealer pricing.</Text>
+        <DealerScreen>
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+                <Text style={styles.title}>Dealer KYC Verification</Text>
+                <Text style={styles.subtitle}>Upload your business documents to unlock dealer pricing.</Text>
 
-            <View style={styles.card}>
-                <Text style={styles.cardTitle}>Select Document Type</Text>
-                <View style={styles.optionsWrap}>
-                    {DOC_OPTIONS.map((option) => {
-                        const selected = option.key === docType;
-                        return (
-                            <TouchableOpacity
-                                key={option.key}
-                                style={[styles.optionChip, selected ? styles.optionChipActive : null]}
-                                onPress={() => setDocType(option.key)}
-                            >
-                                <Text style={[styles.optionChipText, selected ? styles.optionChipTextActive : null]}>
-                                    {option.label}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Select Document Type</Text>
+                    <View style={styles.optionsWrap}>
+                        {DOC_OPTIONS.map((option) => {
+                            const selected = option.key === docType;
+                            return (
+                                <TouchableOpacity
+                                    key={option.key}
+                                    style={[styles.optionChip, selected ? styles.optionChipActive : null]}
+                                    onPress={() => setDocType(option.key)}
+                                >
+                                    <Text style={[styles.optionChipText, selected ? styles.optionChipTextActive : null]}>
+                                        {option.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
                 </View>
-            </View>
 
-            <View style={styles.card}>
-                <Text style={styles.cardTitle}>Upload Documents</Text>
-                <TouchableOpacity style={styles.secondaryButton} onPress={pickDocuments}>
-                    <Text style={styles.secondaryButtonText}>Choose Images</Text>
-                </TouchableOpacity>
-                <Text style={styles.metaText}>Selected files: {documents.length}</Text>
-                {documents.map((file, index) => (
-                    <Text key={`${file.uri}-${index}`} style={styles.fileItem} numberOfLines={1}>
-                        {index + 1}. {file.fileName || file.uri.split('/').pop() || 'Document'}
-                    </Text>
-                ))}
-            </View>
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Upload Documents</Text>
+                    <TouchableOpacity style={styles.secondaryButton} onPress={pickDocuments}>
+                        <Text style={styles.secondaryButtonText}>Choose Images</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.metaText}>Selected files: {documents.length}</Text>
+                    {documents.map((file, index) => (
+                        <Text key={`${file.uri}-${index}`} style={styles.fileItem} numberOfLines={1}>
+                            {index + 1}. {file.fileName || file.uri.split('/').pop() || 'Document'}
+                        </Text>
+                    ))}
+                </View>
 
-            <View style={styles.card}>
-                <Text style={styles.cardTitle}>Submit</Text>
-                {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                <TouchableOpacity
-                    style={[styles.primaryButton, uploadingKyc ? styles.buttonDisabled : null]}
-                    onPress={submitKyc}
-                    disabled={uploadingKyc}
-                >
-                    <Text style={styles.primaryButtonText}>{uploadingKyc ? 'Submitting...' : 'Submit KYC'}</Text>
-                </TouchableOpacity>
-            </View>
-        </ScrollView>
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Submit</Text>
+                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                    <TouchableOpacity
+                        style={[styles.primaryButton, uploadingKyc ? styles.buttonDisabled : null]}
+                        onPress={submitKyc}
+                        disabled={uploadingKyc}
+                    >
+                        <Text style={styles.primaryButtonText}>{uploadingKyc ? 'Submitting...' : 'Submit KYC'}</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </DealerScreen>
     );
 };
 

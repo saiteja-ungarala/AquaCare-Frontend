@@ -1,6 +1,6 @@
 import { Alert, Platform, ToastAndroid } from 'react-native';
 
-export const showAgentToast = (message: string): void => {
+export const showTechnicianToast = (message: string): void => {
     if (!message) return;
 
     if (Platform.OS === 'android') {

@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import {
-    AgentCampaign,
-    AgentEarnProgress,
-    AgentEarnSummary,
-    AgentProductCommissionPreview,
+    TechnicianCampaign,
+    TechnicianEarnProgress,
+    TechnicianEarnSummary,
+    TechnicianProductCommissionPreview,
 } from '../models/types';
-import { agentEarnService } from '../services/agentEarnService';
+import { technicianEarnService } from '../services/technicianEarnService';
 
-interface AgentEarnLoadingState {
+interface TechnicianEarnLoadingState {
     referral: boolean;
     summary: boolean;
     campaigns: boolean;
@@ -16,18 +16,18 @@ interface AgentEarnLoadingState {
     refresh: boolean;
 }
 
-interface AgentEarnState {
+interface TechnicianEarnState {
     referralCode: string;
-    summary: AgentEarnSummary;
-    campaigns: AgentCampaign[];
+    summary: TechnicianEarnSummary;
+    campaigns: TechnicianCampaign[];
     activeCampaignId: number | null;
-    progress: AgentEarnProgress | null;
-    productsWithCommissionPreview: AgentProductCommissionPreview[];
-    loading: AgentEarnLoadingState;
+    progress: TechnicianEarnProgress | null;
+    productsWithCommissionPreview: TechnicianProductCommissionPreview[];
+    loading: TechnicianEarnLoadingState;
     error: string | null;
 }
 
-interface AgentEarnActions {
+interface TechnicianEarnActions {
     fetchReferral: () => Promise<string>;
     fetchSummary: () => Promise<void>;
     fetchCampaigns: () => Promise<void>;
@@ -38,9 +38,9 @@ interface AgentEarnActions {
     reset: () => void;
 }
 
-type AgentEarnStore = AgentEarnState & AgentEarnActions;
+type TechnicianEarnStore = TechnicianEarnState & TechnicianEarnActions;
 
-const emptySummary: AgentEarnSummary = {
+const emptySummary: TechnicianEarnSummary = {
     totalsPending: 0,
     totalsApproved: 0,
     totalsPaid: 0,
@@ -48,7 +48,7 @@ const emptySummary: AgentEarnSummary = {
     bonusPaid: 0,
 };
 
-const initialLoading: AgentEarnLoadingState = {
+const initialLoading: TechnicianEarnLoadingState = {
     referral: false,
     summary: false,
     campaigns: false,
@@ -58,12 +58,12 @@ const initialLoading: AgentEarnLoadingState = {
 };
 
 const getMessage = (error: unknown, fallback: string): string => {
-    return agentEarnService.getApiErrorMessage(error, fallback);
+    return technicianEarnService.getApiErrorMessage(error, fallback);
 };
 
 const getResolvedCampaignId = (
     campaignIdFromSummary: number | null,
-    campaigns: AgentCampaign[]
+    campaigns: TechnicianCampaign[]
 ): number | null => {
     if (campaignIdFromSummary && campaigns.some((item) => item.id === campaignIdFromSummary)) {
         return campaignIdFromSummary;
@@ -72,7 +72,7 @@ const getResolvedCampaignId = (
     return campaigns[0]?.id ?? null;
 };
 
-export const useAgentEarnStore = create<AgentEarnStore>((set, get) => ({
+export const useTechnicianEarnStore = create<TechnicianEarnStore>((set, get) => ({
     referralCode: '',
     summary: emptySummary,
     campaigns: [],
@@ -89,7 +89,7 @@ export const useAgentEarnStore = create<AgentEarnStore>((set, get) => ({
         }));
 
         try {
-            const referralCode = await agentEarnService.fetchReferral();
+            const referralCode = await technicianEarnService.fetchReferral();
             set((state) => ({
                 referralCode,
                 loading: { ...state.loading, referral: false },
@@ -111,7 +111,7 @@ export const useAgentEarnStore = create<AgentEarnStore>((set, get) => ({
         }));
 
         try {
-            const { summary, progress, campaignId } = await agentEarnService.fetchSummary();
+            const { summary, progress, campaignId } = await technicianEarnService.fetchSummary();
             set((state) => {
                 const activeCampaignId = getResolvedCampaignId(campaignId, state.campaigns);
                 return {
@@ -136,7 +136,7 @@ export const useAgentEarnStore = create<AgentEarnStore>((set, get) => ({
         }));
 
         try {
-            const campaigns = await agentEarnService.fetchCampaigns();
+            const campaigns = await technicianEarnService.fetchCampaigns();
             set((state) => {
                 const activeCampaignId = getResolvedCampaignId(state.activeCampaignId, campaigns);
                 return {
@@ -160,7 +160,7 @@ export const useAgentEarnStore = create<AgentEarnStore>((set, get) => ({
         }));
 
         try {
-            const products = await agentEarnService.fetchProducts();
+            const products = await technicianEarnService.fetchProducts();
             set((state) => ({
                 productsWithCommissionPreview: products,
                 loading: { ...state.loading, products: false },
@@ -180,7 +180,7 @@ export const useAgentEarnStore = create<AgentEarnStore>((set, get) => ({
         }));
 
         try {
-            const progress = await agentEarnService.fetchProgress(campaignId);
+            const progress = await technicianEarnService.fetchProgress(campaignId);
             set((state) => ({
                 progress,
                 activeCampaignId: campaignId,
@@ -202,17 +202,17 @@ export const useAgentEarnStore = create<AgentEarnStore>((set, get) => ({
 
         try {
             const [referralCode, campaigns, summaryPayload, products] = await Promise.all([
-                agentEarnService.fetchReferral(),
-                agentEarnService.fetchCampaigns(),
-                agentEarnService.fetchSummary(),
-                agentEarnService.fetchProducts(),
+                technicianEarnService.fetchReferral(),
+                technicianEarnService.fetchCampaigns(),
+                technicianEarnService.fetchSummary(),
+                technicianEarnService.fetchProducts(),
             ]);
 
             const activeCampaignId = getResolvedCampaignId(summaryPayload.campaignId, campaigns);
             let progress = summaryPayload.progress;
 
             if (!progress && activeCampaignId) {
-                progress = await agentEarnService.fetchProgress(activeCampaignId);
+                progress = await technicianEarnService.fetchProgress(activeCampaignId);
             }
 
             set((state) => ({

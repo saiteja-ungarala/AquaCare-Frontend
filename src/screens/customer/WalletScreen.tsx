@@ -1,7 +1,7 @@
 // Wallet Screen
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -22,6 +22,7 @@ export const WalletScreen: React.FC = () => {
         fetchTransactions,
     } = useWalletStore();
     const user = useAuthStore((state) => state.user);
+    const [refreshing, setRefreshing] = React.useState(false);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -32,10 +33,16 @@ export const WalletScreen: React.FC = () => {
         }, [fetchWallet, fetchTransactions])
     );
 
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        await Promise.all([fetchWallet(), fetchTransactions()]);
+        setRefreshing(false);
+    }, [fetchWallet, fetchTransactions]);
+
     const handleShare = async () => {
         try {
             await Share.share({
-                message: `Join IonCare and get your first service FREE! Use my referral code: ${user?.referralCode || 'ION100'}`,
+                message: `Join IONORA CARE and get your first service FREE! Use my referral code: ${user?.referralCode || 'ION100'}`,
                 title: 'Refer & Earn',
             });
         } catch (error) { }
@@ -66,7 +73,18 @@ export const WalletScreen: React.FC = () => {
                     <Text style={styles.loadingText}>Loading wallet...</Text>
                 </View>
             ) : (
-                <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    style={styles.scrollView}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={[customerColors.primary]}
+                            tintColor={customerColors.primary}
+                        />
+                    }
+                >
                     {error ? (
                         <View style={styles.errorCard}>
                             <Ionicons name="alert-circle-outline" size={20} color={colors.error} />

@@ -15,6 +15,7 @@ import ordersService from '../../services/ordersService';
 import { profileService } from '../../services/profileService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { navigateToStoreCategories } from '../../navigation/storeNavigation';
 
 type CartScreenProps = { navigation: NativeStackNavigationProp<any> };
 
@@ -198,7 +199,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                 amount: finalTotal,
                 entityType: 'order',
                 entityId: createdOrderId,
-                description: 'IonCare Order',
+                description: 'IONORA CARE Order',
             });
         } catch (error: any) {
             console.error(error);
@@ -259,7 +260,11 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                 <View style={styles.emptyContainer}>
                     <Ionicons name="cart-outline" size={80} color={colors.textLight} />
                     <Text style={styles.emptyTitle}>Your cart is empty</Text>
-                    <Button title="Browse Products" onPress={() => navigation.navigate('CustomerTabs', { screen: 'Store' })} style={{ marginTop: 16, backgroundColor: customerColors.primaryDark }} />
+                    <Button
+                        title="Browse Products"
+                        onPress={() => navigateToStoreCategories(navigation)}
+                        style={{ marginTop: 16, backgroundColor: customerColors.primaryDark }}
+                    />
                 </View>
             </View>
         );
@@ -377,14 +382,14 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                             <TextInput
                                 value={referralCode}
                                 onChangeText={handleReferralCodeChange}
-                                placeholder="Enter agent code"
+                                placeholder="Enter technician code"
                                 autoCapitalize="characters"
                                 autoCorrect={false}
                                 style={[styles.referralInput, referralCodeError ? styles.referralInputError : null]}
                                 placeholderTextColor={colors.textLight}
                                 maxLength={32}
                             />
-                            <Text style={styles.referralHelperText}>Enter agent code to support them and unlock offers.</Text>
+                            <Text style={styles.referralHelperText}>Enter a technician code to support them and unlock offers.</Text>
                             {referralCodeError ? (
                                 <Text style={styles.referralErrorText}>{referralCodeError}</Text>
                             ) : null}

@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { AgentJob } from '../../models/types';
-import { agentTheme } from '../../theme/agentTheme';
-import { AgentCard, AgentChip, AgentScreen, AgentSectionHeader } from '../../components/agent';
-import { useAgentStore } from '../../store';
+import { TechnicianJob } from '../../models/types';
+import { technicianTheme } from '../../theme/technicianTheme';
+import { TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
+import { useTechnicianStore } from '../../store';
 
 type HistoryTab = 'completed' | 'in_progress' | 'assigned';
 
@@ -18,9 +18,9 @@ const chipTone = (status: HistoryTab): 'success' | 'warning' => (status === 'com
 
 const formatSlot = (date: string, time: string) => `${date} ${time}`.trim();
 
-export const AgentHistoryScreen: React.FC = () => {
+export const TechnicianHistoryScreen: React.FC = () => {
     const [activeTab, setActiveTab] = useState<HistoryTab>('completed');
-    const { jobs, fetchJobs } = useAgentStore();
+    const { jobs, fetchJobs } = useTechnicianStore();
 
     useFocusEffect(
         React.useCallback(() => {
@@ -30,21 +30,21 @@ export const AgentHistoryScreen: React.FC = () => {
 
     const historyJobs = useMemo(() => jobs.filter((job) => job.status === activeTab), [activeTab, jobs]);
 
-    const renderJob = ({ item }: { item: AgentJob }) => (
-        <AgentCard>
+    const renderJob = ({ item }: { item: TechnicianJob }) => (
+        <TechnicianCard>
             <View style={styles.topRow}>
                 <Text style={styles.service}>{item.service_name}</Text>
-                <AgentChip label={item.status.replace('_', ' ')} tone={chipTone(activeTab)} />
+                <TechnicianChip label={item.status.replace('_', ' ')} tone={chipTone(activeTab)} />
             </View>
             <Text style={styles.line}>{formatSlot(item.scheduled_date, item.scheduled_time)}</Text>
             <Text style={styles.line} numberOfLines={1}>{[item.address_city, item.address_line1].filter(Boolean).join(', ') || 'Address unavailable'}</Text>
-        </AgentCard>
+        </TechnicianCard>
     );
 
     return (
-        <AgentScreen>
+        <TechnicianScreen>
             <View style={styles.headerWrap}>
-                <AgentSectionHeader title="History" subtitle="Track assigned and completed work" />
+                <TechnicianSectionHeader title="History" subtitle="Track assigned and completed work" />
             </View>
 
             <View style={styles.tabsRow}>
@@ -65,26 +65,26 @@ export const AgentHistoryScreen: React.FC = () => {
                 renderItem={renderJob}
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
-                    <AgentCard>
+                    <TechnicianCard>
                         <Text style={styles.emptyTitle}>No records in this section</Text>
                         <Text style={styles.emptySubtitle}>Completed and active assignments will appear here.</Text>
-                    </AgentCard>
+                    </TechnicianCard>
                 }
             />
-        </AgentScreen>
+        </TechnicianScreen>
     );
 };
 
 const styles = StyleSheet.create({
     headerWrap: {
-        paddingHorizontal: agentTheme.spacing.lg,
-        paddingTop: agentTheme.spacing.lg,
+        paddingHorizontal: technicianTheme.spacing.lg,
+        paddingTop: technicianTheme.spacing.lg,
     },
     tabsRow: {
         flexDirection: 'row',
-        marginHorizontal: agentTheme.spacing.lg,
-        marginTop: agentTheme.spacing.md,
-        borderRadius: agentTheme.radius.full,
+        marginHorizontal: technicianTheme.spacing.lg,
+        marginTop: technicianTheme.spacing.md,
+        borderRadius: technicianTheme.radius.full,
         backgroundColor: '#ECEFF3',
         padding: 4,
     },
@@ -92,22 +92,22 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         paddingVertical: 8,
-        borderRadius: agentTheme.radius.full,
+        borderRadius: technicianTheme.radius.full,
     },
     tabActive: {
-        backgroundColor: agentTheme.colors.agentDark,
+        backgroundColor: technicianTheme.colors.agentDark,
     },
     tabText: {
-        ...agentTheme.typography.caption,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.caption,
+        color: technicianTheme.colors.textSecondary,
     },
     tabTextActive: {
         color: '#F6F8FB',
     },
     listContent: {
-        padding: agentTheme.spacing.lg,
-        gap: agentTheme.spacing.md,
-        paddingBottom: agentTheme.spacing.xxl,
+        padding: technicianTheme.spacing.lg,
+        gap: technicianTheme.spacing.md,
+        paddingBottom: technicianTheme.spacing.xxl,
     },
     topRow: {
         flexDirection: 'row',
@@ -116,23 +116,23 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     service: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
         flex: 1,
     },
     line: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         marginTop: 6,
     },
     emptyTitle: {
-        ...agentTheme.typography.h2,
-        color: agentTheme.colors.textPrimary,
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
         textAlign: 'center',
     },
     emptySubtitle: {
-        ...agentTheme.typography.bodySmall,
-        color: agentTheme.colors.textSecondary,
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
         textAlign: 'center',
         marginTop: 6,
     },

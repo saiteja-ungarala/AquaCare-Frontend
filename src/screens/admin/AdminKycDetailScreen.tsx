@@ -19,11 +19,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { adminColors } from '../../theme/adminTheme';
 import {
-    approveAgent,
+    approveTechnician,
     approveDealer,
-    getKycAgentDetail,
+    getKycTechnicianDetail,
     getKycDealerDetail,
-    rejectAgent,
+    rejectTechnician,
     rejectDealer,
 } from '../../services/adminService';
 import { SERVER_BASE_URL } from '../../config/constants';
@@ -62,6 +62,10 @@ function formatDocType(raw: string): string {
     return raw
         .replace(/_/g, ' ')
         .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function formatRoleLabel(type: 'agent' | 'dealer'): string {
+    return type === 'agent' ? 'Technician' : 'Dealer';
 }
 
 function formatDate(dateStr: string | null): string {
@@ -110,7 +114,7 @@ export default function AdminKycDetailScreen() {
     const loadDetail = useCallback(async () => {
         setLoading(true);
         try {
-            const fn   = type === 'agent' ? getKycAgentDetail : getKycDealerDetail;
+            const fn   = type === 'agent' ? getKycTechnicianDetail : getKycDealerDetail;
             const data = await fn(userId);
             setDetail(data);
         } catch (e) {
@@ -137,7 +141,7 @@ export default function AdminKycDetailScreen() {
                     onPress: async () => {
                         setActionLoading(true);
                         try {
-                            if (type === 'agent') await approveAgent(userId);
+                            if (type === 'agent') await approveTechnician(userId);
                             else                   await approveDealer(userId);
                             toast.show('KYC approved!');
                             setTimeout(() => navigation.goBack(), 1800);
@@ -159,7 +163,7 @@ export default function AdminKycDetailScreen() {
         }
         setActionLoading(true);
         try {
-            if (type === 'agent') await rejectAgent(userId, rejectNotes.trim());
+            if (type === 'agent') await rejectTechnician(userId, rejectNotes.trim());
             else                   await rejectDealer(userId, rejectNotes.trim());
             toast.show('KYC rejected.');
             setTimeout(() => navigation.goBack(), 1800);
@@ -219,7 +223,7 @@ export default function AdminKycDetailScreen() {
                         <Row icon="person-outline"       label="Name"     value={detail.name} />
                         <Row icon="mail-outline"         label="Email"    value={detail.email} />
                         <Row icon="call-outline"         label="Phone"    value={detail.phone || '—'} />
-                        <Row icon="shield-outline"       label="Role"     value={type.charAt(0).toUpperCase() + type.slice(1)} />
+                        <Row icon="shield-outline"       label="Role"     value={formatRoleLabel(type)} />
                         <Row icon="calendar-outline"     label="Joined"   value={formatDate(detail.created_at)} />
 
                         {type === 'dealer' && detail.business_name && (

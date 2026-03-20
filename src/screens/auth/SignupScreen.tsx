@@ -128,7 +128,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
     };
 
     const isCustomSignup = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
-    const isAgent = selectedRole === 'agent';
+    const isTechnician = selectedRole === 'agent';
     const Wrapper = (isCustomSignup ? ImageBackground : View) as React.ComponentType<any>;
 
     const getBackgroundImage = () => {
@@ -173,8 +173,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                             isCustomSignup && styles.bottomContent,
                         ]}>
                             <View style={isCustomSignup ? styles.glassContent : undefined}>
-                                <Text style={[styles.title, isAgent ? { color: colors.surface } : null]}>Create Account</Text>
-                                <Text style={[styles.subtitle, isAgent ? { color: 'rgba(255, 255, 255, 0.8)' } : null]}>Join IonCare today</Text>
+                                <Text style={[styles.title, isTechnician ? { color: colors.surface } : null]}>Create Account</Text>
+                                <Text style={[styles.subtitle, isTechnician ? { color: 'rgba(255, 255, 255, 0.8)' } : null]}>Join IONORA CARE today</Text>
 
                                 <View style={styles.form}>
                                     <AuthErrorBanner
@@ -192,8 +192,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                         }}
                                         leftIcon="person-outline"
                                         inputContainerStyle={isCustomSignup ? styles.transparentInput : undefined}
-                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
-                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                        labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                         error={clientFieldErrors.fullName || fieldErrors.name}
                                     />
 
@@ -209,8 +209,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                         autoCapitalize="none"
                                         leftIcon="mail-outline"
                                         inputContainerStyle={isCustomSignup ? styles.transparentInput : undefined}
-                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
-                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                        labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                         error={clientFieldErrors.email || fieldErrors.email}
                                     />
 
@@ -226,8 +226,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                         maxLength={10}
                                         leftIcon="call-outline"
                                         inputContainerStyle={isCustomSignup ? styles.transparentInput : undefined}
-                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
-                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                        labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                         error={clientFieldErrors.phone || fieldErrors.phone}
                                     />
 
@@ -242,8 +242,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                         secureTextEntry
                                         leftIcon="lock-closed-outline"
                                         inputContainerStyle={isCustomSignup ? styles.transparentInput : undefined}
-                                        labelStyle={isAgent ? { color: colors.surface } : undefined}
-                                        placeholderTextColor={isAgent ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                        labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                         error={clientFieldErrors.password || fieldErrors.password}
                                     />
 

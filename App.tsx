@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
+import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 
 import { RoleSelectionScreen, LoginScreen, SignupScreen, ForgotPasswordScreen, OTPVerificationScreen } from './src/screens/auth';
@@ -28,17 +29,17 @@ import { PrivacyScreen } from './src/screens/customer/PrivacyScreen';
 
 import { StoreHomeScreen, StoreBrandsScreen, ProductListingScreen } from './src/screens/store';
 import {
-    AgentActiveJobScreen,
-    AgentEarnScreen,
-    AgentEntryScreen,
-    AgentHistoryScreen,
-    AgentJobsScreen,
-    AgentKycPendingScreen,
-    AgentKycUploadScreen,
-    AgentProfileScreen,
+    TechnicianActiveJobScreen,
+    TechnicianEarnScreen,
+    TechnicianEntryScreen,
+    TechnicianHistoryScreen,
+    TechnicianJobsScreen,
+    TechnicianKycPendingScreen,
+    TechnicianKycUploadScreen,
+    TechnicianProfileScreen,
     CampaignMilestonesScreen,
     BookingUpdateScreen,
-} from './src/screens/agent';
+} from './src/screens/technician';
 import {
     DealerEntryScreen,
     DealerKycPendingScreen,
@@ -48,12 +49,12 @@ import {
     DealerProfileScreen,
 } from './src/screens/dealer';
 
-import { useAuthStore } from './src/store';
+import { useAuthStore, useLocationStore } from './src/store';
 
 import { RootStackParamList } from './src/models/types';
 import { colors } from './src/theme/theme';
 import { customerColors } from './src/theme/customerTheme';
-import { agentTheme } from './src/theme/agentTheme';
+import { technicianTheme } from './src/theme/technicianTheme';
 import { dealerTheme } from './src/theme/dealerTheme';
 import { adminColors } from './src/theme/adminTheme';
 import {
@@ -205,19 +206,19 @@ function CustomerTabs() {
     );
 }
 
-function AgentTabs() {
+function TechnicianTabs() {
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
-                tabBarActiveTintColor: agentTheme.colors.agentPrimary,
+                tabBarActiveTintColor: technicianTheme.colors.agentPrimary,
                 tabBarInactiveTintColor: '#8F9DAC',
                 tabBarLabelStyle: {
                     fontSize: 11,
                     fontWeight: '700',
                 },
                 tabBarStyle: {
-                    backgroundColor: agentTheme.colors.agentDark,
+                    backgroundColor: technicianTheme.colors.agentDark,
                     height: 64,
                     borderTopWidth: 0,
                     paddingTop: 6,
@@ -225,15 +226,15 @@ function AgentTabs() {
                 tabBarIcon: ({ color, size, focused }) => {
                     let iconName: keyof typeof Ionicons.glyphMap = 'briefcase-outline';
 
-                    if (route.name === 'AgentJobs') {
+                    if (route.name === 'TechnicianJobs') {
                         iconName = focused ? 'briefcase' : 'briefcase-outline';
-                    } else if (route.name === 'AgentActiveJob') {
+                    } else if (route.name === 'TechnicianActiveJob') {
                         iconName = focused ? 'flash' : 'flash-outline';
-                    } else if (route.name === 'AgentEarn') {
+                    } else if (route.name === 'TechnicianEarn') {
                         iconName = focused ? 'cash' : 'cash-outline';
-                    } else if (route.name === 'AgentHistory') {
+                    } else if (route.name === 'TechnicianHistory') {
                         iconName = focused ? 'time' : 'time-outline';
-                    } else if (route.name === 'AgentProfile') {
+                    } else if (route.name === 'TechnicianProfile') {
                         iconName = focused ? 'person' : 'person-outline';
                     }
 
@@ -241,11 +242,11 @@ function AgentTabs() {
                 },
             })}
         >
-            <Tab.Screen name="AgentJobs" component={AgentJobsScreen} options={{ title: 'Jobs' }} />
-            <Tab.Screen name="AgentActiveJob" component={AgentActiveJobScreen} options={{ title: 'Active Job' }} />
-            <Tab.Screen name="AgentEarn" component={AgentEarnScreen} options={{ title: 'Earn' }} />
-            <Tab.Screen name="AgentHistory" component={AgentHistoryScreen} options={{ title: 'History' }} />
-            <Tab.Screen name="AgentProfile" component={AgentProfileScreen} options={{ title: 'Profile' }} />
+            <Tab.Screen name="TechnicianJobs" component={TechnicianJobsScreen} options={{ title: 'Jobs' }} />
+            <Tab.Screen name="TechnicianActiveJob" component={TechnicianActiveJobScreen} options={{ title: 'Active Job' }} />
+            <Tab.Screen name="TechnicianEarn" component={TechnicianEarnScreen} options={{ title: 'Earn' }} />
+            <Tab.Screen name="TechnicianHistory" component={TechnicianHistoryScreen} options={{ title: 'History' }} />
+            <Tab.Screen name="TechnicianProfile" component={TechnicianProfileScreen} options={{ title: 'Profile' }} />
         </Tab.Navigator>
     );
 }
@@ -411,14 +412,14 @@ function CustomerStack() {
     );
 }
 
-function AgentGateStack() {
+function TechnicianGateStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="AgentEntry" component={AgentEntryScreen} />
-            <Stack.Screen name="AgentKycUpload" component={AgentKycUploadScreen} />
-            <Stack.Screen name="AgentKycPending" component={AgentKycPendingScreen} />
-            <Stack.Screen name="AgentTabs" component={AgentTabs} />
-            <Stack.Screen name="AgentCampaignMilestones" component={CampaignMilestonesScreen} />
+            <Stack.Screen name="TechnicianEntry" component={TechnicianEntryScreen} />
+            <Stack.Screen name="TechnicianKycUpload" component={TechnicianKycUploadScreen} />
+            <Stack.Screen name="TechnicianKycPending" component={TechnicianKycPendingScreen} />
+            <Stack.Screen name="TechnicianTabs" component={TechnicianTabs} />
+            <Stack.Screen name="TechnicianCampaignMilestones" component={CampaignMilestonesScreen} />
         </Stack.Navigator>
     );
 }
@@ -436,6 +437,7 @@ function DealerGateStack() {
 
 export default function App() {
     const { isAuthenticated, user, checkAuth } = useAuthStore();
+    const { fetchAndSet: fetchLocation, loadCached: loadCachedLocation } = useLocationStore();
     const [isReady, setIsReady] = React.useState(false);
 
     React.useEffect(() => {
@@ -507,6 +509,39 @@ export default function App() {
         };
     }, [isAuthenticated, user?.id]);
 
+    // Request location permission and fetch area name when user logs in
+    React.useEffect(() => {
+        if (!isAuthenticated || Platform.OS === 'web') {
+            return;
+        }
+
+        const initLocation = async () => {
+            try {
+                // Restore last known area instantly from cache
+                await loadCachedLocation();
+
+                // Check current permission status
+                const { status: existing } = await Location.getForegroundPermissionsAsync();
+
+                if (existing === 'granted') {
+                    // Already granted — just fetch fresh location
+                    void fetchLocation();
+                    return;
+                }
+
+                // Not yet granted — ask the OS for permission
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status === 'granted') {
+                    void fetchLocation();
+                }
+            } catch {
+                // ignore — header falls back to "Select Location"
+            }
+        };
+
+        void initLocation();
+    }, [isAuthenticated, user?.id]);
+
     if (!isReady) {
         return null;
     }
@@ -521,7 +556,7 @@ export default function App() {
         }
 
         if (user?.role === 'agent') {
-            return <AgentGateStack />;
+            return <TechnicianGateStack />;
         }
 
         if (user?.role === 'dealer') {
