@@ -1,7 +1,7 @@
 // Authentication store using Zustand
 
 import { create } from 'zustand';
-import { User, UserRole, LoginCredentials, SignupData } from '../models/types';
+import { User, UserRole, LoginCredentials, SignupData, OtpChannel, OtpSessionPayload } from '../models/types';
 import { authService } from '../services/authService';
 import { FieldErrors, getApiErrorMessage } from '../utils/errorMessage';
 
@@ -22,9 +22,23 @@ interface AuthActions {
     setSelectedRole: (role: UserRole) => void;
     login: (credentials: LoginCredentials) => Promise<boolean>;
     signup: (data: SignupData) => Promise<boolean>;
+    startSignupVerification: (data: SignupData) => Promise<OtpSessionPayload | null>;
+    verifySignupOtp: (
+        sessionToken: string,
+        channel: Extract<OtpChannel, 'email' | 'sms'>,
+        otp: string,
+        role: UserRole,
+    ) => Promise<{ completed: boolean; session?: OtpSessionPayload } | null>;
+    resendSignupOtp: (
+        sessionToken: string,
+        channel: Extract<OtpChannel, 'email' | 'sms'>,
+    ) => Promise<OtpSessionPayload | null>;
     forgotPassword: (email: string) => Promise<boolean>;
     requestOTP: (phone: string) => Promise<boolean>;
     verifyOTP: (phone: string, otp: string, role: UserRole) => Promise<boolean>;
+    startLoginOtp: (phone: string, role: UserRole) => Promise<OtpSessionPayload | null>;
+    resendLoginOtp: (sessionToken: string, channel: OtpChannel) => Promise<OtpSessionPayload | null>;
+    verifyLoginOtp: (sessionToken: string, channel: OtpChannel, otp: string, role: UserRole) => Promise<boolean>;
     logout: () => Promise<void>;
     checkAuth: () => Promise<void>;
     clearError: () => void;
@@ -108,6 +122,95 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         }
     },
 
+    startSignupVerification: async (data: SignupData) => {
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        try {
+            const session = await authService.startSignupVerification(data);
+            set({
+                isLoading: false,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
+            });
+            return session;
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
+            set({
+                isLoading: false,
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
+            });
+            return null;
+        }
+    },
+
+    verifySignupOtp: async (sessionToken, channel, otp, role) => {
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        try {
+            const result = await authService.verifySignupOtp(sessionToken, channel, otp, role);
+
+            if (!result.completed) {
+                set({
+                    isLoading: false,
+                    error: null,
+                    errorMessage: null,
+                    fieldErrors: {},
+                });
+                return {
+                    completed: false,
+                    session: result.session,
+                };
+            }
+
+            set({
+                user: result.user,
+                token: result.token,
+                refreshToken: result.refreshToken || null,
+                isAuthenticated: true,
+                isLoading: false,
+                selectedRole: result.user.role,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
+            });
+
+            return { completed: true };
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
+            set({
+                isLoading: false,
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
+            });
+            return null;
+        }
+    },
+
+    resendSignupOtp: async (sessionToken, channel) => {
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        try {
+            const session = await authService.resendSignupOtp(sessionToken, channel);
+            set({
+                isLoading: false,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
+            });
+            return session;
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
+            set({
+                isLoading: false,
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
+            });
+            return null;
+        }
+    },
+
     forgotPassword: async (email: string) => {
         set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
         try {
@@ -144,6 +247,52 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         }
     },
 
+    startLoginOtp: async (phone: string, role: UserRole) => {
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        try {
+            const session = await authService.startLoginOtp(phone, role);
+            set({
+                isLoading: false,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
+            });
+            return session;
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
+            set({
+                isLoading: false,
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
+            });
+            return null;
+        }
+    },
+
+    resendLoginOtp: async (sessionToken: string, channel: OtpChannel) => {
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        try {
+            const session = await authService.resendLoginOtp(sessionToken, channel);
+            set({
+                isLoading: false,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
+            });
+            return session;
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
+            set({
+                isLoading: false,
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
+            });
+            return null;
+        }
+    },
+
     verifyOTP: async (phone: string, otp: string, role: UserRole) => {
         set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
         try {
@@ -151,6 +300,34 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             set({
                 user,
                 token,
+                isAuthenticated: true,
+                isLoading: false,
+                selectedRole: user.role,
+                error: null,
+                errorMessage: null,
+                fieldErrors: {},
+            });
+            return true;
+        } catch (error: unknown) {
+            const normalized = getApiErrorMessage(error);
+            set({
+                isLoading: false,
+                error: normalized.message,
+                errorMessage: normalized.message,
+                fieldErrors: normalized.fieldErrors || {},
+            });
+            return false;
+        }
+    },
+
+    verifyLoginOtp: async (sessionToken: string, channel: OtpChannel, otp: string, role: UserRole) => {
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        try {
+            const { user, token, refreshToken } = await authService.verifyLoginOtp(sessionToken, channel, otp, role);
+            set({
+                user,
+                token,
+                refreshToken: refreshToken || null,
                 isAuthenticated: true,
                 isLoading: false,
                 selectedRole: user.role,

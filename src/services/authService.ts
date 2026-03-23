@@ -2,7 +2,14 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import api from './api';
-import { User, LoginCredentials, SignupData, UserRole } from '../models/types';
+import {
+    User,
+    LoginCredentials,
+    SignupData,
+    UserRole,
+    OtpChannel,
+    OtpSessionPayload,
+} from '../models/types';
 import { STORAGE_KEYS } from '../config/constants';
 import { getApiErrorMessage } from '../utils/errorMessage';
 
@@ -39,6 +46,58 @@ const normalizeRole = (value: unknown): UserRole | null => {
     return null;
 };
 
+interface PersistedAuthResult {
+    user: User;
+    token: string;
+    refreshToken?: string;
+}
+
+interface PendingOtpVerificationResult {
+    completed: false;
+    session: OtpSessionPayload;
+}
+
+interface CompletedOtpVerificationResult extends PersistedAuthResult {
+    completed: true;
+}
+
+type SignupOtpVerificationResult = PendingOtpVerificationResult | CompletedOtpVerificationResult;
+
+const LEGACY_LOGIN_SESSION_PREFIX = 'legacy-login:';
+
+const extractResponseData = (response: any) => response?.data?.data ?? response?.data;
+
+const maskPhone = (phone: string): string => {
+    const trimmed = phone.trim();
+    if (trimmed.length <= 4) return trimmed;
+    return `${'*'.repeat(Math.max(0, trimmed.length - 4))}${trimmed.slice(-4)}`;
+};
+
+const buildLegacyLoginSession = (phone: string): OtpSessionPayload => ({
+    flow: 'login',
+    sessionToken: `${LEGACY_LOGIN_SESSION_PREFIX}${phone}`,
+    currentChannel: 'sms',
+    nextChannel: null,
+    maskedEmail: '',
+    maskedPhone: maskPhone(phone),
+    verifiedChannels: {
+        email: false,
+        sms: false,
+        whatsapp: false,
+    },
+    expiresInSeconds: 300,
+    availableChannels: ['sms'],
+    whatsappAvailable: false,
+});
+
+const getLegacyLoginPhone = (sessionToken: string): string | null => {
+    if (!sessionToken.startsWith(LEGACY_LOGIN_SESSION_PREFIX)) {
+        return null;
+    }
+    const phone = sessionToken.slice(LEGACY_LOGIN_SESSION_PREFIX.length).trim();
+    return phone || null;
+};
+
 // Map backend user to frontend User type
 const mapBackendUser = (backendUser: any, role?: UserRole): User => {
     const backendRole = normalizeRole(backendUser?.role);
@@ -56,6 +115,35 @@ const mapBackendUser = (backendUser: any, role?: UserRole): User => {
     };
 };
 
+const persistAuthSession = async (
+    data: { user: any; accessToken: string; refreshToken?: string },
+    role?: UserRole,
+): Promise<PersistedAuthResult> => {
+    const accessToken = data.accessToken;
+    const refreshToken = data.refreshToken;
+
+    let user = mapBackendUser(data.user, role);
+
+    try {
+        const meResponse = await api.get('/auth/me', {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+        user = mapBackendUser(extractResponseData(meResponse)?.user, user.role);
+    } catch (meError: any) {
+        console.warn('[Auth] /auth/me hydration after auth flow failed, using current payload:', meError?.message);
+    }
+
+    await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
+    if (refreshToken) {
+        await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    }
+    await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+
+    return { user, token: accessToken, refreshToken };
+};
+
 export const authService = {
     // Login with email and password
     async login(credentials: LoginCredentials): Promise<{ user: User; token: string; refreshToken?: string }> {
@@ -66,31 +154,7 @@ export const authService = {
                 role: credentials.role,
             });
 
-            const { data } = response.data;
-            const accessToken = data.accessToken;
-            const refreshToken = data.refreshToken;
-
-            // Validate role from backend /auth/me so role-based navigation is always authoritative.
-            let user = mapBackendUser(data.user, credentials.role);
-            try {
-                const meResponse = await api.get('/auth/me', {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                });
-                user = mapBackendUser(meResponse.data?.data?.user, user.role);
-            } catch (meError: any) {
-                console.warn('[Auth] /auth/me hydration after login failed, using login payload:', meError?.message);
-            }
-
-            // Store tokens and user in secure storage
-            await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
-            if (refreshToken) {
-                await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-            }
-            await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-
-            return { user, token: accessToken, refreshToken };
+            return await persistAuthSession(extractResponseData(response), credentials.role);
         } catch (error: unknown) {
             throw getApiErrorMessage(error);
         }
@@ -107,19 +171,68 @@ export const authService = {
                 role: data.role,
             });
 
-            const { data: responseData } = response.data;
-            const user = mapBackendUser(responseData.user, data.role);
-            const accessToken = responseData.accessToken;
-            const refreshToken = responseData.refreshToken;
+            return await persistAuthSession(extractResponseData(response), data.role);
+        } catch (error: unknown) {
+            throw getApiErrorMessage(error);
+        }
+    },
 
-            // Store tokens and user in secure storage
-            await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
-            if (refreshToken) {
-                await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    async startSignupVerification(data: SignupData): Promise<OtpSessionPayload> {
+        try {
+            const response = await api.post('/auth/signup/initiate', {
+                full_name: data.name,
+                email: data.email,
+                password: data.password,
+                phone: data.phone,
+                role: data.role,
+            });
+
+            return extractResponseData(response) as OtpSessionPayload;
+        } catch (error: unknown) {
+            throw getApiErrorMessage(error);
+        }
+    },
+
+    async verifySignupOtp(
+        sessionToken: string,
+        channel: Extract<OtpChannel, 'email' | 'sms'>,
+        otp: string,
+        role: UserRole,
+    ): Promise<SignupOtpVerificationResult> {
+        try {
+            const response = await api.post('/auth/signup/verify-otp', {
+                sessionToken,
+                channel,
+                otp,
+            });
+
+            const responseData = extractResponseData(response);
+
+            if (!responseData?.completed) {
+                return {
+                    completed: false,
+                    session: responseData?.session as OtpSessionPayload,
+                };
             }
-            await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
-            return { user, token: accessToken, refreshToken };
+            const persisted = await persistAuthSession(responseData, role);
+            return { completed: true, ...persisted };
+        } catch (error: unknown) {
+            throw getApiErrorMessage(error);
+        }
+    },
+
+    async resendSignupOtp(
+        sessionToken: string,
+        channel: Extract<OtpChannel, 'email' | 'sms'>,
+    ): Promise<OtpSessionPayload> {
+        try {
+            const response = await api.post('/auth/signup/resend-otp', {
+                sessionToken,
+                channel,
+            });
+
+            return extractResponseData(response) as OtpSessionPayload;
         } catch (error: unknown) {
             throw getApiErrorMessage(error);
         }
@@ -207,23 +320,73 @@ export const authService = {
         }
     },
 
+    async startLoginOtp(phone: string, role: UserRole): Promise<OtpSessionPayload> {
+        try {
+            const response = await api.post('/auth/login/send-otp', { phone, role });
+            return extractResponseData(response) as OtpSessionPayload;
+        } catch (error: unknown) {
+            if ((error as any)?.response?.status === 404) {
+                await api.post('/auth/send-otp', { phone });
+                return buildLegacyLoginSession(phone);
+            }
+            throw getApiErrorMessage(error);
+        }
+    },
+
+    async resendLoginOtp(sessionToken: string, channel: OtpChannel): Promise<OtpSessionPayload> {
+        try {
+            const legacyPhone = getLegacyLoginPhone(sessionToken);
+            if (legacyPhone) {
+                await api.post('/auth/send-otp', { phone: legacyPhone });
+                return buildLegacyLoginSession(legacyPhone);
+            }
+
+            const response = await api.post('/auth/login/resend-otp', { sessionToken, channel });
+            return extractResponseData(response) as OtpSessionPayload;
+        } catch (error: unknown) {
+            const legacyPhone = getLegacyLoginPhone(sessionToken);
+            if ((error as any)?.response?.status === 404 && legacyPhone) {
+                await api.post('/auth/send-otp', { phone: legacyPhone });
+                return buildLegacyLoginSession(legacyPhone);
+            }
+            throw getApiErrorMessage(error);
+        }
+    },
+
     async verifyOTP(phone: string, otp: string, role: UserRole): Promise<{ user: User; token: string }> {
         try {
             const response = await api.post('/auth/verify-otp', { phone, otp });
-            const { data } = response.data;
-            const accessToken = data.accessToken;
-            const refreshToken = data.refreshToken;
-
-            const user = mapBackendUser(data.user, role);
-
-            await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
-            if (refreshToken) {
-                await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-            }
-            await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-
-            return { user, token: accessToken };
+            const persisted = await persistAuthSession(extractResponseData(response), role);
+            return { user: persisted.user, token: persisted.token };
         } catch (error: unknown) {
+            throw getApiErrorMessage(error);
+        }
+    },
+
+    async verifyLoginOtp(
+        sessionToken: string,
+        channel: OtpChannel,
+        otp: string,
+        role: UserRole,
+    ): Promise<PersistedAuthResult> {
+        try {
+            const legacyPhone = getLegacyLoginPhone(sessionToken);
+            if (legacyPhone) {
+                return await this.verifyOTP(legacyPhone, otp, role);
+            }
+
+            const response = await api.post('/auth/login/verify-otp', {
+                sessionToken,
+                channel,
+                otp,
+            });
+
+            return await persistAuthSession(extractResponseData(response), role);
+        } catch (error: unknown) {
+            const legacyPhone = getLegacyLoginPhone(sessionToken);
+            if ((error as any)?.response?.status === 404 && legacyPhone) {
+                return await this.verifyOTP(legacyPhone, otp, role);
+            }
             throw getApiErrorMessage(error);
         }
     },

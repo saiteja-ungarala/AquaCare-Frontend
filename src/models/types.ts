@@ -345,6 +345,26 @@ export interface SignupData {
     referralCode?: string;
 }
 
+export type OtpChannel = 'email' | 'sms' | 'whatsapp';
+export type OtpFlowMode = 'signup' | 'login';
+
+export interface OtpSessionPayload {
+    flow: OtpFlowMode;
+    sessionToken: string;
+    currentChannel: OtpChannel;
+    nextChannel: OtpChannel | null;
+    maskedEmail: string;
+    maskedPhone: string;
+    verifiedChannels: {
+        email: boolean;
+        sms: boolean;
+        whatsapp: boolean;
+    };
+    expiresInSeconds: number;
+    availableChannels: OtpChannel[];
+    whatsappAvailable: boolean;
+}
+
 // Navigation Types
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -353,7 +373,7 @@ export type RootStackParamList = {
     Login: undefined;
     Signup: undefined;
     ForgotPassword: undefined;
-    OTPVerification: { phone: string };
+    OTPVerification: { otpSession: OtpSessionPayload };
     PaymentScreen: { amount: number; entityType: 'booking' | 'order'; entityId: number; description: string };
     BookingDetail: { bookingId: number };
     BookingUpdate: { bookingId: number };

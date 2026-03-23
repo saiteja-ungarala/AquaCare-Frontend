@@ -31,7 +31,15 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
     const [password, setPassword] = useState('');
     const [phone, setPhone] = useState('');
     const [clientFieldErrors, setClientFieldErrors] = useState<Record<string, string>>({});
-    const { signup, isLoading, errorMessage, fieldErrors, clearError, clearFieldError, selectedRole } = useAuthStore();
+    const {
+        startSignupVerification,
+        isLoading,
+        errorMessage,
+        fieldErrors,
+        clearError,
+        clearFieldError,
+        selectedRole,
+    } = useAuthStore();
 
     const clearFieldState = (field: string) => {
         if (errorMessage) {
@@ -114,7 +122,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
             return;
         }
 
-        const success = await signup({
+        const otpSession = await startSignupVerification({
             name: fullName.trim(),
             email: email.trim(),
             password,
@@ -122,8 +130,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
             role: selectedRole
         });
 
-        if (success) {
-            // Success logic is handled by store (sets user, navigates)
+        if (otpSession) {
+            navigation.navigate('OTPVerification', { otpSession });
         }
     };
 
@@ -247,8 +255,12 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                         error={clientFieldErrors.password || fieldErrors.password}
                                     />
 
+                                    <Text style={[styles.helperText, isTechnician ? styles.helperTextLight : null]}>
+                                        We will send one OTP to your email and one OTP to your mobile number. Both must be verified to finish signup.
+                                    </Text>
+
                                     <Button
-                                        title="Sign Up"
+                                        title="Sign Up & Verify"
                                         onPress={handleSignup}
                                         loading={isLoading}
                                         fullWidth
@@ -369,5 +381,15 @@ const styles = StyleSheet.create({
         ...typography.body,
         color: colors.primary,
         fontWeight: '700',
+    },
+    helperText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        marginTop: -spacing.xs,
+        marginBottom: spacing.md,
+        lineHeight: 18,
+    },
+    helperTextLight: {
+        color: 'rgba(255, 255, 255, 0.78)',
     },
 });

@@ -153,18 +153,18 @@ const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
         paddingVertical: 0,
-        marginTop: -20,
+        marginTop: -12,
     },
     logoBadge: {
-        width: 300,
-        height: 300,
+        width: 280,
+        height: 220,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.md,
     },
     logoImage: {
-        width: 300,
-        height: 300,
+        width: 280,
+        height: 220,
     },
     appName: {
         ...typography.h1,

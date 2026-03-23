@@ -36,7 +36,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null);
     const {
         login,
-        requestOTP,
+        startLoginOtp,
         isLoading,
         selectedRole,
         setShowLoginCelebration,
@@ -139,6 +139,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     };
 
     const handleSendOtp = async () => {
+        setLocalErrorMessage(null);
         setPhoneError('');
         clearError();
 
@@ -153,9 +154,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             return;
         }
 
-        const success = await requestOTP(phone);
-        if (success) {
-            navigation.navigate('OTPVerification', { phone });
+        const otpSession = await startLoginOtp(phone, selectedRole);
+        if (otpSession) {
+            navigation.navigate('OTPVerification', { otpSession });
         }
     };
 
@@ -163,25 +164,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         setLocalErrorMessage(null);
         clearError();
 
-        const nextFieldErrors: Record<string, string> = {};
-        if (!email.trim()) {
-            nextFieldErrors.email = 'Email is required for OTP login';
-        } else if (!isValidEmail(email.trim())) {
-            nextFieldErrors.email = 'Enter a valid email address';
-        }
-        setClientFieldErrors(nextFieldErrors);
-
         if (!selectedRole) {
             setLocalErrorMessage('Please select a role first.');
             navigation.goBack();
             return;
         }
 
-        if (Object.keys(nextFieldErrors).length > 0) {
-            return;
-        }
-
-        setLocalErrorMessage('OTP login is available only with a mobile number. Use the Phone Login tab.');
+        setActiveTab('phone');
+        setLocalErrorMessage('Enter your registered mobile number. We will send the OTP to the email linked with that number.');
     };
 
     const isCustomLogin = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
@@ -285,8 +275,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                             {phoneError ? (
                                                 <Text style={styles.phoneError}>{phoneError}</Text>
                                             ) : null}
+                                            <Text style={[styles.helperText, isTechnician ? styles.helperTextLight : null]}>
+                                                OTP will be delivered to the registered email linked to this mobile number.
+                                            </Text>
                                             <Button
-                                                title="Send OTP"
+                                                title="Send OTP to Email"
                                                 onPress={handleSendOtp}
                                                 loading={isLoading}
                                                 fullWidth
@@ -536,5 +529,15 @@ const styles = StyleSheet.create({
         marginTop: -spacing.sm,
         marginBottom: spacing.sm,
         marginLeft: spacing.xs,
+    },
+    helperText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        marginTop: -spacing.xs,
+        marginBottom: spacing.sm,
+        lineHeight: 18,
+    },
+    helperTextLight: {
+        color: 'rgba(255, 255, 255, 0.78)',
     },
 });
