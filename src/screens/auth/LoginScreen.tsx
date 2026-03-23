@@ -26,6 +26,15 @@ type LoginScreenProps = {
     navigation: NativeStackNavigationProp<any>;
 };
 
+const blurWebActiveElement = () => {
+    if (Platform.OS !== 'web') {
+        return;
+    }
+
+    const activeElement = document.activeElement as HTMLElement | null;
+    activeElement?.blur?.();
+};
+
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const [activeTab, setActiveTab] = useState<'email' | 'phone'>('email');
     const [email, setEmail] = useState('');
@@ -156,6 +165,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
         const otpSession = await startLoginOtp(phone, selectedRole);
         if (otpSession) {
+            blurWebActiveElement();
             navigation.navigate('OTPVerification', { otpSession });
         }
     };

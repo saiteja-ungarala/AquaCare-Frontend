@@ -29,6 +29,15 @@ type Props = {
 const OTP_LENGTH = 6;
 const RESEND_DELAY = 30;
 
+const blurWebActiveElement = () => {
+    if (Platform.OS !== 'web') {
+        return;
+    }
+
+    const activeElement = document.activeElement as HTMLElement | null;
+    activeElement?.blur?.();
+};
+
 const getChannelLabel = (channel: OtpChannel): string => {
     switch (channel) {
         case 'email':
@@ -260,13 +269,6 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
         if (cleaned && index < OTP_LENGTH - 1) {
             inputRefs.current[index + 1]?.focus();
         }
-
-        if (cleaned && index === OTP_LENGTH - 1) {
-            const otp = updatedDigits.join('');
-            if (!updatedDigits.includes('')) {
-                void submitOtp(otp);
-            }
-        }
     };
 
     const handleKeyPress = (e: { nativeEvent: { key: string } }, index: number) => {
@@ -307,7 +309,6 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
         setInfoMessage('');
 
         if (alternateLoginChannel === 'whatsapp' && !session.whatsappAvailable) {
-            setInfoMessage('WhatsApp OTP is not enabled yet. It requires a paid provider setup.');
             return;
         }
 
@@ -342,7 +343,10 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
                         <View style={styles.header}>
                             <TouchableOpacity
                                 style={[styles.backButton, isCustomLogin && styles.glassButton]}
-                                onPress={() => navigation.goBack()}
+                                onPress={() => {
+                                    blurWebActiveElement();
+                                    navigation.goBack();
+                                }}
                             >
                                 <Ionicons name="chevron-back" size={28} color={colors.text} />
                             </TouchableOpacity>
@@ -459,7 +463,7 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
                                     </TouchableOpacity>
                                 </View>
 
-                                {session.flow === 'login' ? (
+                                {session.flow === 'login' && alternateLoginChannel ? (
                                     <View style={styles.altChannelWrap}>
                                         <TouchableOpacity
                                             style={[
@@ -483,11 +487,11 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
                                                 {alternateLoginChannel === 'whatsapp' ? 'Send OTP on WhatsApp' : 'Send OTP to Email'}
                                             </Text>
                                         </TouchableOpacity>
-                                        <Text style={[styles.altChannelNote, isTechnician ? styles.lightSubtitle : null]}>
-                                            {session.whatsappAvailable
-                                                ? 'Use WhatsApp if you prefer receiving the OTP there instead of email.'
-                                                : 'WhatsApp OTP is not enabled yet. It requires a paid provider setup.'}
-                                        </Text>
+                                        {alternateLoginChannel === 'whatsapp' ? (
+                                            <Text style={[styles.altChannelNote, isTechnician ? styles.lightSubtitle : null]}>
+                                                Use WhatsApp if you prefer receiving the OTP there instead of email.
+                                            </Text>
+                                        ) : null}
                                     </View>
                                 ) : null}
                             </View>
@@ -622,17 +626,19 @@ const styles = StyleSheet.create({
     },
     otpRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
+        alignItems: 'center',
         marginBottom: spacing.md,
         gap: spacing.sm,
     },
     otpBox: {
-        flex: 1,
+        width: 44,
         height: 56,
         borderWidth: 1.5,
         borderColor: colors.border,
         borderRadius: borderRadius.sm,
         backgroundColor: colors.surface,
+        paddingHorizontal: 0,
         fontSize: 20,
         fontWeight: '700',
         color: colors.text,

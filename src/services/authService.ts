@@ -63,40 +63,9 @@ interface CompletedOtpVerificationResult extends PersistedAuthResult {
 
 type SignupOtpVerificationResult = PendingOtpVerificationResult | CompletedOtpVerificationResult;
 
-const LEGACY_LOGIN_SESSION_PREFIX = 'legacy-login:';
-
 const extractResponseData = (response: any) => response?.data?.data ?? response?.data;
 
-const maskPhone = (phone: string): string => {
-    const trimmed = phone.trim();
-    if (trimmed.length <= 4) return trimmed;
-    return `${'*'.repeat(Math.max(0, trimmed.length - 4))}${trimmed.slice(-4)}`;
-};
 
-const buildLegacyLoginSession = (phone: string): OtpSessionPayload => ({
-    flow: 'login',
-    sessionToken: `${LEGACY_LOGIN_SESSION_PREFIX}${phone}`,
-    currentChannel: 'sms',
-    nextChannel: null,
-    maskedEmail: '',
-    maskedPhone: maskPhone(phone),
-    verifiedChannels: {
-        email: false,
-        sms: false,
-        whatsapp: false,
-    },
-    expiresInSeconds: 300,
-    availableChannels: ['sms'],
-    whatsappAvailable: false,
-});
-
-const getLegacyLoginPhone = (sessionToken: string): string | null => {
-    if (!sessionToken.startsWith(LEGACY_LOGIN_SESSION_PREFIX)) {
-        return null;
-    }
-    const phone = sessionToken.slice(LEGACY_LOGIN_SESSION_PREFIX.length).trim();
-    return phone || null;
-};
 
 // Map backend user to frontend User type
 const mapBackendUser = (backendUser: any, role?: UserRole): User => {
@@ -325,30 +294,15 @@ export const authService = {
             const response = await api.post('/auth/login/send-otp', { phone, role });
             return extractResponseData(response) as OtpSessionPayload;
         } catch (error: unknown) {
-            if ((error as any)?.response?.status === 404) {
-                await api.post('/auth/send-otp', { phone });
-                return buildLegacyLoginSession(phone);
-            }
             throw getApiErrorMessage(error);
         }
     },
 
     async resendLoginOtp(sessionToken: string, channel: OtpChannel): Promise<OtpSessionPayload> {
         try {
-            const legacyPhone = getLegacyLoginPhone(sessionToken);
-            if (legacyPhone) {
-                await api.post('/auth/send-otp', { phone: legacyPhone });
-                return buildLegacyLoginSession(legacyPhone);
-            }
-
             const response = await api.post('/auth/login/resend-otp', { sessionToken, channel });
             return extractResponseData(response) as OtpSessionPayload;
         } catch (error: unknown) {
-            const legacyPhone = getLegacyLoginPhone(sessionToken);
-            if ((error as any)?.response?.status === 404 && legacyPhone) {
-                await api.post('/auth/send-otp', { phone: legacyPhone });
-                return buildLegacyLoginSession(legacyPhone);
-            }
             throw getApiErrorMessage(error);
         }
     },
@@ -370,11 +324,6 @@ export const authService = {
         role: UserRole,
     ): Promise<PersistedAuthResult> {
         try {
-            const legacyPhone = getLegacyLoginPhone(sessionToken);
-            if (legacyPhone) {
-                return await this.verifyOTP(legacyPhone, otp, role);
-            }
-
             const response = await api.post('/auth/login/verify-otp', {
                 sessionToken,
                 channel,
@@ -383,10 +332,6 @@ export const authService = {
 
             return await persistAuthSession(extractResponseData(response), role);
         } catch (error: unknown) {
-            const legacyPhone = getLegacyLoginPhone(sessionToken);
-            if ((error as any)?.response?.status === 404 && legacyPhone) {
-                return await this.verifyOTP(legacyPhone, otp, role);
-            }
             throw getApiErrorMessage(error);
         }
     },

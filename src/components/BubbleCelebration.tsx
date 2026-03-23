@@ -127,9 +127,9 @@ export const BubbleCelebration: React.FC<BubbleCelebrationProps> = ({ onComplete
                 styles.overlay,
                 {
                     opacity: overlayOpacity,
+                    pointerEvents: 'auto',
                 },
             ]}
-            pointerEvents="auto" // Block touches during animation
         >
             {bubbles.map((bubble, index) => (
                 <Animated.View
