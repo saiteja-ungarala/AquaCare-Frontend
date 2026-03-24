@@ -87,7 +87,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         switch (selectedRole) {
             case 'customer':
                 return 'Customer & Referrals';
-            case 'agent':
+            case 'technician':
                 return 'Technician';
             case 'dealer':
                 return 'Dealer';
@@ -184,18 +184,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         setLocalErrorMessage('Enter your registered mobile number. We will send the OTP to the email linked with that number.');
     };
 
-    const isCustomLogin = selectedRole === 'customer' || selectedRole === 'agent' || selectedRole === 'dealer';
-    const isTechnician = selectedRole === 'agent';
+    const isCustomLogin = selectedRole === 'customer' || selectedRole === 'technician' || selectedRole === 'dealer';
+    const isTechnician = selectedRole === 'technician';
     const Wrapper = (isCustomLogin ? ImageBackground : View) as React.ComponentType<any>;
 
     const getBackgroundImage = () => {
         if (selectedRole === 'customer') return require('../../../assets/customer-login.png');
-        if (selectedRole === 'agent') return require('../../../assets/technicain-login.jpg');
+        if (selectedRole === 'technician') return require('../../../assets/technicain-login.jpg');
         if (selectedRole === 'dealer') return require('../../../assets/dealer-login.png');
         return undefined;
     };
 
-    const activeThemeColor = selectedRole === 'agent' ? colors.accent : (selectedRole === 'dealer' ? colors.info : customerColors.primary);
+    const activeThemeColor = selectedRole === 'technician' ? colors.accent : (selectedRole === 'dealer' ? colors.info : customerColors.primary);
 
     const wrapperProps = isCustomLogin
         ? { source: getBackgroundImage(), style: styles.backgroundImage, resizeMode: 'cover' as const }

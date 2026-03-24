@@ -106,12 +106,12 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({
                     />
 
                     <RoleCard
-                        role="agent"
+                        role="technician"
                         title="Technician"
                         description="Accept jobs & manage earnings"
                         icon="construct"
                         color={colors.accent}
-                        onPress={() => handleRoleSelect('agent')}
+                        onPress={() => handleRoleSelect('technician')}
                         delay={400}
                     />
 

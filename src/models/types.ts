@@ -1,6 +1,6 @@
 // Type definitions for the Water Services App
 
-export type UserRole = 'customer' | 'agent' | 'dealer' | 'admin';
+export type UserRole = 'customer' | 'technician' | 'dealer' | 'admin';
 
 export interface User {
     id: string;
@@ -79,7 +79,7 @@ export interface Booking {
     scheduledDate: string;
     scheduledTime: string;
     address: Address;
-    agent?: Technician;
+    technician?: Technician;
     totalAmount: number;
     createdAt: string;
     completedAt?: string;
@@ -90,16 +90,18 @@ export type BookingUpdateType = 'arrived' | 'diagnosed' | 'in_progress' | 'compl
 export interface BookingUpdate {
     id: number;
     booking_id: number;
-    agent_id: number;
+    technician_id: number;
     update_type: BookingUpdateType;
     note: string | null;
     media_url: string | null;
     created_at: string;
+    technician_name?: string | null;
 }
 
 export type BookingStatus =
     | 'pending'
     | 'confirmed'
+    | 'assigned'
     | 'agent_assigned'
     | 'on_the_way'
     | 'in_progress'
