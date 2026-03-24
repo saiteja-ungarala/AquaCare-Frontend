@@ -373,7 +373,7 @@ export type RootStackParamList = {
     Login: undefined;
     Signup: undefined;
     ForgotPassword: undefined;
-    OTPVerification: { otpSession: OtpSessionPayload };
+    OTPVerification: { otpSession: OtpSessionPayload; signupPhone?: string };
     PaymentScreen: { amount: number; entityType: 'booking' | 'order'; entityId: number; description: string };
     BookingDetail: { bookingId: number };
     BookingUpdate: { bookingId: number };

@@ -191,6 +191,33 @@ export const authService = {
         }
     },
 
+    async verifySignupFirebaseSms(
+        sessionToken: string,
+        firebaseIdToken: string,
+        role: UserRole,
+    ): Promise<SignupOtpVerificationResult> {
+        try {
+            const response = await api.post('/auth/signup/verify-firebase-sms', {
+                sessionToken,
+                firebaseIdToken,
+            });
+
+            const responseData = extractResponseData(response);
+
+            if (!responseData?.completed) {
+                return {
+                    completed: false,
+                    session: responseData?.session as OtpSessionPayload,
+                };
+            }
+
+            const persisted = await persistAuthSession(responseData, role);
+            return { completed: true, ...persisted };
+        } catch (error: unknown) {
+            throw getApiErrorMessage(error);
+        }
+    },
+
     async resendSignupOtp(
         sessionToken: string,
         channel: Extract<OtpChannel, 'email' | 'sms'>,

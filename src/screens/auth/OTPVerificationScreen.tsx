@@ -20,6 +20,8 @@ import { useAuthStore } from '../../store';
 import { OtpChannel, OtpSessionPayload, RootStackParamList } from '../../models/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components';
+import { firebaseSignupSms } from '../../services/firebaseSignupSms';
+import { getApiErrorMessage } from '../../utils/errorMessage';
 
 type Props = {
     navigation: NativeStackNavigationProp<RootStackParamList, 'OTPVerification'>;
@@ -104,6 +106,7 @@ const buildResendMessage = (session: OtpSessionPayload): string => {
 
 export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) => {
     const initialSession = route.params.otpSession;
+    const signupPhone = route.params.signupPhone || null;
     const [session, setSession] = useState(initialSession);
     const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
     const [otpError, setOtpError] = useState('');
@@ -113,9 +116,11 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const inputRefs = useRef<(TextInput | null)[]>([]);
+    const firebaseSmsDispatchRef = useRef<string | null>(null);
 
     const {
         verifySignupOtp,
+        verifySignupFirebaseSms,
         resendSignupOtp,
         verifyLoginOtp,
         resendLoginOtp,
@@ -182,6 +187,53 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
     }, [clearError]);
 
     useEffect(() => {
+        if (session.flow !== 'signup' || session.currentChannel !== 'sms' || !signupPhone) {
+            return;
+        }
+
+        const dispatchKey = `${session.sessionToken}:${signupPhone}`;
+        if (firebaseSmsDispatchRef.current === dispatchKey) {
+            return;
+        }
+
+        firebaseSmsDispatchRef.current = dispatchKey;
+        let cancelled = false;
+
+        const sendFirebaseSignupOtp = async () => {
+            setIsSubmitting(true);
+            setOtpError('');
+            setInfoMessage('');
+
+            try {
+                await firebaseSignupSms.sendOtp(signupPhone);
+                if (!cancelled) {
+                    setInfoMessage(`SMS OTP sent to ${session.maskedPhone}.`);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setOtpError(getApiErrorMessage(error).message);
+                }
+            } finally {
+                if (!cancelled) {
+                    setIsSubmitting(false);
+                }
+            }
+        };
+
+        void sendFirebaseSignupOtp();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [session.currentChannel, session.flow, session.maskedPhone, session.sessionToken, signupPhone]);
+
+    useEffect(() => {
+        return () => {
+            void firebaseSignupSms.clear();
+        };
+    }, []);
+
+    useEffect(() => {
         if (resendTimer <= 0) {
             setCanResend(true);
             return;
@@ -214,16 +266,27 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
         clearError();
 
         if (session.flow === 'signup') {
-            const result = await verifySignupOtp(
-                session.sessionToken,
-                session.currentChannel as Extract<OtpChannel, 'email' | 'sms'>,
-                otp,
-                selectedRole,
-            );
+            let localErrorMessage = '';
+            const result = session.currentChannel === 'sms'
+                ? await (async () => {
+                    try {
+                        const firebaseIdToken = await firebaseSignupSms.confirmOtp(otp);
+                        return await verifySignupFirebaseSms(session.sessionToken, firebaseIdToken, selectedRole);
+                    } catch (error) {
+                        localErrorMessage = getApiErrorMessage(error).message;
+                        return null;
+                    }
+                })()
+                : await verifySignupOtp(
+                    session.sessionToken,
+                    session.currentChannel as Extract<OtpChannel, 'email' | 'sms'>,
+                    otp,
+                    selectedRole,
+                );
             setIsSubmitting(false);
 
             if (!result) {
-                setOtpError(resolveOtpError());
+                setOtpError(localErrorMessage || resolveOtpError());
                 setDigits(Array(OTP_LENGTH).fill(''));
                 focusFirstInput();
                 return;
@@ -285,6 +348,24 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
         clearError();
         setOtpError('');
         setInfoMessage('');
+
+        if (session.flow === 'signup' && session.currentChannel === 'sms') {
+            if (!signupPhone) {
+                setOtpError('Signup phone number is missing. Please go back and start signup again.');
+                return;
+            }
+
+            setIsSubmitting(true);
+            try {
+                await firebaseSignupSms.sendOtp(signupPhone, true);
+                resetOtpState(buildResendMessage(session));
+            } catch (error) {
+                setOtpError(getApiErrorMessage(error).message);
+            } finally {
+                setIsSubmitting(false);
+            }
+            return;
+        }
 
         const nextSession = session.flow === 'signup'
             ? await resendSignupOtp(session.sessionToken, session.currentChannel as Extract<OtpChannel, 'email' | 'sms'>)

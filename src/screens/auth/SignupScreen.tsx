@@ -131,7 +131,10 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         });
 
         if (otpSession) {
-            navigation.navigate('OTPVerification', { otpSession });
+            navigation.navigate('OTPVerification', {
+                otpSession,
+                signupPhone: phone.trim(),
+            });
         }
     };
 
