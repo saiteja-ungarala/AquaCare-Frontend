@@ -26,6 +26,17 @@ interface WalletActions {
 
 type WalletStore = WalletState & WalletActions;
 
+const normalizeTransaction = (raw: any): WalletTransaction => ({
+    id: Number(raw.id ?? raw.transaction_id ?? 0),
+    type: (['credit', 'debit'].includes(String(raw.type ?? raw.transaction_type ?? '').toLowerCase())
+        ? String(raw.type ?? raw.transaction_type).toLowerCase()
+        : 'credit') as 'credit' | 'debit',
+    amount: Number(raw.amount ?? 0),
+    description: String(raw.description ?? raw.notes ?? raw.note ?? ''),
+    date: String(raw.date ?? raw.created_at ?? raw.createdAt ?? ''),
+    source: String(raw.source ?? raw.source_type ?? raw.sourceType ?? 'order') as WalletTransaction['source'],
+});
+
 export const useWalletStore = create<WalletStore>((set) => ({
     // Initial state
     balance: 0,
@@ -40,8 +51,8 @@ export const useWalletStore = create<WalletStore>((set) => ({
             const response = await api.get('/wallet');
             const data = response.data.data;
             set({
-                balance: data.balance || 0,
-                isLoading: false
+                balance: Number(data.balance ?? data.wallet_balance ?? 0),
+                isLoading: false,
             });
         } catch (error: any) {
             console.error('[WalletStore] fetchWallet error:', error);
@@ -54,10 +65,11 @@ export const useWalletStore = create<WalletStore>((set) => ({
         set({ isLoading: true, error: null });
         try {
             const response = await api.get('/wallet/transactions');
-            const data = response.data.data;
+            const raw = response.data.data;
+            const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.transactions) ? raw.transactions : []);
             set({
-                transactions: data || [],
-                isLoading: false
+                transactions: list.map(normalizeTransaction),
+                isLoading: false,
             });
         } catch (error: any) {
             console.error('[WalletStore] fetchTransactions error:', error);

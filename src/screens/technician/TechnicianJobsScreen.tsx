@@ -128,6 +128,11 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
         setRefreshing(false);
     }, [loadData]);
 
+    const hasActiveJob = useMemo(
+        () => jobs.some((j) => j.status === 'assigned' || j.status === 'in_progress'),
+        [jobs]
+    );
+
     const filteredJobs = useMemo(() => {
         const availableJobs = jobs.filter((job) => job.status === 'pending' || job.status === 'confirmed');
 
@@ -217,7 +222,7 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
                     <TechnicianButton
                         title="Accept"
                         onPress={() => handleAccept(item.id)}
-                        disabled={loading.action}
+                        disabled={loading.action || hasActiveJob}
                         style={styles.actionBtn}
                     />
                 </View>
@@ -255,6 +260,18 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
                     </TouchableOpacity>
                 ))}
             </View>
+
+            {hasActiveJob && (
+                <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={styles.activeJobBanner}
+                    onPress={() => navigation.navigate('TechnicianActiveJob')}
+                >
+                    <Ionicons name="flash" size={14} color="#FFFFFF" />
+                    <Text style={styles.activeJobBannerText}>You have an active job — tap to manage it</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#FFFFFF" />
+                </TouchableOpacity>
+            )}
 
             <TouchableOpacity
                 activeOpacity={0.9}
@@ -318,6 +335,23 @@ const styles = StyleSheet.create({
         gap: technicianTheme.spacing.sm,
         paddingHorizontal: technicianTheme.spacing.lg,
         marginTop: -14,
+    },
+    activeJobBanner: {
+        marginTop: technicianTheme.spacing.md,
+        marginHorizontal: technicianTheme.spacing.lg,
+        borderRadius: technicianTheme.radius.md,
+        backgroundColor: '#2563EB',
+        paddingHorizontal: technicianTheme.spacing.md,
+        paddingVertical: technicianTheme.spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: technicianTheme.spacing.sm,
+    },
+    activeJobBannerText: {
+        ...technicianTheme.typography.bodySmall,
+        color: '#FFFFFF',
+        flex: 1,
+        fontWeight: '600',
     },
     earnBanner: {
         marginTop: technicianTheme.spacing.md,

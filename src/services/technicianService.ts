@@ -1,5 +1,6 @@
 import api from './api';
 import {
+    JobUpdate,
     TechnicianJob,
     TechnicianJobsMeta,
     TechnicianKycDocType,
@@ -61,12 +62,12 @@ const getApiErrorMessage = (error: any, fallback: string): string => {
 
 export const technicianService = {
     async getMe(): Promise<TechnicianMePayload> {
-        const response = await api.get<ApiSuccess<TechnicianMePayload>>('/agent/me');
+        const response = await api.get<ApiSuccess<TechnicianMePayload>>('/technician/me');
         return response.data.data;
     },
 
     async submitKyc(formData: FormData): Promise<{ uploaded: number; verification_status: string }> {
-        const response = await api.post<ApiSuccess<{ uploaded: number; verification_status: string }>>('/agent/kyc', formData, {
+        const response = await api.post<ApiSuccess<{ uploaded: number; verification_status: string }>>('/technician/kyc', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -75,18 +76,18 @@ export const technicianService = {
     },
 
     async updateLocation(lat: number, lng: number): Promise<void> {
-        await api.patch('/agent/location', { lat, lng });
+        await api.patch('/technician/location', { lat, lng });
     },
 
     async setOnline(isOnline: boolean): Promise<{ is_online: boolean }> {
-        const response = await api.patch<ApiSuccess<{ is_online: boolean }>>('/agent/online', {
+        const response = await api.patch<ApiSuccess<{ is_online: boolean }>>('/technician/online', {
             is_online: isOnline,
         });
         return response.data.data;
     },
 
     async getAvailableJobs(): Promise<TechnicianJobsPayload> {
-        const response = await api.get<ApiSuccess<TechnicianJobsPayload>>('/agent/jobs/available');
+        const response = await api.get<ApiSuccess<TechnicianJobsPayload>>('/technician/jobs/available');
         const payload = response.data.data;
         return {
             jobs: Array.isArray(payload.jobs) ? payload.jobs.map(mapTechnicianJob) : [],
@@ -95,15 +96,20 @@ export const technicianService = {
     },
 
     async acceptJob(bookingId: string): Promise<void> {
-        await api.post(`/agent/jobs/${bookingId}/accept`);
+        await api.post(`/technician/jobs/${bookingId}/accept`);
     },
 
     async rejectJob(bookingId: string): Promise<void> {
-        await api.post(`/agent/jobs/${bookingId}/reject`);
+        await api.post(`/technician/jobs/${bookingId}/reject`);
     },
 
     async updateJobStatus(bookingId: string, status: 'in_progress' | 'completed'): Promise<void> {
-        await api.patch(`/agent/jobs/${bookingId}/status`, { status });
+        await api.patch(`/technician/jobs/${bookingId}/status`, { status });
+    },
+
+    async getJobUpdates(bookingId: string): Promise<JobUpdate[]> {
+        const response = await api.get<ApiSuccess<{ updates: JobUpdate[] }>>(`/technician/jobs/${bookingId}/updates`);
+        return response.data.data.updates || [];
     },
 
     async postJobUpdate(bookingId: number, payload: {
@@ -111,7 +117,7 @@ export const technicianService = {
         note?: string;
         media_url?: string;
     }): Promise<void> {
-        await api.post(`/agent/jobs/${bookingId}/updates`, payload);
+        await api.post(`/technician/jobs/${bookingId}/updates`, payload);
     },
 
     getApiErrorMessage,

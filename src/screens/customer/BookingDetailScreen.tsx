@@ -26,6 +26,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
     pending: { label: 'Pending', color: '#9CA3AF' },
     confirmed: { label: 'Confirmed', color: colors.info },
     assigned: { label: 'Assigned', color: '#F97316' },
+    technician_assigned: { label: 'Technician Assigned', color: '#F97316' },
+    on_the_way: { label: 'On The Way', color: '#8B5CF6' },
     in_progress: { label: 'In Progress', color: '#EAB308' },
     completed: { label: 'Completed', color: colors.success },
     cancelled: { label: 'Cancelled', color: colors.error },
@@ -267,16 +269,16 @@ export const BookingDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                 </View>
 
                 {/* Technician card */}
-                {booking.agent?.name ? (
+                {booking.technician?.name ? (
                     <View style={[styles.card, styles.agentCard]}>
                         <View style={styles.agentRow}>
                             <View style={styles.agentAvatar}>
                                 <Ionicons name="person" size={22} color={colors.primary} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.agentName}>{booking.agent.name}</Text>
-                                {booking.agent.phone ? (
-                                    <Text style={styles.agentPhone}>{booking.agent.phone}</Text>
+                                <Text style={styles.agentName}>{booking.technician.name}</Text>
+                                {booking.technician.phone ? (
+                                    <Text style={styles.agentPhone}>{booking.technician.phone}</Text>
                                 ) : null}
                             </View>
                             <View style={[styles.assignedBadge, { backgroundColor: '#F97316' + '18' }]}>

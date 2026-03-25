@@ -68,7 +68,7 @@ export const profileService = {
     },
 
     // Add new address
-    async addAddress(address: Omit<Address, 'id'>): Promise<Address | null> {
+    async addAddress(address: Omit<Address, 'id'> & { latitude?: number; longitude?: number }): Promise<Address | null> {
         try {
             console.log('[profileService] addAddress payload:', JSON.stringify(address));
             const response = await api.post('/user/addresses', {
@@ -80,6 +80,8 @@ export const profileService = {
                 postal_code: address.postal_code,
                 country: address.country || 'India',
                 is_default: address.is_default,
+                ...(address.latitude !== undefined ? { latitude: address.latitude } : {}),
+                ...(address.longitude !== undefined ? { longitude: address.longitude } : {}),
             });
             console.log('[profileService] addAddress response:', JSON.stringify(response.data));
             const { data } = response.data;
@@ -92,7 +94,7 @@ export const profileService = {
     },
 
     // Update address
-    async updateAddress(id: string, updates: Partial<Address>): Promise<Address | null> {
+    async updateAddress(id: string, updates: Partial<Address> & { latitude?: number; longitude?: number }): Promise<Address | null> {
         try {
             const payload: any = {};
             if (updates.label !== undefined) payload.label = updates.label;
@@ -102,6 +104,8 @@ export const profileService = {
             if (updates.state !== undefined) payload.state = updates.state;
             if (updates.postal_code !== undefined) payload.postal_code = updates.postal_code;
             if (updates.is_default !== undefined) payload.is_default = updates.is_default;
+            if (updates.latitude !== undefined) payload.latitude = updates.latitude;
+            if (updates.longitude !== undefined) payload.longitude = updates.longitude;
 
             const response = await api.patch(`/user/addresses/${id}`, payload);
             const { data } = response.data;

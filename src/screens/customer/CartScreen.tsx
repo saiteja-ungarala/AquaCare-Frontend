@@ -62,9 +62,6 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
     const [orderId, setOrderId] = React.useState<string | null>(null);
     const [referralCode, setReferralCode] = React.useState('');
 
-    const deliveryFee = totalAmount > 0 ? 99 : 0;
-    const finalTotal = totalAmount + deliveryFee;
-
     const isReferralCodeValid = referralCode.length === 0 || REFERRAL_CODE_REGEX.test(referralCode);
     const referralCodeError = referralCode.length > 0 && !isReferralCodeValid ? 'Invalid code format' : null;
 
@@ -196,7 +193,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
 
             // Go to payment screen to complete payment
             navigation.navigate('PaymentScreen', {
-                amount: finalTotal,
+                amount: result.totalAmount,
                 entityType: 'order',
                 entityId: createdOrderId,
                 description: 'IONORA CARE Order',
@@ -332,9 +329,9 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
 
                 <View style={styles.summaryCard}>
                     <Text style={styles.summaryTitle}>Price Details</Text>
-                    <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Subtotal</Text><Text>₹{totalAmount.toLocaleString()}</Text></View>
-                    <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Delivery Fee</Text><Text>₹{deliveryFee}</Text></View>
-                    <View style={[styles.summaryRow, styles.totalRow]}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>₹{finalTotal.toLocaleString()}</Text></View>
+                    <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Items Subtotal</Text><Text>₹{totalAmount.toLocaleString()}</Text></View>
+                    <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Delivery Fee</Text><Text style={{ color: '#9CA3AF' }}>Calculated at checkout</Text></View>
+                    <View style={[styles.summaryRow, styles.totalRow]}><Text style={styles.totalLabel}>Items Total</Text><Text style={styles.totalValue}>₹{totalAmount.toLocaleString()}</Text></View>
                 </View>
             </ScrollView>
 
@@ -347,7 +344,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
             )}
 
             <View style={styles.bottomBar}>
-                <View><Text style={styles.bottomLabel}>Total</Text><Text style={styles.bottomPrice}>₹{finalTotal.toLocaleString()}</Text></View>
+                <View><Text style={styles.bottomLabel}>Subtotal</Text><Text style={styles.bottomPrice}>₹{totalAmount.toLocaleString()}</Text></View>
                 <Button title="Checkout" onPress={handleCheckoutButton} style={{ paddingHorizontal: 32, backgroundColor: customerColors.primaryDark }} />
             </View>
 
@@ -363,7 +360,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                         <Ionicons name="cart-outline" size={48} color={colors.primary} />
                         <Text style={styles.confirmTitle}>Confirm Order</Text>
                         <Text style={styles.confirmDesc}>
-                            Total Amount: ₹{finalTotal.toLocaleString()}
+                            Items Subtotal: ₹{totalAmount.toLocaleString()}
                         </Text>
                         <View style={styles.paymentMethod}>
                             <Ionicons name="cash-outline" size={20} color={colors.textSecondary} />

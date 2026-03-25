@@ -19,16 +19,18 @@ export const TechnicianEntryScreen: React.FC<TechnicianEntryScreenProps> = ({ na
             if (!payload) return;
 
             const status = payload.profile.verification_status;
+
             if (status === 'approved') {
                 navigation.reset({ index: 0, routes: [{ name: 'TechnicianTabs' }] });
                 return;
             }
 
-            if (status === 'pending') {
+            if (status === 'pending' || status === 'rejected' || status === 'suspended') {
                 navigation.reset({ index: 0, routes: [{ name: 'TechnicianKycPending' }] });
                 return;
             }
 
+            // 'unverified' or unknown — go to upload
             navigation.reset({ index: 0, routes: [{ name: 'TechnicianKycUpload' }] });
         };
 

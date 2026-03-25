@@ -19,8 +19,12 @@ export const TechnicianKycPendingScreen: React.FC<TechnicianKycPendingScreenProp
         const payload = await fetchMe();
         setRefreshing(false);
 
-        if (payload?.profile.verification_status === 'approved') {
+        if (!payload) return;
+        const status = payload.profile.verification_status;
+        if (status === 'approved') {
             navigation.reset({ index: 0, routes: [{ name: 'TechnicianTabs' }] });
+        } else if (status === 'unverified') {
+            navigation.reset({ index: 0, routes: [{ name: 'TechnicianKycUpload' }] });
         }
     }, [fetchMe, navigation]);
 
@@ -28,7 +32,30 @@ export const TechnicianKycPendingScreen: React.FC<TechnicianKycPendingScreenProp
         refresh();
     }, [refresh]);
 
-    const isRejected = me?.verification_status === 'rejected';
+    const status = me?.verification_status;
+    const isRejected = status === 'rejected';
+    const isSuspended = status === 'suspended';
+
+    const chipLabel = isSuspended ? 'suspended' : isRejected ? 'rejected' : 'pending';
+    const chipTone: 'danger' | 'warning' = (isRejected || isSuspended) ? 'danger' : 'warning';
+
+    const titleText = isSuspended
+        ? 'Account Suspended'
+        : isRejected
+            ? 'Verification Rejected'
+            : 'Verification In Progress';
+
+    const subtitleText = isSuspended
+        ? 'Your account has been suspended. Please contact support for assistance.'
+        : isRejected
+            ? 'Please review the note below and upload corrected documents.'
+            : 'Your documents are under review. Pull down to refresh status.';
+
+    const noteText = isSuspended
+        ? (me?.suspension_reason ?? latestKycDocument?.review_notes ?? null)
+        : isRejected
+            ? (me?.rejection_reason ?? latestKycDocument?.review_notes ?? null)
+            : null;
 
     return (
         <TechnicianScreen dark>
@@ -37,22 +64,20 @@ export const TechnicianKycPendingScreen: React.FC<TechnicianKycPendingScreenProp
                 refreshControl={<RefreshControl refreshing={refreshing || loading.me} onRefresh={refresh} tintColor={technicianTheme.colors.agentPrimary} />}
             >
                 <TechnicianCard style={styles.statusCard}>
-                    <TechnicianChip label={isRejected ? 'rejected' : 'pending'} tone={isRejected ? 'danger' : 'warning'} />
-                    <Text style={styles.title}>{isRejected ? 'Verification Rejected' : 'Verification In Progress'}</Text>
-                    <Text style={styles.subtitle}>
-                        {isRejected
-                            ? 'Please review the note and upload corrected documents.'
-                            : 'Your documents are under review. Pull down to refresh status.'}
-                    </Text>
+                    <TechnicianChip label={chipLabel} tone={chipTone} />
+                    <Text style={styles.title}>{titleText}</Text>
+                    <Text style={styles.subtitle}>{subtitleText}</Text>
 
-                    {latestKycDocument?.review_notes ? (
-                        <View style={styles.noteBox}>
-                            <Text style={styles.noteLabel}>Review Note</Text>
-                            <Text style={styles.noteText}>{latestKycDocument.review_notes}</Text>
+                    {noteText ? (
+                        <View style={[styles.noteBox, isSuspended && styles.noteBoxDanger]}>
+                            <Text style={[styles.noteLabel, isSuspended && styles.noteLabelDanger]}>
+                                {isSuspended ? 'Suspension Reason' : 'Review Note'}
+                            </Text>
+                            <Text style={[styles.noteText, isSuspended && styles.noteTextDanger]}>{noteText}</Text>
                         </View>
                     ) : null}
 
-                    {isRejected ? (
+                    {isRejected && !isSuspended ? (
                         <TechnicianButton title="Re-upload Documents" onPress={() => navigation.navigate('TechnicianKycUpload')} style={{ marginTop: technicianTheme.spacing.lg }} />
                     ) : null}
                 </TechnicianCard>
@@ -89,13 +114,23 @@ const styles = StyleSheet.create({
         padding: technicianTheme.spacing.md,
         width: '100%',
     },
+    noteBoxDanger: {
+        backgroundColor: '#FFF0F0',
+        borderColor: '#FFAAAA',
+    },
     noteLabel: {
         ...technicianTheme.typography.caption,
         color: '#8A5D00',
         marginBottom: 4,
     },
+    noteLabelDanger: {
+        color: '#8A0000',
+    },
     noteText: {
         ...technicianTheme.typography.bodySmall,
         color: '#6A4A08',
+    },
+    noteTextDanger: {
+        color: '#6A0808',
     },
 });

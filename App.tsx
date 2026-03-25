@@ -56,24 +56,10 @@ import { colors } from './src/theme/theme';
 import { customerColors } from './src/theme/customerTheme';
 import { technicianTheme } from './src/theme/technicianTheme';
 import { dealerTheme } from './src/theme/dealerTheme';
-import { adminColors } from './src/theme/adminTheme';
-import {
-    AdminDashboardScreen,
-    AdminProductsScreen,
-    AdminProductFormScreen,
-    AdminBannersScreen,
-    AdminBannerFormScreen,
-    AdminKycScreen,
-    AdminKycDetailScreen,
-    AdminOrdersScreen,
-    AdminBookingDetailScreen,
-    AdminOrderDetailScreen,
-} from './src/screens/admin';
 import api from './src/services/api';
 
-const Stack    = createNativeStackNavigator<RootStackParamList>();
-const AdminNav = createNativeStackNavigator();
-const Tab      = createBottomTabNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab   = createBottomTabNavigator();
 
 type AppErrorBoundaryState = {
     hasError: boolean;
@@ -230,6 +216,8 @@ function TechnicianTabs() {
                         iconName = focused ? 'briefcase' : 'briefcase-outline';
                     } else if (route.name === 'TechnicianActiveJob') {
                         iconName = focused ? 'flash' : 'flash-outline';
+                    } else if (route.name === 'TechnicianStore') {
+                        iconName = focused ? 'storefront' : 'storefront-outline';
                     } else if (route.name === 'TechnicianEarn') {
                         iconName = focused ? 'cash' : 'cash-outline';
                     } else if (route.name === 'TechnicianHistory') {
@@ -244,6 +232,7 @@ function TechnicianTabs() {
         >
             <Tab.Screen name="TechnicianJobs" component={TechnicianJobsScreen} options={{ title: 'Jobs' }} />
             <Tab.Screen name="TechnicianActiveJob" component={TechnicianActiveJobScreen} options={{ title: 'Active Job' }} />
+            <Tab.Screen name="TechnicianStore" component={StoreStack} options={{ title: 'Store' }} />
             <Tab.Screen name="TechnicianEarn" component={TechnicianEarnScreen} options={{ title: 'Earn' }} />
             <Tab.Screen name="TechnicianHistory" component={TechnicianHistoryScreen} options={{ title: 'History' }} />
             <Tab.Screen name="TechnicianProfile" component={TechnicianProfileScreen} options={{ title: 'Profile' }} />
@@ -287,88 +276,6 @@ function DealerTabs() {
             <Tab.Screen name="DealerPricing" component={DealerPricingScreen} options={{ title: 'Pricing' }} />
             <Tab.Screen name="DealerOrders" component={DealerOrdersScreen} options={{ title: 'Orders' }} />
             <Tab.Screen name="DealerProfile" component={DealerProfileScreen} options={{ title: 'Profile' }} />
-        </Tab.Navigator>
-    );
-}
-
-function AdminProductsStack() {
-    return (
-        <AdminNav.Navigator screenOptions={{ headerShown: false }}>
-            <AdminNav.Screen name="AdminProductsList" component={AdminProductsScreen} />
-            <AdminNav.Screen name="AdminProductForm"  component={AdminProductFormScreen} />
-        </AdminNav.Navigator>
-    );
-}
-
-function AdminBannersStack() {
-    return (
-        <AdminNav.Navigator screenOptions={{ headerShown: false }}>
-            <AdminNav.Screen name="AdminBannersList" component={AdminBannersScreen} />
-            <AdminNav.Screen name="AdminBannerForm"  component={AdminBannerFormScreen} />
-        </AdminNav.Navigator>
-    );
-}
-
-function AdminKycStack() {
-    return (
-        <AdminNav.Navigator screenOptions={{ headerShown: false }}>
-            <AdminNav.Screen name="AdminKycList"   component={AdminKycScreen} />
-            <AdminNav.Screen name="AdminKycDetail" component={AdminKycDetailScreen} />
-        </AdminNav.Navigator>
-    );
-}
-
-function AdminOrdersStack() {
-    return (
-        <AdminNav.Navigator screenOptions={{ headerShown: false }}>
-            <AdminNav.Screen name="AdminOrdersList"      component={AdminOrdersScreen} />
-            <AdminNav.Screen name="AdminBookingDetail"   component={AdminBookingDetailScreen} />
-            <AdminNav.Screen name="AdminOrderDetail"     component={AdminOrderDetailScreen} />
-        </AdminNav.Navigator>
-    );
-}
-
-function AdminTabNavigator() {
-    return (
-        <Tab.Navigator
-            screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarActiveTintColor:   adminColors.tabBarActive,
-                tabBarInactiveTintColor: adminColors.tabBarInactive,
-                tabBarLabelStyle: {
-                    fontSize: 11,
-                    fontWeight: '700',
-                },
-                tabBarStyle: {
-                    backgroundColor: adminColors.tabBarBackground,
-                    height: 64,
-                    borderTopWidth: 0,
-                    paddingTop: 6,
-                },
-                tabBarIcon: ({ color, size, focused }) => {
-                    let iconName: keyof typeof Ionicons.glyphMap = 'grid-outline';
-
-                    if (route.name === 'AdminDashboard') {
-                        iconName = focused ? 'grid' : 'grid-outline';
-                    } else if (route.name === 'AdminProducts') {
-                        iconName = focused ? 'cube' : 'cube-outline';
-                    } else if (route.name === 'AdminBanners') {
-                        iconName = focused ? 'image' : 'image-outline';
-                    } else if (route.name === 'AdminKyc') {
-                        iconName = focused ? 'document-text' : 'document-text-outline';
-                    } else if (route.name === 'AdminOrders') {
-                        iconName = focused ? 'receipt' : 'receipt-outline';
-                    }
-
-                    return <Ionicons name={iconName} size={size} color={color} />;
-                },
-            })}
-        >
-            <Tab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: 'Dashboard' }} />
-            <Tab.Screen name="AdminProducts"  component={AdminProductsStack}   options={{ title: 'Products' }} />
-            <Tab.Screen name="AdminBanners"   component={AdminBannersStack}    options={{ title: 'Banners' }} />
-            <Tab.Screen name="AdminKyc"       component={AdminKycStack}        options={{ title: 'KYC' }} />
-            <Tab.Screen name="AdminOrders"    component={AdminOrdersStack}     options={{ title: 'Orders' }} />
         </Tab.Navigator>
     );
 }
@@ -420,6 +327,12 @@ function TechnicianGateStack() {
             <Stack.Screen name="TechnicianKycPending" component={TechnicianKycPendingScreen} />
             <Stack.Screen name="TechnicianTabs" component={TechnicianTabs} />
             <Stack.Screen name="TechnicianCampaignMilestones" component={CampaignMilestonesScreen} />
+            {/* Store flow — reusing customer screen components */}
+            <Stack.Screen name="PaymentScreen" component={PaymentScreen} />
+            <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
+            <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+            <Stack.Screen name="Addresses" component={AddressesScreen} />
+            <Stack.Screen name="AddEditAddress" component={AddEditAddressScreen} />
         </Stack.Navigator>
     );
 }
@@ -551,11 +464,7 @@ export default function App() {
             return <AuthStack />;
         }
 
-        if (user?.role === 'admin') {
-            return <AdminTabNavigator />;
-        }
-
-        if (user?.role === 'agent') {
+        if (user?.role === 'technician') {
             return <TechnicianGateStack />;
         }
 

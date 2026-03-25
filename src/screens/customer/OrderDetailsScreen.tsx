@@ -137,6 +137,8 @@ export const OrderDetailsScreen: React.FC<OrderDetailsScreenProps> = ({ navigati
 
     const statusColor = getStatusColor(selectedOrder.status);
     const canCancel = selectedOrder.status === 'pending' || selectedOrder.status === 'paid';
+    const isTerminal = selectedOrder.status === 'cancelled' || selectedOrder.status === 'refunded' || selectedOrder.status === 'delivered' || selectedOrder.status === 'completed';
+    const canRetryPayment = !isTerminal && String(selectedOrder.paymentStatus ?? '').toLowerCase() !== 'paid';
 
     return (
         <View style={styles.container}>
@@ -223,10 +225,26 @@ export const OrderDetailsScreen: React.FC<OrderDetailsScreenProps> = ({ navigati
                     </View>
                 </View>
 
+                {/* Retry payment — for unpaid active orders */}
+                {canRetryPayment && (
+                    <TouchableOpacity
+                        style={styles.retryPaymentBtn}
+                        onPress={() => navigation.navigate('PaymentScreen', {
+                            amount: selectedOrder.totalAmount,
+                            entityType: 'order',
+                            entityId: selectedOrder.id,
+                            description: 'IONORA CARE Order',
+                        })}
+                    >
+                        <Ionicons name="card-outline" size={18} color="#FFFFFF" />
+                        <Text style={styles.retryPaymentBtnText}>Complete Payment</Text>
+                    </TouchableOpacity>
+                )}
+
                 {/* Cancel button — only for pending / paid */}
                 {canCancel && (
                     <TouchableOpacity
-                        style={styles.cancelBtn}
+                        style={[styles.cancelBtn, canRetryPayment && { marginTop: 8 }]}
                         onPress={() => setCancelModal(true)}
                     >
                         <Ionicons name="close-circle-outline" size={18} color={customerColors.error} />
@@ -341,6 +359,16 @@ const styles = StyleSheet.create({
     totalLabel: { ...typography.body, color: customerColors.text, fontWeight: '700' },
     totalValue: { ...typography.body, color: customerColors.primary, fontWeight: '700' },
 
+    retryPaymentBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.lg,
+        backgroundColor: customerColors.primary,
+    },
+    retryPaymentBtnText: { ...typography.body, color: '#FFFFFF', fontWeight: '700' },
     cancelBtn: {
         flexDirection: 'row',
         alignItems: 'center',

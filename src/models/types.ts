@@ -1,6 +1,6 @@
 // Type definitions for the Water Services App
 
-export type UserRole = 'customer' | 'technician' | 'dealer' | 'admin';
+export type UserRole = 'customer' | 'technician' | 'dealer';
 
 export interface User {
     id: string;
@@ -102,13 +102,13 @@ export type BookingStatus =
     | 'pending'
     | 'confirmed'
     | 'assigned'
-    | 'agent_assigned'
+    | 'technician_assigned'
     | 'on_the_way'
     | 'in_progress'
     | 'completed'
     | 'cancelled';
 
-export type TechnicianVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
+export type TechnicianVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected' | 'suspended';
 export type TechnicianKycDocType = 'aadhaar' | 'pan' | 'driving_license' | 'selfie' | 'other';
 export type DealerVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
 export type DealerKycDocType = 'gst_certificate' | 'shop_license' | 'pan' | 'aadhaar' | 'bank_proof' | 'selfie' | 'other';
@@ -127,6 +127,8 @@ export interface TechnicianProfile {
     full_name: string;
     phone: string | null;
     verification_status: TechnicianVerificationStatus | string;
+    rejection_reason?: string | null;
+    suspension_reason?: string | null;
     is_online: boolean;
     service_radius_km: number;
     base_lat: number | null;
@@ -142,6 +144,14 @@ export interface TechnicianKycDocument {
     review_notes?: string | null;
     reviewed_by?: string | null;
     reviewed_at?: string | null;
+}
+
+export interface JobUpdate {
+    id: number;
+    update_type: 'arrived' | 'diagnosed' | 'in_progress' | 'completed' | 'photo' | 'note';
+    note: string | null;
+    media_url: string | null;
+    created_at: string;
 }
 
 export interface TechnicianKycSummary {

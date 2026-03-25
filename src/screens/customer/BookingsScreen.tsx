@@ -200,16 +200,16 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({ navigation, rout
                         </View>
                     ) : null}
 
-                    {booking.agent?.name ? (
+                    {booking.technician?.name ? (
                         <View style={styles.agentBlock}>
                             <View style={styles.bookingRow}>
                                 <Ionicons name="person-circle-outline" size={15} color={customerColors.primary} />
-                                <Text style={styles.agentName} numberOfLines={1}>Technician: {booking.agent.name}</Text>
+                                <Text style={styles.agentName} numberOfLines={1}>Technician: {booking.technician.name}</Text>
                             </View>
-                            {booking.agent.phone ? (
+                            {booking.technician.phone ? (
                                 <View style={styles.bookingRow}>
                                     <Ionicons name="call-outline" size={14} color={colors.textSecondary} />
-                                    <Text style={styles.bookingInfo} numberOfLines={1}>{booking.agent.phone}</Text>
+                                    <Text style={styles.bookingInfo} numberOfLines={1}>{booking.technician.phone}</Text>
                                 </View>
                             ) : null}
                         </View>

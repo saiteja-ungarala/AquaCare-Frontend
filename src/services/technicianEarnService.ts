@@ -113,12 +113,12 @@ const getApiErrorMessage = (error: any, fallback: string): string => {
 
 export const technicianEarnService = {
     async fetchReferral(): Promise<string> {
-        const response = await api.get<ApiSuccess<{ referral_code?: string }>>('/agent/earn/referral');
+        const response = await api.get<ApiSuccess<{ referral_code?: string }>>('/technician/earn/referral');
         return String(response.data.data?.referral_code || '');
     },
 
     async fetchSummary(): Promise<{ summary: TechnicianEarnSummary; progress: TechnicianEarnProgress | null; campaignId: number | null }> {
-        const response = await api.get<ApiSuccess<SummaryApiPayload>>('/agent/earn/summary');
+        const response = await api.get<ApiSuccess<SummaryApiPayload>>('/technician/earn/summary');
         const payload = response.data.data || {};
 
         const progress = mapProgress(payload.campaign_progress);
@@ -134,19 +134,19 @@ export const technicianEarnService = {
     },
 
     async fetchCampaigns(): Promise<TechnicianCampaign[]> {
-        const response = await api.get<ApiSuccess<any[]>>('/agent/earn/campaigns');
+        const response = await api.get<ApiSuccess<any[]>>('/technician/earn/campaigns');
         const list = Array.isArray(response.data.data) ? response.data.data : [];
         return list.map(mapCampaign);
     },
 
     async fetchProducts(): Promise<TechnicianProductCommissionPreview[]> {
-        const response = await api.get<ApiSuccess<any[]>>('/agent/earn/products');
+        const response = await api.get<ApiSuccess<any[]>>('/technician/earn/products');
         const list = Array.isArray(response.data.data) ? response.data.data : [];
         return list.map(mapProduct);
     },
 
     async fetchProgress(campaignId: number): Promise<TechnicianEarnProgress> {
-        const response = await api.get<ApiSuccess<any>>(`/agent/earn/progress/${campaignId}`);
+        const response = await api.get<ApiSuccess<any>>(`/technician/earn/progress/${campaignId}`);
         const payload = response.data.data || {};
 
         return {

@@ -16,7 +16,6 @@ export interface CheckoutResponse {
     totalAmount: number;
     status: string;
     paymentStatus: string;
-    referred_by_agent_id?: number | null;
     referral_code_used?: string | null;
 }
 
@@ -177,7 +176,6 @@ export const ordersService = {
             totalAmount: toNumber(result.totalAmount ?? result.total_amount),
             status: normalizeStatus(result.status),
             paymentStatus: normalizeStatus(result.paymentStatus ?? result.payment_status),
-            referred_by_agent_id: result.referred_by_agent_id ?? null,
             referral_code_used: result.referral_code_used ?? null,
         };
     },

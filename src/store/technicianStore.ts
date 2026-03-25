@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Alert } from 'react-native';
 import {
+    JobUpdate,
     TechnicianJob,
     TechnicianJobsMeta,
     TechnicianKycDocument,
@@ -9,6 +10,26 @@ import {
 } from '../models/types';
 import { technicianService } from '../services/technicianService';
 import { getCurrentLocation } from '../utils/location';
+
+// ── Location polling (module-level, survives re-renders) ─────────────────────
+let _locationInterval: ReturnType<typeof setInterval> | null = null;
+
+function startLocationPolling() {
+    if (_locationInterval !== null) return;
+    _locationInterval = setInterval(async () => {
+        try {
+            const pos = await getCurrentLocation();
+            if (pos) await technicianService.updateLocation(pos.latitude, pos.longitude);
+        } catch { /* silent — don't interrupt the UI */ }
+    }, 60_000); // every 60 s
+}
+
+function stopLocationPolling() {
+    if (_locationInterval !== null) {
+        clearInterval(_locationInterval);
+        _locationInterval = null;
+    }
+}
 
 interface TechnicianLoadingState {
     me: boolean;
@@ -25,6 +46,7 @@ interface TechnicianState {
     isOnline: boolean;
     jobs: TechnicianJob[];
     jobsMeta: TechnicianJobsMeta | null;
+    jobUpdates: Record<string, JobUpdate[]>;
     loading: TechnicianLoadingState;
     error: string | null;
 }
@@ -34,6 +56,8 @@ interface TechnicianActions {
     uploadKyc: (formData: FormData) => Promise<boolean>;
     toggleOnline: (isOnline: boolean) => Promise<boolean>;
     fetchJobs: () => Promise<void>;
+    fetchJobUpdates: (bookingId: string) => Promise<void>;
+    postArrived: (bookingId: string) => Promise<boolean>;
     accept: (bookingId: string) => Promise<boolean>;
     reject: (bookingId: string) => Promise<boolean>;
     updateStatus: (bookingId: string, status: 'in_progress' | 'completed') => Promise<boolean>;
@@ -87,6 +111,7 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
     isOnline: false,
     jobs: [],
     jobsMeta: null,
+    jobUpdates: {},
     loading: initialLoadingState,
     error: null,
 
@@ -105,6 +130,9 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
                 isOnline: !!payload.profile.is_online,
                 loading: { ...state.loading, me: false },
             }));
+            // Sync location polling with server-side online state
+            if (payload.profile.is_online) startLocationPolling();
+            else stopLocationPolling();
             return payload;
         } catch (error: any) {
             set((state) => ({
@@ -168,6 +196,8 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
                 me: state.me ? { ...state.me, is_online: isOnline } : state.me,
                 loading: { ...state.loading, online: false },
             }));
+            if (isOnline) startLocationPolling();
+            else stopLocationPolling();
             return true;
         } catch (error: any) {
             const code = (error as any)?.response?.data?.code;
@@ -200,6 +230,35 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
                 loading: { ...state.loading, jobs: false },
                 error: extractErrorMessage(error, 'Failed to load available jobs.'),
             }));
+        }
+    },
+
+    fetchJobUpdates: async (bookingId: string) => {
+        try {
+            const updates = await technicianService.getJobUpdates(bookingId);
+            set((state) => ({
+                jobUpdates: { ...state.jobUpdates, [bookingId]: updates },
+            }));
+        } catch { /* silent — timeline is non-critical */ }
+    },
+
+    postArrived: async (bookingId: string) => {
+        set((state) => ({ loading: { ...state.loading, action: true }, error: null }));
+        try {
+            await technicianService.postJobUpdate(Number(bookingId), { update_type: 'arrived' });
+            set((state) => ({ loading: { ...state.loading, action: false } }));
+            // Refresh updates so timeline updates immediately
+            const updates = await technicianService.getJobUpdates(bookingId);
+            set((state) => ({
+                jobUpdates: { ...state.jobUpdates, [bookingId]: updates },
+            }));
+            return true;
+        } catch (error: any) {
+            set((state) => ({
+                loading: { ...state.loading, action: false },
+                error: extractErrorMessage(error, 'Failed to post arrival.'),
+            }));
+            return false;
         }
     },
 
@@ -277,7 +336,8 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
     reject: async (bookingId: string) => get().rejectJob(bookingId),
     updateStatus: async (bookingId: string, status: 'in_progress' | 'completed') => get().updateJobStatus(bookingId, status),
 
-    reset: () =>
+    reset: () => {
+        stopLocationPolling();
         set({
             me: null,
             kycStatus: null,
@@ -285,7 +345,9 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
             isOnline: false,
             jobs: [],
             jobsMeta: null,
+            jobUpdates: {},
             loading: initialLoadingState,
             error: null,
-        }),
+        });
+    },
 }));

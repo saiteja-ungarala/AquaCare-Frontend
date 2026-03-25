@@ -74,7 +74,7 @@ export const AddEditAddressScreen: React.FC<Props> = ({ navigation, route }) => 
                 state: state.trim(),
                 postal_code: postalCode.trim(),
                 is_default: isDefault,
-                ...(coords ? { lat: coords.latitude, lng: coords.longitude } : {}),
+                ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
             };
 
             console.log('[AddAddress] Saving payload:', JSON.stringify(payload));

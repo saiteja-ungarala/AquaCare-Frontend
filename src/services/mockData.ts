@@ -133,7 +133,7 @@ export const mockBookings: Booking[] = [
             postal_code: '400001',
             is_default: true,
         },
-        agent: {
+        technician: {
             id: 'AG1',
             name: 'Rajesh Kumar',
             phone: '+91 98765 43210',
