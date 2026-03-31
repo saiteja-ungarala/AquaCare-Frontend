@@ -7,7 +7,6 @@ This document describes the API endpoints that the mobile app expects. Use this 
 Production: https://api.ioncare.com/api
 Development: http://localhost:3000/api
 ```
-
 ## Authentication
 
 All authenticated endpoints require a Bearer token in the header:
