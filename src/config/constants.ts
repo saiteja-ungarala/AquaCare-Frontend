@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-export const DEFAULT_API_URL = 'https://ioncare-backend-production.up.railway.app/api';
+export const DEFAULT_API_URL = 'https://care-api.lifeionizersindia.com/api';
 export const FORCE_WEB_PROXY = process.env.EXPO_PUBLIC_FORCE_WEB_PROXY === 'true';
 
 export const normalizeApiUrl = (url: string): string => {
