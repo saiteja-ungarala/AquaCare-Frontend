@@ -105,3 +105,13 @@ export const resolveProductImageSource = (rawValue: string | null | undefined): 
         allowKnownProductAliases: true,
     });
 };
+
+const PRODUCT_PLACEHOLDER: ImageSourcePropType = require('../../assets/icon3.png');
+
+/**
+ * Like resolveProductImageSource but always returns a source — never null.
+ * Falls back to the local placeholder image when rawValue is empty/null/undefined.
+ */
+export const getProductImageSource = (rawValue: string | null | undefined): ImageSourcePropType => {
+    return resolveProductImageSource(rawValue) ?? PRODUCT_PLACEHOLDER;
+};

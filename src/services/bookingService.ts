@@ -112,4 +112,21 @@ export const bookingService = {
             throw new Error(error.response?.data?.message || 'Failed to cancel booking');
         }
     },
+
+    /** Get the rating for a completed booking — returns null if not yet rated */
+    async getRating(bookingId: number): Promise<{ rating: number; review: string | null } | null> {
+        try {
+            const response = await api.get(`/bookings/${bookingId}/rating`);
+            return response.data?.data ?? null;
+        } catch (error: any) {
+            if (error.response?.status === 404) return null;
+            console.error('Error fetching booking rating:', error.message);
+            return null;
+        }
+    },
+
+    /** Submit a 1-5 star rating with optional review for a completed booking */
+    async submitRating(bookingId: number, rating: number, review?: string): Promise<void> {
+        await api.post(`/bookings/${bookingId}/rate`, { rating, review });
+    },
 };

@@ -45,7 +45,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({
 
     // Auto-play logic
     useEffect(() => {
-        if (isInteracting.current) return;
+        if (isInteracting.current || banners.length === 0) return;
         const nextIndex = (activeIndex + 1) % banners.length;
         timerRef.current = setTimeout(() => {
             flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
@@ -69,6 +69,8 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({
     const onScrollFailed = (info: { index: number }) => {
         flatListRef.current?.scrollToOffset({ offset: info.index * screenWidth, animated: true });
     };
+
+    if (banners.length === 0) return null;
 
     const renderItem = ({ item }: { item: BannerItem }) => (
         <TouchableOpacity

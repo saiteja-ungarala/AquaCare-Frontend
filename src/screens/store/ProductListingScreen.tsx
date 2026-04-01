@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { borderRadius, shadows, spacing, storeTheme } from '../../theme/theme';
 import storeService, { StoreProduct } from '../../services/storeService';
 import { useCartStore } from '../../store/cartStore';
-import { resolveProductImageSource } from '../../utils/productImage';
+import { getProductImageSource } from '../../utils/productImage';
 
 type ProductSort = 'popular' | 'new' | 'price_asc' | 'price_desc';
 
@@ -131,8 +131,8 @@ export function ProductListingScreen({ route, navigation }: any) {
 
     const renderProduct = ({ item, index }: { item: StoreProduct; index: number }) => {
         const productImage = item.image_url_full || item.imageUrlFull || item.image_url || item.imageUrl;
-        const imageSource = resolveProductImageSource(productImage);
-        const shouldShowImage = !!imageSource && !failedImages[item.id];
+        const imageSource = getProductImageSource(productImage);
+        const shouldShowImage = !failedImages[item.id];
         const showMrp = item.mrp != null && item.mrp > item.price;
         const discountPercent = showMrp ? Math.max(1, Math.round(((item.mrp! - item.price) / item.mrp!) * 100)) : 0;
         const isOutOfStock = item.stockQty <= 0;

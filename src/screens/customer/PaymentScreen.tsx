@@ -40,6 +40,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
     const [payState, setPayState] = useState<PayState>('idle');
     const [errorMsg, setErrorMsg] = useState('');
     const [showRetryModal, setShowRetryModal] = useState(false);
+    const [isComingSoonError, setIsComingSoonError] = useState(false);
 
     const isBusy = payState === 'creating_order' || payState === 'processing' || payState === 'verifying';
 
@@ -69,6 +70,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
             order = await paymentService.createOrder(amount, entityType, entityId);
         } catch (err: any) {
             const msg = err?.response?.data?.message || err?.message || 'Could not initiate payment';
+            const is503 = err?.response?.status === 503 || msg.toLowerCase().includes('coming soon');
+            setIsComingSoonError(is503);
             setErrorMsg(msg);
             setPayState('error');
             setShowRetryModal(true);
@@ -238,21 +241,28 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
 
                 {/* Payment methods */}
                 <View style={styles.methodsCard}>
-                    <Text style={styles.methodsTitle}>Accepted Payment Methods</Text>
-                    <View style={styles.methodsGrid}>
-                        {[
-                            { icon: 'phone-portrait-outline', label: 'UPI' },
-                            { icon: 'card-outline', label: 'Cards' },
-                            { icon: 'business-outline', label: 'Net Banking' },
-                            { icon: 'wallet-outline', label: 'Wallets' },
-                        ].map((method, i) => (
-                            <View key={i} style={styles.methodItem}>
-                                <View style={styles.methodIconWrap}>
-                                    <Ionicons name={method.icon as any} size={20} color={TEAL} />
-                                </View>
-                                <Text style={styles.methodLabel}>{method.label}</Text>
-                            </View>
-                        ))}
+                    <Text style={styles.methodsTitle}>Payment Methods</Text>
+                    <View style={styles.methodRow}>
+                        <View style={[styles.methodIconWrap, { backgroundColor: '#DCFCE7' }]}>
+                            <Ionicons name="cash-outline" size={20} color="#16A34A" />
+                        </View>
+                        <View style={styles.methodTextWrap}>
+                            <Text style={styles.methodAvailLabel}>Cash on Delivery</Text>
+                            <Text style={styles.methodAvailSub}>Pay when your order arrives</Text>
+                        </View>
+                        <Ionicons name="checkmark-circle" size={20} color="#16A34A" />
+                    </View>
+                    <View style={[styles.methodRow, { marginTop: spacing.sm }]}>
+                        <View style={[styles.methodIconWrap, { backgroundColor: '#F3F4F6' }]}>
+                            <Ionicons name="card-outline" size={20} color="#9CA3AF" />
+                        </View>
+                        <View style={styles.methodTextWrap}>
+                            <Text style={styles.methodUnavailLabel}>Online Payments</Text>
+                            <Text style={styles.methodAvailSub}>UPI · Cards · Net Banking</Text>
+                        </View>
+                        <View style={styles.comingSoonBadge}>
+                            <Text style={styles.comingSoonText}>Soon</Text>
+                        </View>
                     </View>
                 </View>
 
@@ -296,33 +306,53 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
             <Modal visible={showRetryModal} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
-                        <View style={styles.modalIconWrap}>
-                            <Ionicons name="close-circle" size={56} color={colors.error} />
+                        <View style={[styles.modalIconWrap, isComingSoonError && { backgroundColor: TEAL + '15' }]}>
+                            <Ionicons
+                                name={isComingSoonError ? 'time-outline' : 'close-circle'}
+                                size={56}
+                                color={isComingSoonError ? TEAL : colors.error}
+                            />
                         </View>
-                        <Text style={styles.modalTitle}>Payment Failed</Text>
+                        <Text style={styles.modalTitle}>
+                            {isComingSoonError ? 'Coming Soon' : 'Payment Failed'}
+                        </Text>
                         <Text style={styles.modalMessage}>
                             {errorMsg || 'Something went wrong. Would you like to try again?'}
                         </Text>
                         <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                                style={[styles.modalBtn, styles.modalBtnOutline]}
-                                onPress={() => {
-                                    setShowRetryModal(false);
-                                    navigation.goBack();
-                                }}
-                            >
-                                <Text style={[styles.modalBtnText, { color: colors.textSecondary }]}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalBtn, { backgroundColor: TEAL }]}
-                                onPress={() => {
-                                    setShowRetryModal(false);
-                                    setPayState('idle');
-                                    handlePayNow();
-                                }}
-                            >
-                                <Text style={[styles.modalBtnText, { color: '#fff' }]}>Try Again</Text>
-                            </TouchableOpacity>
+                            {isComingSoonError ? (
+                                <TouchableOpacity
+                                    style={[styles.modalBtn, { backgroundColor: TEAL }]}
+                                    onPress={() => {
+                                        setShowRetryModal(false);
+                                        navigation.goBack();
+                                    }}
+                                >
+                                    <Text style={[styles.modalBtnText, { color: '#fff' }]}>Got it</Text>
+                                </TouchableOpacity>
+                            ) : (
+                                <>
+                                    <TouchableOpacity
+                                        style={[styles.modalBtn, styles.modalBtnOutline]}
+                                        onPress={() => {
+                                            setShowRetryModal(false);
+                                            navigation.goBack();
+                                        }}
+                                    >
+                                        <Text style={[styles.modalBtnText, { color: colors.textSecondary }]}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.modalBtn, { backgroundColor: TEAL }]}
+                                        onPress={() => {
+                                            setShowRetryModal(false);
+                                            setPayState('idle');
+                                            handlePayNow();
+                                        }}
+                                    >
+                                        <Text style={[styles.modalBtnText, { color: '#fff' }]}>Try Again</Text>
+                                    </TouchableOpacity>
+                                </>
+                            )}
                         </View>
                     </View>
                 </View>
@@ -490,26 +520,49 @@ const styles = StyleSheet.create({
         color: colors.text,
         marginBottom: spacing.md,
     },
-    methodsGrid: {
+    methodRow: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-    },
-    methodItem: {
         alignItems: 'center',
-        gap: spacing.xs,
+        gap: spacing.md,
     },
     methodIconWrap: {
-        width: 48,
-        height: 48,
-        borderRadius: 14,
-        backgroundColor: TEAL + '10',
+        width: 44,
+        height: 44,
+        borderRadius: 13,
         alignItems: 'center',
         justifyContent: 'center',
+        flexShrink: 0,
     },
-    methodLabel: {
-        fontSize: 11,
-        fontWeight: '600',
+    methodTextWrap: {
+        flex: 1,
+    },
+    methodAvailLabel: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: colors.text,
+        marginBottom: 2,
+    },
+    methodUnavailLabel: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#9CA3AF',
+        marginBottom: 2,
+    },
+    methodAvailSub: {
+        fontSize: 12,
         color: colors.textSecondary,
+        fontWeight: '500',
+    },
+    comingSoonBadge: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 3,
+        borderRadius: 20,
+        backgroundColor: '#F3F4F6',
+    },
+    comingSoonText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#9CA3AF',
     },
 
     // Security

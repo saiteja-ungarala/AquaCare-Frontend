@@ -298,12 +298,14 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     />
 
                     {/* Promotional Banners */}
-                    <BannerCarousel
-                        banners={banners}
-                        onBannerPress={(banner) => {
-                            void handleBannerPress(banner);
-                        }}
-                    />
+                    {banners.length > 0 && (
+                        <BannerCarousel
+                            banners={banners}
+                            onBannerPress={(banner) => {
+                                void handleBannerPress(banner);
+                            }}
+                        />
+                    )}
 
                     {/* Book Service Section */}
                     <View style={styles.section}>

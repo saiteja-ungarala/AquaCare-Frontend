@@ -10,13 +10,46 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { customerColors } from '../../theme/customerTheme';
 
 const FAQ_DATA = [
-    { q: 'How do I book a service?', a: 'Go to the Home tab, browse available services, select one, pick a date and time, and confirm your booking.' },
-    { q: 'How can I track my booking?', a: 'Navigate to the Bookings tab to see the real-time status of all your service requests.' },
-    { q: 'What payment methods are accepted?', a: 'Online payments are handled securely during checkout through Razorpay. Depending on availability, customers can pay using UPI, cards, or net banking.' },
-    { q: 'How does Refer and Earn work?', a: 'Share your referral code with friends. When they sign up and complete their first booking, you both earn wallet credits.' },
-    { q: 'How do I change my default address?', a: 'Go to Profile > Addresses, then tap the star icon on the address you want to set as default.' },
-    { q: 'Can I cancel a booking?', a: 'Yes, you can cancel a pending booking from the Bookings tab. Cancellation policy applies based on timing.' },
-    { q: 'How do I contact customer support?', a: 'Go to Profile > Contact Us for phone, email, and WhatsApp support options.' },
+    {
+        q: 'How do I book a service?',
+        a: 'Open the app and go to the Services tab. Browse the available service categories, select the service you need, choose a convenient date and time slot, confirm your address, and tap "Book Now". You\'ll receive a confirmation once your booking is placed.',
+    },
+    {
+        q: 'How do I cancel a booking?',
+        a: 'Go to the Bookings tab, open the booking you want to cancel, and tap "Cancel Booking" at the bottom. You\'ll be asked to provide a reason. Cancellations are accepted for pending or confirmed bookings before the technician is dispatched.',
+    },
+    {
+        q: 'What payment methods are accepted?',
+        a: 'Currently, Cash on Delivery (pay when the technician arrives) and IONORA Wallet credits (earned from referrals or refunds) are accepted. Online payments via UPI, cards, and net banking are coming soon.',
+    },
+    {
+        q: 'How long does a service typically take?',
+        a: 'Most services — such as water purifier servicing or filter replacement — take between 30 and 60 minutes. The exact duration depends on the complexity of the issue and your device model. Your technician will give you an estimate on arrival.',
+    },
+    {
+        q: 'How can I track my technician?',
+        a: 'Once a technician is assigned to your booking, their name and contact number appear on the Booking Detail screen. The status updates in real time — you\'ll see when they\'ve been assigned, when they\'re on the way, and when work is in progress.',
+    },
+    {
+        q: 'What is the referral program?',
+        a: 'Tap "Refer & Earn" in your Profile to find your unique referral code. Share it with friends or family. When they sign up using your code and complete their first booking, you both receive wallet credits that can be used on your next service.',
+    },
+    {
+        q: 'How do I contact customer support?',
+        a: 'Go to Profile > Contact Us. You can call us, send an email, or reach us on WhatsApp. Our support team is available Mon–Sat, 9 AM to 6 PM.',
+    },
+    {
+        q: 'What is the return policy for products ordered through the app?',
+        a: 'Products like filters and accessories can be returned within 7 days of delivery if they are unused, in original packaging, and in the same condition as received. Raise a return request through Profile > Orders or contact our support team directly.',
+    },
+    {
+        q: 'How do I change my default address?',
+        a: 'Go to Profile > My Addresses. Tap the star or "Set as default" option on the address you want to use. Your default address will be pre-selected when you book a service or place an order.',
+    },
+    {
+        q: 'Is my personal data secure?',
+        a: 'Yes. IONORA CARE uses industry-standard encryption for data in transit and at rest. Your payment details are processed through certified payment gateways and are never stored on our servers. You can request account deletion from your Profile settings at any time.',
+    },
 ];
 
 type Props = { navigation: NativeStackNavigationProp<any> };

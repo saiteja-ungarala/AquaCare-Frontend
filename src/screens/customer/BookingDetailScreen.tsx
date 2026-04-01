@@ -9,7 +9,8 @@ import {
     Alert,
     Image,
     Modal,
-    RefreshControl
+    RefreshControl,
+    TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackScreenProps, Booking, BookingUpdate, BookingUpdateType } from '../../models/types';
@@ -19,6 +20,7 @@ import { CancelReasonModal } from '../../components/CancelReasonModal';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { customerColors } from '../../theme/customerTheme';
+import { StarRating } from '../../components/StarRating';
 
 type Props = RootStackScreenProps<'BookingDetail'>;
 
@@ -93,6 +95,12 @@ export const BookingDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     const [cancelModal, setCancelModal] = useState(false);
     const [cancelling, setCancelling] = useState(false);
 
+    // undefined = not yet fetched, null = fetched & not rated, object = rated
+    const [existingRating, setExistingRating] = useState<{ rating: number; review: string | null } | null | undefined>(undefined);
+    const [selectedStars, setSelectedStars] = useState(0);
+    const [reviewText, setReviewText] = useState('');
+    const [submittingRating, setSubmittingRating] = useState(false);
+
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const fetchAll = useCallback(async () => {
@@ -117,6 +125,12 @@ export const BookingDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     }, [fetchAll]);
 
     useEffect(() => { load(); }, [load]);
+
+    // Fetch existing rating once booking is known to be completed
+    useEffect(() => {
+        if (booking?.status !== 'completed') return;
+        bookingService.getRating(bookingId).then(setExistingRating);
+    }, [booking?.status, bookingId]);
 
     // Auto-refresh every 30s while not in a terminal state
     useEffect(() => {
@@ -144,6 +158,19 @@ export const BookingDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             Alert.alert('Error', err?.message || 'Failed to cancel booking. Please try again.');
         } finally {
             setCancelling(false);
+        }
+    };
+
+    const handleSubmitRating = async () => {
+        if (selectedStars === 0) return;
+        setSubmittingRating(true);
+        try {
+            await bookingService.submitRating(bookingId, selectedStars, reviewText.trim() || undefined);
+            setExistingRating({ rating: selectedStars, review: reviewText.trim() || null });
+        } catch (err: any) {
+            Alert.alert('Error', err?.response?.data?.message || 'Failed to submit rating. Please try again.');
+        } finally {
+            setSubmittingRating(false);
         }
     };
 
@@ -326,6 +353,48 @@ export const BookingDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                                 </View>
                             );
                         })}
+                    </View>
+                )}
+
+                {/* Rating section — only for completed bookings */}
+                {booking.status === 'completed' && existingRating !== undefined && (
+                    <View style={styles.ratingCard}>
+                        <Text style={styles.ratingTitle}>
+                            {existingRating ? 'Your Rating' : 'Rate Your Experience'}
+                        </Text>
+                        {existingRating ? (
+                            <>
+                                <StarRating rating={existingRating.rating} readonly />
+                                {existingRating.review ? (
+                                    <Text style={styles.ratingReview}>{existingRating.review}</Text>
+                                ) : null}
+                            </>
+                        ) : (
+                            <>
+                                <StarRating rating={selectedStars} onRate={setSelectedStars} size={32} />
+                                <TextInput
+                                    style={styles.ratingInput}
+                                    placeholder="Share your experience (optional)"
+                                    placeholderTextColor={colors.textMuted}
+                                    value={reviewText}
+                                    onChangeText={setReviewText}
+                                    multiline
+                                    maxLength={500}
+                                />
+                                <TouchableOpacity
+                                    style={[styles.submitBtn, (selectedStars === 0 || submittingRating) && styles.submitBtnDisabled]}
+                                    onPress={handleSubmitRating}
+                                    disabled={selectedStars === 0 || submittingRating}
+                                    activeOpacity={0.8}
+                                >
+                                    {submittingRating ? (
+                                        <ActivityIndicator size="small" color="#fff" />
+                                    ) : (
+                                        <Text style={styles.submitBtnText}>Submit Rating</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </View>
                 )}
 
@@ -538,4 +607,36 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+
+    ratingCard: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        marginTop: spacing.md,
+        marginBottom: spacing.md,
+        ...shadows.sm,
+        gap: spacing.md,
+    },
+    ratingTitle: { ...typography.h3, color: colors.text },
+    ratingInput: {
+        backgroundColor: colors.background,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        ...typography.body,
+        color: colors.text,
+        minHeight: 80,
+        textAlignVertical: 'top',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    ratingReview: { ...typography.body, color: colors.textSecondary, fontStyle: 'italic', lineHeight: 22 },
+    submitBtn: {
+        backgroundColor: customerColors.primary,
+        borderRadius: borderRadius.lg,
+        paddingVertical: spacing.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    submitBtnDisabled: { opacity: 0.45 },
+    submitBtnText: { ...typography.body, color: '#FFFFFF', fontWeight: '700' },
 });

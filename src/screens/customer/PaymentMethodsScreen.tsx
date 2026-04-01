@@ -8,29 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = { navigation: NativeStackNavigationProp<any> };
 
-const METHODS = [
-    {
-        icon: 'phone-portrait-outline',
-        title: 'UPI Apps',
-        subtitle: 'Supported through Razorpay checkout when enabled.',
-    },
-    {
-        icon: 'card-outline',
-        title: 'Debit and Credit Cards',
-        subtitle: 'Cards are entered securely during checkout and are not stored in the app.',
-    },
-    {
-        icon: 'globe-outline',
-        title: 'Net Banking',
-        subtitle: 'Available through supported banks in the payment gateway.',
-    },
-    {
-        icon: 'wallet-outline',
-        title: 'Wallet Credits and Refunds',
-        subtitle: 'Refunds and credits appear in your IONORA CARE wallet after processing.',
-    },
-];
-
 export const PaymentMethodsScreen: React.FC<Props> = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.container}>
@@ -40,29 +17,72 @@ export const PaymentMethodsScreen: React.FC<Props> = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Payment Methods</Text>
             </View>
+
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.hero}>
                     <View style={styles.iconWrap}>
-                        <Ionicons name="shield-checkmark-outline" size={56} color={customerColors.primary} />
+                        <Ionicons name="wallet-outline" size={56} color={customerColors.primary} />
                     </View>
-                    <Text style={styles.title}>Secure checkout</Text>
+                    <Text style={styles.title}>How you can pay</Text>
                     <Text style={styles.subtitle}>
-                        Payments are completed during checkout using the available options from the payment gateway.
+                        Choose a payment method at checkout. Online payments are coming soon.
                     </Text>
                 </View>
 
                 <View style={styles.card}>
-                    {METHODS.map((method, index) => (
-                        <View key={method.title} style={[styles.row, index === METHODS.length - 1 && styles.rowLast]}>
-                            <View style={styles.rowIcon}>
-                                <Ionicons name={method.icon as keyof typeof Ionicons.glyphMap} size={22} color={customerColors.primary} />
-                            </View>
-                            <View style={styles.rowContent}>
-                                <Text style={styles.rowTitle}>{method.title}</Text>
-                                <Text style={styles.rowSubtitle}>{method.subtitle}</Text>
-                            </View>
+                    {/* Cash on Delivery — available */}
+                    <View style={styles.row}>
+                        <View style={[styles.rowIcon, { backgroundColor: '#DCFCE7' }]}>
+                            <Ionicons name="cash-outline" size={22} color="#16A34A" />
                         </View>
-                    ))}
+                        <View style={styles.rowContent}>
+                            <View style={styles.rowTitleRow}>
+                                <Text style={styles.rowTitle}>Cash on Delivery</Text>
+                                <View style={styles.availBadge}>
+                                    <Text style={styles.availText}>Available</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.rowSubtitle}>
+                                Pay in cash when your order or service is delivered.
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Wallet — available */}
+                    <View style={styles.row}>
+                        <View style={[styles.rowIcon, { backgroundColor: colors.primaryLight }]}>
+                            <Ionicons name="wallet-outline" size={22} color={customerColors.primary} />
+                        </View>
+                        <View style={styles.rowContent}>
+                            <View style={styles.rowTitleRow}>
+                                <Text style={styles.rowTitle}>IONORA Wallet</Text>
+                                <View style={styles.availBadge}>
+                                    <Text style={styles.availText}>Available</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.rowSubtitle}>
+                                Use wallet credits earned from referrals or refunds.
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Online payments — coming soon */}
+                    <View style={[styles.row, styles.rowLast, styles.rowMuted]}>
+                        <View style={[styles.rowIcon, { backgroundColor: '#F3F4F6' }]}>
+                            <Ionicons name="card-outline" size={22} color="#9CA3AF" />
+                        </View>
+                        <View style={styles.rowContent}>
+                            <View style={styles.rowTitleRow}>
+                                <Text style={[styles.rowTitle, styles.rowTitleMuted]}>Online Payments</Text>
+                                <View style={styles.soonBadge}>
+                                    <Text style={styles.soonText}>Coming soon</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.rowSubtitle}>
+                                UPI, Cards, Net Banking — launching shortly.
+                            </Text>
+                        </View>
+                    </View>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -71,7 +91,13 @@ export const PaymentMethodsScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    header: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.surface, ...shadows.sm },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.md,
+        backgroundColor: colors.surface,
+        ...shadows.sm,
+    },
     backButton: {
         width: 32,
         height: 40,
@@ -106,34 +132,60 @@ const styles = StyleSheet.create({
     },
     row: {
         flexDirection: 'row',
+        alignItems: 'center',
         padding: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+        gap: spacing.md,
     },
-    rowLast: {
-        borderBottomWidth: 0,
-    },
+    rowLast: { borderBottomWidth: 0 },
+    rowMuted: { opacity: 0.7 },
     rowIcon: {
-        width: 42,
-        height: 42,
-        borderRadius: 12,
-        backgroundColor: colors.primaryLight,
+        width: 44,
+        height: 44,
+        borderRadius: 13,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: spacing.md,
+        flexShrink: 0,
     },
-    rowContent: {
-        flex: 1,
+    rowContent: { flex: 1 },
+    rowTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginBottom: 2,
     },
     rowTitle: {
         ...typography.body,
         color: colors.text,
         fontWeight: '700',
-        marginBottom: 2,
     },
+    rowTitleMuted: { color: '#9CA3AF' },
     rowSubtitle: {
         ...typography.caption,
         color: colors.textSecondary,
         lineHeight: 18,
+    },
+    availBadge: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: 20,
+        backgroundColor: '#DCFCE7',
+    },
+    availText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#16A34A',
+    },
+    soonBadge: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: 20,
+        backgroundColor: '#F3F4F6',
+    },
+    soonText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#9CA3AF',
     },
 });

@@ -190,14 +190,8 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
             setCheckoutModalVisible(false);
             clearLocalCart();
             fetchCart();
-
-            // Go to payment screen to complete payment
-            navigation.navigate('PaymentScreen', {
-                amount: result.totalAmount,
-                entityType: 'order',
-                entityId: createdOrderId,
-                description: 'IONORA CARE Order',
-            });
+            setCheckoutSuccess(true);
+            setTimeout(() => navigation.navigate('OrderHistory'), 2500);
         } catch (error: any) {
             console.error(error);
             setCheckoutError(error.response?.data?.message || 'Checkout failed');

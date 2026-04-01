@@ -1,11 +1,12 @@
 // ProductCard component for displaying products
 // Premium design with responsive sizing
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, borderRadius, spacing, typography, shadows } from '../theme/theme';
 import { Product } from '../models/types';
+import { getProductImageSource } from '../utils/productImage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = spacing.md;
@@ -26,6 +27,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     customColors,
 }) => {
     const theme = customColors || colors;
+    const [imageError, setImageError] = useState(false);
 
     const discount = product.originalPrice
         ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -53,9 +55,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
 
             <View style={[styles.imageContainer, { backgroundColor: theme.surfaceSecondary || '#F3F4F6' }]}>
-                <View style={styles.iconCircle}>
-                    <Ionicons name={getIcon()} size={36} color={theme.primary} />
-                </View>
+                {!imageError ? (
+                    <Image
+                        source={getProductImageSource((product as any).image_url)}
+                        style={styles.productImage}
+                        resizeMode="contain"
+                        onError={() => setImageError(true)}
+                    />
+                ) : (
+                    <View style={styles.iconCircle}>
+                        <Ionicons name={getIcon()} size={36} color={theme.primary} />
+                    </View>
+                )}
             </View>
 
             <View style={styles.content}>
@@ -127,6 +138,10 @@ const styles = StyleSheet.create({
         height: 110,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    productImage: {
+        width: '75%',
+        height: '75%',
     },
     iconCircle: {
         width: 64,

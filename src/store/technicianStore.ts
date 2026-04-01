@@ -82,27 +82,12 @@ const extractErrorMessage = (error: any, fallback: string): string => {
     return technicianService.getApiErrorMessage(error, fallback);
 };
 
-const mergeJobs = (incomingJobs: TechnicianJob[], existingJobs: TechnicianJob[]): TechnicianJob[] => {
-    const jobMap = new Map<string, TechnicianJob>();
-
-    // Keep jobs already accepted by this technician in local state so status actions remain available.
-    existingJobs
-        .filter((job) => ['assigned', 'in_progress', 'completed'].includes(job.status))
-        .forEach((job) => {
-            jobMap.set(job.id, job);
-        });
-
-    incomingJobs.forEach((job) => {
-        const existing = jobMap.get(job.id);
-        jobMap.set(job.id, existing ? { ...existing, ...job } : job);
-    });
-
-    return Array.from(jobMap.values()).sort((a, b) => {
+const sortJobs = (jobs: TechnicianJob[]): TechnicianJob[] =>
+    [...jobs].sort((a, b) => {
         const aDate = new Date(a.created_at || 0).getTime();
         const bDate = new Date(b.created_at || 0).getTime();
         return bDate - aDate;
     });
-};
 
 export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
     me: null,
@@ -221,7 +206,7 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
         try {
             const payload = await technicianService.getAvailableJobs();
             set((state) => ({
-                jobs: mergeJobs(payload.jobs, state.jobs),
+                jobs: sortJobs(payload.jobs),
                 jobsMeta: payload.meta || null,
                 loading: { ...state.loading, jobs: false },
             }));
@@ -270,10 +255,10 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
 
         try {
             await technicianService.acceptJob(bookingId);
+            const payload = await technicianService.getAvailableJobs();
             set((state) => ({
-                jobs: state.jobs.map((job) =>
-                    job.id === bookingId ? { ...job, status: 'assigned' } : job
-                ),
+                jobs: sortJobs(payload.jobs),
+                jobsMeta: payload.meta || null,
                 loading: { ...state.loading, action: false },
             }));
             return true;
@@ -294,8 +279,10 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
 
         try {
             await technicianService.rejectJob(bookingId);
+            const payload = await technicianService.getAvailableJobs();
             set((state) => ({
-                jobs: state.jobs.filter((job) => job.id !== bookingId),
+                jobs: sortJobs(payload.jobs),
+                jobsMeta: payload.meta || null,
                 loading: { ...state.loading, action: false },
             }));
             return true;
@@ -316,8 +303,10 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
 
         try {
             await technicianService.updateJobStatus(bookingId, status);
+            const payload = await technicianService.getAvailableJobs();
             set((state) => ({
-                jobs: state.jobs.map((job) => (job.id === bookingId ? { ...job, status } : job)),
+                jobs: sortJobs(payload.jobs),
+                jobsMeta: payload.meta || null,
                 loading: { ...state.loading, action: false },
             }));
             return true;
