@@ -25,18 +25,13 @@ interface AuthActions {
     startSignupVerification: (data: SignupData) => Promise<OtpSessionPayload | null>;
     verifySignupOtp: (
         sessionToken: string,
-        channel: Extract<OtpChannel, 'email' | 'sms'>,
+        channel: 'email',
         otp: string,
-        role: UserRole,
-    ) => Promise<{ completed: boolean; session?: OtpSessionPayload } | null>;
-    verifySignupFirebaseSms: (
-        sessionToken: string,
-        firebaseIdToken: string,
         role: UserRole,
     ) => Promise<{ completed: boolean; session?: OtpSessionPayload } | null>;
     resendSignupOtp: (
         sessionToken: string,
-        channel: Extract<OtpChannel, 'email' | 'sms'>,
+        channel: 'email',
     ) => Promise<OtpSessionPayload | null>;
     forgotPassword: (email: string) => Promise<boolean>;
     requestOTP: (phone: string) => Promise<boolean>;
@@ -154,49 +149,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
         try {
             const result = await authService.verifySignupOtp(sessionToken, channel, otp, role);
-
-            if (!result.completed) {
-                set({
-                    isLoading: false,
-                    error: null,
-                    errorMessage: null,
-                    fieldErrors: {},
-                });
-                return {
-                    completed: false,
-                    session: result.session,
-                };
-            }
-
-            set({
-                user: result.user,
-                token: result.token,
-                refreshToken: result.refreshToken || null,
-                isAuthenticated: true,
-                isLoading: false,
-                selectedRole: result.user.role,
-                error: null,
-                errorMessage: null,
-                fieldErrors: {},
-            });
-
-            return { completed: true };
-        } catch (error: unknown) {
-            const normalized = getApiErrorMessage(error);
-            set({
-                isLoading: false,
-                error: normalized.message,
-                errorMessage: normalized.message,
-                fieldErrors: normalized.fieldErrors || {},
-            });
-            return null;
-        }
-    },
-
-    verifySignupFirebaseSms: async (sessionToken, firebaseIdToken, role) => {
-        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
-        try {
-            const result = await authService.verifySignupFirebaseSms(sessionToken, firebaseIdToken, role);
 
             if (!result.completed) {
                 set({

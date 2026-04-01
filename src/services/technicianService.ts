@@ -52,7 +52,12 @@ const mapTechnicianJob = (job: any): TechnicianJob => ({
 });
 
 const getApiErrorMessage = (error: any, fallback: string): string => {
+    const firstDetailMessage = Array.isArray(error?.response?.data?.details)
+        ? error.response.data.details[0]?.message
+        : null;
+
     return (
+        firstDetailMessage ||
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
@@ -67,11 +72,7 @@ export const technicianService = {
     },
 
     async submitKyc(formData: FormData): Promise<{ uploaded: number; verification_status: string }> {
-        const response = await api.post<ApiSuccess<{ uploaded: number; verification_status: string }>>('/technician/kyc', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        const response = await api.post<ApiSuccess<{ uploaded: number; verification_status: string }>>('/technician/kyc', formData);
         return response.data.data;
     },
 

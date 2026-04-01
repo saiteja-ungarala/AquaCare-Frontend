@@ -49,7 +49,7 @@ export const TechnicianKycPendingScreen: React.FC<TechnicianKycPendingScreenProp
         ? 'Your account has been suspended. Please contact support for assistance.'
         : isRejected
             ? 'Please review the note below and upload corrected documents.'
-            : 'Your documents are under review. Pull down to refresh status.';
+            : 'Your application has been submitted successfully. Our admin team will review it within 24 hours.';
 
     const noteText = isSuspended
         ? (me?.suspension_reason ?? latestKycDocument?.review_notes ?? null)
@@ -67,6 +67,16 @@ export const TechnicianKycPendingScreen: React.FC<TechnicianKycPendingScreenProp
                     <TechnicianChip label={chipLabel} tone={chipTone} />
                     <Text style={styles.title}>{titleText}</Text>
                     <Text style={styles.subtitle}>{subtitleText}</Text>
+
+                    {!isRejected && !isSuspended ? (
+                        <View style={styles.infoBox}>
+                            <Text style={styles.infoLabel}>What happens next</Text>
+                            <Text style={styles.infoText}>
+                                Your documents are in the review queue. You will get access to technician jobs as soon as our admin approves your account.
+                            </Text>
+                            <Text style={styles.infoText}>Pull down anytime to refresh your approval status.</Text>
+                        </View>
+                    ) : null}
 
                     {noteText ? (
                         <View style={[styles.noteBox, isSuspended && styles.noteBoxDanger]}>
@@ -104,6 +114,25 @@ const styles = StyleSheet.create({
         ...technicianTheme.typography.body,
         color: technicianTheme.colors.textSecondary,
         marginTop: technicianTheme.spacing.sm,
+    },
+    infoBox: {
+        marginTop: technicianTheme.spacing.lg,
+        borderRadius: technicianTheme.radius.md,
+        backgroundColor: '#FFF7E7',
+        borderWidth: 1,
+        borderColor: '#F4D28C',
+        padding: technicianTheme.spacing.md,
+        width: '100%',
+    },
+    infoLabel: {
+        ...technicianTheme.typography.caption,
+        color: '#8A5D00',
+        marginBottom: 6,
+    },
+    infoText: {
+        ...technicianTheme.typography.bodySmall,
+        color: '#6A4A08',
+        marginBottom: 4,
     },
     noteBox: {
         marginTop: technicianTheme.spacing.lg,

@@ -133,7 +133,6 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         if (otpSession) {
             navigation.navigate('OTPVerification', {
                 otpSession,
-                signupPhone: phone.trim(),
             });
         }
     };
@@ -259,11 +258,11 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                     />
 
                                     <Text style={[styles.helperText, isTechnician ? styles.helperTextLight : null]}>
-                                        We will send one OTP to your email and one OTP to your mobile number. Both must be verified to finish signup.
+                                        We will send a verification OTP to your email to complete signup. Your mobile number will be used for service updates and contact.
                                     </Text>
 
                                     <Button
-                                        title="Sign Up & Verify"
+                                        title="Sign Up & Verify Email"
                                         onPress={handleSignup}
                                         loading={isLoading}
                                         fullWidth

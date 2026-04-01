@@ -1,6 +1,3 @@
-// Login Screen - Modern Viral India Aesthetic
-// Clean, minimal, high contrast
-
 import React, { useEffect, useState } from 'react';
 import {
     View,
@@ -10,7 +7,7 @@ import {
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
-    ImageBackground
+    ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,7 +17,6 @@ import { useAuthStore } from '../../store';
 import { AuthErrorBanner, Button, Input } from '../../components';
 import { isValidEmail } from '../../utils/errorMapper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { isValidIndianMobile, normalizePhoneInput } from '../../utils/phoneValidator';
 
 type LoginScreenProps = {
     navigation: NativeStackNavigationProp<any>;
@@ -41,16 +37,12 @@ const navigateWithBlur = (callback: () => void) => {
 };
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
-    const [activeTab, setActiveTab] = useState<'email' | 'phone'>('email');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [phone, setPhone] = useState('');
-    const [phoneError, setPhoneError] = useState('');
     const [clientFieldErrors, setClientFieldErrors] = useState<Record<string, string>>({});
     const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null);
     const {
         login,
-        startLoginOtp,
         isLoading,
         selectedRole,
         setShowLoginCelebration,
@@ -152,43 +144,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         }
     };
 
-    const handleSendOtp = async () => {
-        setLocalErrorMessage(null);
-        setPhoneError('');
-        clearError();
-
-        if (!isValidIndianMobile(phone)) {
-            setPhoneError('Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9');
-            return;
-        }
-
-        if (!selectedRole) {
-            setLocalErrorMessage('Please select a role first.');
-            navigation.goBack();
-            return;
-        }
-
-        const otpSession = await startLoginOtp(phone, selectedRole);
-        if (otpSession) {
-            blurWebActiveElement();
-            navigation.navigate('OTPVerification', { otpSession });
-        }
-    };
-
-    const handleOtpLogin = async () => {
-        setLocalErrorMessage(null);
-        clearError();
-
-        if (!selectedRole) {
-            setLocalErrorMessage('Please select a role first.');
-            navigation.goBack();
-            return;
-        }
-
-        setActiveTab('phone');
-        setLocalErrorMessage('Enter your registered mobile number. We will send the OTP to the email linked with that number.');
-    };
-
     const isCustomLogin = selectedRole === 'customer' || selectedRole === 'technician' || selectedRole === 'dealer';
     const isTechnician = selectedRole === 'technician';
     const Wrapper = (isCustomLogin ? ImageBackground : View) as React.ComponentType<any>;
@@ -200,7 +155,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         return undefined;
     };
 
-    const activeThemeColor = selectedRole === 'technician' ? colors.accent : (selectedRole === 'dealer' ? colors.info : customerColors.primary);
+    const activeThemeColor =
+        selectedRole === 'technician' ? colors.accent : (selectedRole === 'dealer' ? colors.info : customerColors.primary);
 
     const wrapperProps = isCustomLogin
         ? { source: getBackgroundImage(), style: styles.backgroundImage, resizeMode: 'cover' as const }
@@ -208,9 +164,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     return (
         <Wrapper {...wrapperProps}>
-            {isCustomLogin && (
-                <View style={styles.overlay} />
-            )}
+            {isCustomLogin && <View style={styles.overlay} />}
             <SafeAreaView style={isCustomLogin ? styles.safeArea : styles.container}>
                 <KeyboardAvoidingView
                     style={styles.keyboardView}
@@ -230,37 +184,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
 
-                        <View style={[
-                            styles.content,
-                            isCustomLogin && styles.bottomContent,
-                        ]}>
+                        <View style={[styles.content, isCustomLogin && styles.bottomContent]}>
                             <View style={isCustomLogin ? styles.glassContent : undefined}>
                                 <Text style={[styles.title, isTechnician ? { color: colors.surface } : null]}>Welcome Back</Text>
-                                <Text style={[styles.subtitle, isTechnician ? { color: 'rgba(255, 255, 255, 0.8)' } : null]}>
+                                <Text style={[styles.subtitle, isTechnician ? styles.lightSubtitle : null]}>
                                     Login as <Text style={[styles.roleText, { color: activeThemeColor }]}>{getRoleLabel()}</Text>
                                 </Text>
-
-                                {/* Tab toggle */}
-                                <View style={[styles.tabToggle, isTechnician ? styles.tabToggleDark : undefined]}>
-                                    <TouchableOpacity
-                                        style={[styles.tabBtn, activeTab === 'email' && { backgroundColor: activeThemeColor }]}
-                                        onPress={() => { setActiveTab('email'); setPhoneError(''); clearError(); }}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Text style={[styles.tabBtnText, activeTab === 'email' && styles.tabBtnTextActive]}>
-                                            Email Login
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.tabBtn, activeTab === 'phone' && { backgroundColor: activeThemeColor }]}
-                                        onPress={() => { setActiveTab('phone'); clearError(); }}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Text style={[styles.tabBtnText, activeTab === 'phone' && styles.tabBtnTextActive]}>
-                                            Phone Login
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
 
                                 <View style={styles.form}>
                                     <AuthErrorBanner
@@ -268,109 +197,53 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                         onClose={dismissErrorBanner}
                                     />
 
-                                    {/* ── Phone Login Tab ── */}
-                                    {activeTab === 'phone' && (
-                                        <View>
-                                            <Input
-                                                label="Phone Number"
-                                                placeholder="Enter 10-digit mobile number"
-                                                value={phone}
-                                                onChangeText={(val) => {
-                                                    setPhone(normalizePhoneInput(val));
-                                                    if (phoneError) setPhoneError('');
-                                                    if (errorMessage) clearError();
-                                                }}
-                                                keyboardType="numeric"
-                                                maxLength={10}
-                                                leftIcon="phone-portrait-outline"
-                                                inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
-                                                labelStyle={isTechnician ? { color: colors.surface } : undefined}
-                                                placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
-                                            />
-                                            {phoneError ? (
-                                                <Text style={styles.phoneError}>{phoneError}</Text>
-                                            ) : null}
-                                            <Text style={[styles.helperText, isTechnician ? styles.helperTextLight : null]}>
-                                                OTP will be delivered to the registered email linked to this mobile number.
-                                            </Text>
-                                            <Button
-                                                title="Send OTP to Email"
-                                                onPress={handleSendOtp}
-                                                loading={isLoading}
-                                                fullWidth
-                                                style={{ backgroundColor: activeThemeColor, shadowColor: activeThemeColor, marginTop: spacing.xl }}
-                                            />
-                                        </View>
-                                    )}
+                                    <Input
+                                        label="Email"
+                                        placeholder="Enter your email"
+                                        value={email}
+                                        onChangeText={(value) => {
+                                            setEmail(value);
+                                            clearFieldState('email');
+                                        }}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        leftIcon="mail-outline"
+                                        inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
+                                        labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                        error={clientFieldErrors.email || fieldErrors.email}
+                                    />
 
-                                    {/* ── Email Login Tab ── */}
-                                    {activeTab === 'email' && <>
+                                    <Input
+                                        label="Password"
+                                        placeholder="Enter your password"
+                                        value={password}
+                                        onChangeText={(value) => {
+                                            setPassword(value);
+                                            clearFieldState('password');
+                                        }}
+                                        secureTextEntry
+                                        leftIcon="lock-closed-outline"
+                                        inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
+                                        labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                        placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
+                                        error={clientFieldErrors.password || fieldErrors.password}
+                                    />
 
-                                        <Input
-                                            label="Email"
-                                            placeholder="Enter your email"
-                                            value={email}
-                                            onChangeText={(value) => {
-                                                setEmail(value);
-                                                clearFieldState('email');
-                                            }}
-                                            keyboardType="email-address"
-                                            autoCapitalize="none"
-                                            leftIcon="mail-outline"
-                                            inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
-                                            labelStyle={isTechnician ? { color: colors.surface } : undefined}
-                                            placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
-                                            error={clientFieldErrors.email || fieldErrors.email}
-                                        />
+                                    <TouchableOpacity
+                                        style={styles.forgotPassword}
+                                        onPress={() => navigateWithBlur(() => navigation.navigate('ForgotPassword'))}
+                                    >
+                                        <Text style={[styles.forgotPasswordText, { color: activeThemeColor }]}>Forgot Password?</Text>
+                                    </TouchableOpacity>
 
-                                        <Input
-                                            label="Password"
-                                            placeholder="Enter your password"
-                                            value={password}
-                                            onChangeText={(value) => {
-                                                setPassword(value);
-                                                clearFieldState('password');
-                                            }}
-                                            secureTextEntry
-                                            leftIcon="lock-closed-outline"
-                                            inputContainerStyle={isCustomLogin ? styles.transparentInput : undefined}
-                                            labelStyle={isTechnician ? { color: colors.surface } : undefined}
-                                            placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
-                                            error={clientFieldErrors.password || fieldErrors.password}
-                                        />
-
-                                        <TouchableOpacity
-                                            style={styles.forgotPassword}
-                                            onPress={() => navigateWithBlur(() => navigation.navigate('ForgotPassword'))}
-                                        >
-                                            <Text style={[styles.forgotPasswordText, { color: activeThemeColor }]}>Forgot Password?</Text>
-                                        </TouchableOpacity>
-
-                                        <Button
-                                            title="Login"
-                                            onPress={handleLogin}
-                                            loading={isLoading}
-                                            fullWidth
-                                            style={{ backgroundColor: activeThemeColor, shadowColor: activeThemeColor }}
-                                        />
-
-                                        <View style={styles.divider}>
-                                            <View style={styles.dividerLine} />
-                                            <Text style={styles.dividerText}>or</Text>
-                                            <View style={styles.dividerLine} />
-                                        </View>
-
-                                        <Button
-                                            title="Login with OTP"
-                                            onPress={handleOtpLogin}
-                                            variant="outline"
-                                            fullWidth
-                                            disabled={isLoading}
-                                            icon={<Ionicons name="phone-portrait" size={18} color={activeThemeColor} />}
-                                            style={{ borderColor: activeThemeColor }}
-                                            textStyle={{ color: activeThemeColor }}
-                                        />
-                                    </>}
+                                    <Button
+                                        title="Login"
+                                        onPress={handleLogin}
+                                        loading={isLoading}
+                                        fullWidth
+                                        style={{ backgroundColor: activeThemeColor, shadowColor: activeThemeColor }}
+                                    />
                                 </View>
 
                                 <View style={styles.footer}>
@@ -434,6 +307,9 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         marginBottom: spacing.xl,
     },
+    lightSubtitle: {
+        color: 'rgba(255, 255, 255, 0.8)',
+    },
     roleText: {
         color: colors.primary,
         fontWeight: '700',
@@ -449,23 +325,6 @@ const styles = StyleSheet.create({
     forgotPasswordText: {
         ...typography.bodySmall,
         color: colors.primary,
-        fontWeight: '600',
-    },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: spacing.xl,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: colors.border,
-    },
-    dividerText: {
-        ...typography.caption,
-        color: colors.textMuted,
-        marginHorizontal: spacing.md,
-        textTransform: 'uppercase',
         fontWeight: '600',
     },
     footer: {
@@ -513,46 +372,5 @@ const styles = StyleSheet.create({
     },
     glassButton: {
         backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    },
-    tabToggle: {
-        flexDirection: 'row',
-        backgroundColor: colors.surface2,
-        borderRadius: borderRadius.md,
-        padding: 3,
-        marginBottom: spacing.lg,
-    },
-    tabToggleDark: {
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    },
-    tabBtn: {
-        flex: 1,
-        paddingVertical: spacing.sm,
-        alignItems: 'center',
-        borderRadius: borderRadius.sm,
-    },
-    tabBtnText: {
-        ...typography.bodySmall,
-        fontWeight: '600',
-        color: colors.textMuted,
-    },
-    tabBtnTextActive: {
-        color: colors.surface,
-    },
-    phoneError: {
-        ...typography.caption,
-        color: colors.error,
-        marginTop: -spacing.sm,
-        marginBottom: spacing.sm,
-        marginLeft: spacing.xs,
-    },
-    helperText: {
-        ...typography.caption,
-        color: colors.textSecondary,
-        marginTop: -spacing.xs,
-        marginBottom: spacing.sm,
-        lineHeight: 18,
-    },
-    helperTextLight: {
-        color: 'rgba(255, 255, 255, 0.78)',
     },
 });
