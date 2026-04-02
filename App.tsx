@@ -39,14 +39,6 @@ import {
     CampaignMilestonesScreen,
     BookingUpdateScreen,
 } from './src/screens/technician';
-import {
-    DealerEntryScreen,
-    DealerKycPendingScreen,
-    DealerKycUploadScreen,
-    DealerOrdersScreen,
-    DealerPricingScreen,
-    DealerProfileScreen,
-} from './src/screens/dealer';
 
 import { useAuthStore, useLocationStore } from './src/store';
 
@@ -54,7 +46,6 @@ import { RootStackParamList } from './src/models/types';
 import { colors } from './src/theme/theme';
 import { customerColors } from './src/theme/customerTheme';
 import { technicianTheme } from './src/theme/technicianTheme';
-import { dealerTheme } from './src/theme/dealerTheme';
 import api from './src/services/api';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -239,46 +230,6 @@ function TechnicianTabs() {
     );
 }
 
-function DealerTabs() {
-    return (
-        <Tab.Navigator
-            screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarActiveTintColor: dealerTheme.colors.dealerPrimary,
-                tabBarInactiveTintColor: dealerTheme.colors.dealerMuted,
-                tabBarLabelStyle: {
-                    fontSize: 11,
-                    fontWeight: '700',
-                },
-                tabBarStyle: {
-                    backgroundColor: dealerTheme.colors.dealerSurface,
-                    height: 64,
-                    borderTopWidth: 1,
-                    borderTopColor: dealerTheme.colors.border,
-                    paddingTop: 6,
-                },
-                tabBarIcon: ({ color, size, focused }) => {
-                    let iconName: keyof typeof Ionicons.glyphMap = 'pricetag-outline';
-
-                    if (route.name === 'DealerPricing') {
-                        iconName = focused ? 'pricetag' : 'pricetag-outline';
-                    } else if (route.name === 'DealerOrders') {
-                        iconName = focused ? 'receipt' : 'receipt-outline';
-                    } else if (route.name === 'DealerProfile') {
-                        iconName = focused ? 'person' : 'person-outline';
-                    }
-
-                    return <Ionicons name={iconName} size={size} color={color} />;
-                },
-            })}
-        >
-            <Tab.Screen name="DealerPricing" component={DealerPricingScreen} options={{ title: 'Pricing' }} />
-            <Tab.Screen name="DealerOrders" component={DealerOrdersScreen} options={{ title: 'Orders' }} />
-            <Tab.Screen name="DealerProfile" component={DealerProfileScreen} options={{ title: 'Profile' }} />
-        </Tab.Navigator>
-    );
-}
-
 function AuthStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -332,17 +283,6 @@ function TechnicianGateStack() {
             <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
             <Stack.Screen name="Addresses" component={AddressesScreen} />
             <Stack.Screen name="AddEditAddress" component={AddEditAddressScreen} />
-        </Stack.Navigator>
-    );
-}
-
-function DealerGateStack() {
-    return (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="DealerEntry" component={DealerEntryScreen} />
-            <Stack.Screen name="DealerKycUpload" component={DealerKycUploadScreen} />
-            <Stack.Screen name="DealerKycPending" component={DealerKycPendingScreen} />
-            <Stack.Screen name="DealerTabs" component={DealerTabs} />
         </Stack.Navigator>
     );
 }
@@ -497,10 +437,6 @@ export default function App() {
 
         if (user?.role === 'technician') {
             return <TechnicianGateStack />;
-        }
-
-        if (user?.role === 'dealer') {
-            return <DealerGateStack />;
         }
 
         if (user?.role === 'customer') {

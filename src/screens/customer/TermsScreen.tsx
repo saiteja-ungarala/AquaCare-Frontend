@@ -18,7 +18,7 @@ const SECTIONS = [
     },
     {
         title: '2. Accounts',
-        body: 'You are responsible for keeping your login details safe and for activity under your account. The app currently supports customer, technician, and dealer accounts, and each role must use the app only for its intended purpose.',
+        body: 'You are responsible for keeping your login details safe and for activity under your account. The app currently supports customer and technician accounts, and each role must use the app only for its intended purpose.',
     },
     {
         title: '3. Services and Orders',
@@ -38,7 +38,7 @@ const SECTIONS = [
     },
     {
         title: '7. Account Closure and Updates',
-        body: 'Users can delete their account from within the app. We may also update these Terms when the product changes. Continued use of the app after an update means you accept the revised Terms.',
+        body: 'Users can delete their account from within the app using email OTP verification. We may also update these Terms when the product changes. Continued use of the app after an update means you accept the revised Terms.',
     },
 ];
 

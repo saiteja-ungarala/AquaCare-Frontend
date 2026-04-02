@@ -122,12 +122,10 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
     const activeThemeColor =
         selectedRole === 'technician'
             ? colors.accent
-            : selectedRole === 'dealer'
-                ? colors.info
-                : customerColors.primary;
+            : customerColors.primary;
 
     const isTechnician = selectedRole === 'technician';
-    const isCustomLogin = selectedRole === 'customer' || selectedRole === 'technician' || selectedRole === 'dealer';
+    const isCustomLogin = selectedRole === 'customer' || selectedRole === 'technician';
     const isBusy = isLoading || isSubmitting;
     const currentOtp = digits.join('');
     const canSubmit = currentOtp.length === OTP_LENGTH && !digits.some((digit) => !digit);
@@ -152,7 +150,6 @@ export const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) =>
     const getBackgroundImage = () => {
         if (selectedRole === 'customer') return require('../../../assets/customer-login.png');
         if (selectedRole === 'technician') return require('../../../assets/technicain-login.jpg');
-        if (selectedRole === 'dealer') return require('../../../assets/dealer-login.png');
         return undefined;
     };
 

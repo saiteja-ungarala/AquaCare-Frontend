@@ -83,11 +83,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const getRoleLabel = () => {
         switch (selectedRole) {
             case 'customer':
-                return 'Customer & Referrals';
+                return 'Customer';
             case 'technician':
                 return 'Technician';
-            case 'dealer':
-                return 'Dealer';
             default:
                 return 'User';
         }
@@ -144,19 +142,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         }
     };
 
-    const isCustomLogin = selectedRole === 'customer' || selectedRole === 'technician' || selectedRole === 'dealer';
+    const isCustomLogin = selectedRole === 'customer' || selectedRole === 'technician';
     const isTechnician = selectedRole === 'technician';
     const Wrapper = (isCustomLogin ? ImageBackground : View) as React.ComponentType<any>;
 
     const getBackgroundImage = () => {
         if (selectedRole === 'customer') return require('../../../assets/customer-login.png');
         if (selectedRole === 'technician') return require('../../../assets/technicain-login.jpg');
-        if (selectedRole === 'dealer') return require('../../../assets/dealer-login.png');
         return undefined;
     };
 
     const activeThemeColor =
-        selectedRole === 'technician' ? colors.accent : (selectedRole === 'dealer' ? colors.info : customerColors.primary);
+        selectedRole === 'technician' ? colors.accent : customerColors.primary;
 
     const wrapperProps = isCustomLogin
         ? { source: getBackgroundImage(), style: styles.backgroundImage, resizeMode: 'cover' as const }

@@ -14,13 +14,24 @@ import { authStorage } from './authStorage';
 
 const storage = authStorage;
 
+// Singleton promise to prevent concurrent refresh calls from each making their own request
+let _refreshInFlight: Promise<string | null> | null = null;
+
 const normalizeRole = (value: unknown): UserRole | null => {
     if (typeof value !== 'string') return null;
     const normalized = value.trim().toLowerCase();
-    if (normalized === 'customer' || normalized === 'technician' || normalized === 'dealer') {
+    if (normalized === 'customer' || normalized === 'technician') {
         return normalized;
     }
     return null;
+};
+
+const resolveUnsupportedRole = (backendRole: unknown, fallbackRole?: unknown): string | null => {
+    const roles = [backendRole, fallbackRole]
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.trim().toLowerCase());
+
+    return roles.find((value) => value && normalizeRole(value) === null) || null;
 };
 
 interface PersistedAuthResult {
@@ -67,6 +78,10 @@ const persistAuthSession = async (
 ): Promise<PersistedAuthResult> => {
     const accessToken = data.accessToken;
     const refreshToken = data.refreshToken;
+
+    if (resolveUnsupportedRole(data.user?.role, role)) {
+        throw new Error('This app currently supports customer and technician accounts only.');
+    }
 
     let user = mapBackendUser(data.user, role);
 
@@ -239,6 +254,14 @@ export const authService = {
                 }
             }
 
+            if (resolveUnsupportedRole(data?.user?.role, storedUser?.role)) {
+                console.warn('[Auth] Unsupported session found in mobile app, clearing session.');
+                await storage.deleteItem(STORAGE_KEYS.AUTH_TOKEN);
+                await storage.deleteItem(STORAGE_KEYS.REFRESH_TOKEN);
+                await storage.deleteItem(STORAGE_KEYS.USER);
+                return null;
+            }
+
             const user = mapBackendUser(data.user, storedUser?.role);
 
             // Update stored user with fresh data
@@ -313,33 +336,40 @@ export const authService = {
         }
     },
 
-    // Refresh access token using refresh token
-    async refreshToken(): Promise<string | null> {
-        try {
-            const refreshToken = await storage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-            if (!refreshToken) return null;
+    // Refresh access token using refresh token (deduplicated — one in-flight at a time)
+    refreshToken(): Promise<string | null> {
+        if (_refreshInFlight) return _refreshInFlight;
 
-            console.log('[Auth] Refreshing token...');
-            const response = await api.post('/auth/refresh', { refreshToken });
-            const { data } = response.data;
-            
-            const newAccessToken = data.accessToken;
-            const newRefreshToken = data.refreshToken;
+        _refreshInFlight = (async () => {
+            try {
+                const refreshToken = await storage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+                if (!refreshToken) return null;
 
-            if (newAccessToken) {
-                await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, newAccessToken);
-                if (newRefreshToken) {
-                    await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+                console.log('[Auth] Refreshing token...');
+                const response = await api.post('/auth/refresh', { refreshToken });
+                const { data } = response.data;
+
+                const newAccessToken = data.accessToken;
+                const newRefreshToken = data.refreshToken;
+
+                if (newAccessToken) {
+                    await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, newAccessToken);
+                    if (newRefreshToken) {
+                        await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+                    }
+                    console.log('[Auth] Token refreshed successfully');
+                    return newAccessToken;
                 }
-                console.log('[Auth] Token refreshed successfully');
-                return newAccessToken;
+                return null;
+            } catch (error) {
+                console.error('[Auth] Token refresh failed:', error);
+                return null;
+            } finally {
+                _refreshInFlight = null;
             }
-            return null;
-        } catch (error) {
-            console.error('[Auth] Token refresh failed:', error);
-            // Don't clear storage here, the api interceptor will handle it if retry fails
-            return null;
-        }
+        })();
+
+        return _refreshInFlight;
     },
 };
 

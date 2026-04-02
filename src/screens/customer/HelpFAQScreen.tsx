@@ -48,7 +48,7 @@ const FAQ_DATA = [
     },
     {
         q: 'Is my personal data secure?',
-        a: 'We use reasonable safeguards to protect your account and app data. Because payments are currently Cash on Delivery, the app does not currently collect card or UPI payment details for checkout. You can delete your account from within the app from the Profile screen.',
+        a: 'Yes. IONORA CARE uses industry-standard safeguards to protect your data in transit and at rest. Because payments are currently Cash on Delivery, the app does not currently collect card or UPI payment details for checkout. You can delete your account from the Profile screen using email OTP verification.',
     },
 ];
 

@@ -14,6 +14,23 @@ export interface UserProfile {
     created_at: string;
 }
 
+export interface AccountDeletionOtpSession {
+    flow: 'account_delete';
+    sessionToken: string;
+    currentChannel: 'email';
+    nextChannel: null;
+    maskedEmail: string;
+    maskedPhone: string;
+    verifiedChannels: {
+        email: boolean;
+        sms: boolean;
+        whatsapp: boolean;
+    };
+    expiresInSeconds: number;
+    availableChannels: ['email'];
+    whatsappAvailable: false;
+}
+
 // Helper to map backend address to frontend Address type
 const mapBackendAddress = (a: any): Address => ({
     id: String(a.id),
@@ -149,6 +166,36 @@ export const profileService = {
         } catch (error: any) {
             console.error('Error setting default address:', error.message);
             throw new Error(error.response?.data?.message || 'Failed to set default address');
+        }
+    },
+
+    async initiateAccountDeletion(): Promise<AccountDeletionOtpSession> {
+        try {
+            const response = await api.post('/user/profile/delete/initiate');
+            return response.data.data as AccountDeletionOtpSession;
+        } catch (error: any) {
+            console.error('Error initiating account deletion:', error.message);
+            throw new Error(error.response?.data?.message || 'Failed to send deletion OTP');
+        }
+    },
+
+    async resendAccountDeletionOtp(sessionToken: string): Promise<AccountDeletionOtpSession> {
+        try {
+            const response = await api.post('/user/profile/delete/resend-otp', { sessionToken });
+            return response.data.data as AccountDeletionOtpSession;
+        } catch (error: any) {
+            console.error('Error resending deletion OTP:', error.message);
+            throw new Error(error.response?.data?.message || 'Failed to resend deletion OTP');
+        }
+    },
+
+    async confirmAccountDeletion(sessionToken: string, otp: string): Promise<boolean> {
+        try {
+            await api.post('/user/profile/delete/verify-otp', { sessionToken, otp });
+            return true;
+        } catch (error: any) {
+            console.error('Error confirming account deletion:', error.message);
+            throw new Error(error.response?.data?.message || 'Failed to delete account');
         }
     },
 };

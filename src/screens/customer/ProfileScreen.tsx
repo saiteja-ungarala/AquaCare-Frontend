@@ -1,17 +1,28 @@
 // Profile Screen — Premium design with enhanced visuals
 
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    TouchableOpacity,
+    Alert,
+    Platform,
+    Modal,
+    TextInput,
+    ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
-import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
+import { colors, spacing, typography, borderRadius } from '../../theme/theme';
 import { customerColors } from '../../theme/customerTheme';
 import { useAuthStore } from '../../store';
-import { profileService } from '../../services/profileService';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { profileService, AccountDeletionOtpSession } from '../../services/profileService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ProfileScreenProps = { navigation: NativeStackNavigationProp<any> };
 
@@ -30,7 +41,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, subtitle, onPress, dan
         </View>
         <View style={styles.menuContent}>
             <Text style={[styles.menuTitle, danger && { color: colors.error }]} numberOfLines={1}>{title}</Text>
-            {subtitle && <Text style={styles.menuSubtitle} numberOfLines={1}>{subtitle}</Text>}
+            {subtitle ? <Text style={styles.menuSubtitle} numberOfLines={1}>{subtitle}</Text> : null}
         </View>
         <View style={styles.menuArrow}>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -44,8 +55,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     const [referralCode, setReferralCode] = useState(user?.referralCode || '');
     const [profileName, setProfileName] = useState(user?.name || 'User');
     const [profilePhone, setProfilePhone] = useState(user?.phone || '');
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [deleteSession, setDeleteSession] = useState<AccountDeletionOtpSession | null>(null);
+    const [deleteOtp, setDeleteOtp] = useState('');
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteStep, setDeleteStep] = useState<'intro' | 'otp' | 'success'>('intro');
+    const [deleteError, setDeleteError] = useState('');
+    const [deleteInfo, setDeleteInfo] = useState('');
+    const [deleteResendTimer, setDeleteResendTimer] = useState(30);
 
-    // Fetch real profile data on focus
     useFocusEffect(useCallback(() => {
         let isActive = true;
 
@@ -56,7 +74,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 setReferralCode(p.referral_code || '');
                 setProfileName(p.full_name || 'User');
                 setProfilePhone(p.phone || '');
-                // Also update the auth store so other screens see it
                 useAuthStore.setState((s) => ({
                     user: s.user ? {
                         ...s.user,
@@ -75,6 +92,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         };
     }, []));
 
+    useEffect(() => {
+        if (!deleteModalVisible || deleteStep !== 'otp' || deleteResendTimer <= 0) {
+            return;
+        }
+
+        const timeout = setTimeout(() => setDeleteResendTimer((prev) => prev - 1), 1000);
+        return () => clearTimeout(timeout);
+    }, [deleteModalVisible, deleteStep, deleteResendTimer]);
+
     const handleCopyReferral = async () => {
         if (!referralCode) return;
         await Clipboard.setStringAsync(referralCode);
@@ -85,51 +111,96 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         if (Platform.OS === 'web') {
             const confirmed = window.confirm('Are you sure you want to logout?');
             if (confirmed) {
-                logout();
+                void logout();
             }
         } else {
             Alert.alert('Logout', 'Are you sure you want to logout?', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Logout', style: 'destructive', onPress: logout },
+                { text: 'Logout', style: 'destructive', onPress: () => void logout() },
             ]);
         }
     };
 
-    const confirmDeleteAccount = async () => {
+    const resetDeleteFlow = () => {
+        setDeleteSession(null);
+        setDeleteOtp('');
+        setDeleteStep('intro');
+        setDeleteError('');
+        setDeleteInfo('');
+        setDeleteResendTimer(30);
+    };
+
+    const openDeleteModal = () => {
+        resetDeleteFlow();
+        setDeleteModalVisible(true);
+    };
+
+    const closeDeleteModal = () => {
+        if (deleteLoading) return;
+        setDeleteModalVisible(false);
+        resetDeleteFlow();
+    };
+
+    const handleStartDeleteFlow = async () => {
+        setDeleteLoading(true);
+        setDeleteError('');
+        setDeleteInfo('');
+
         try {
-            await profileService.deleteAccount();
-            await logout();
+            const session = await profileService.initiateAccountDeletion();
+            setDeleteSession(session);
+            setDeleteStep('otp');
+            setDeleteInfo(`We sent a 6-digit OTP to ${session.maskedEmail}.`);
+            setDeleteResendTimer(30);
         } catch (error: any) {
-            const message = error?.message || 'We could not delete your account right now.';
-            if (Platform.OS === 'web') {
-                window.alert(message);
-                return;
-            }
-            Alert.alert('Delete Account', message);
+            setDeleteError(error?.message || 'Unable to start account deletion right now.');
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
-    const handleDeleteAccount = () => {
-        const message = 'This will delete your account from within the app and sign you out. Some order, booking, refund, or compliance records may still be kept where required.';
+    const handleResendDeleteOtp = async () => {
+        if (!deleteSession || deleteLoading || deleteResendTimer > 0) return;
 
-        if (Platform.OS === 'web') {
-            const confirmed = window.confirm(message);
-            if (confirmed) {
-                void confirmDeleteAccount();
-            }
+        setDeleteLoading(true);
+        setDeleteError('');
+        setDeleteInfo('');
+
+        try {
+            const session = await profileService.resendAccountDeletionOtp(deleteSession.sessionToken);
+            setDeleteSession(session);
+            setDeleteInfo(`A fresh OTP was sent to ${session.maskedEmail}.`);
+            setDeleteResendTimer(30);
+        } catch (error: any) {
+            setDeleteError(error?.message || 'Unable to resend OTP right now.');
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteSession || deleteLoading) return;
+        if (deleteOtp.trim().length !== 6) {
+            setDeleteError('Enter the 6-digit OTP from your email.');
             return;
         }
 
-        Alert.alert('Delete Account', message, [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Delete Account',
-                style: 'destructive',
-                onPress: () => {
-                    void confirmDeleteAccount();
-                },
-            },
-        ]);
+        setDeleteLoading(true);
+        setDeleteError('');
+        setDeleteInfo('');
+
+        try {
+            await profileService.confirmAccountDeletion(deleteSession.sessionToken, deleteOtp.trim());
+            setDeleteStep('success');
+            setDeleteInfo('Your account has been deleted. Signing you out...');
+            setTimeout(() => {
+                void logout();
+            }, 900);
+        } catch (error: any) {
+            setDeleteError(error?.message || 'Unable to delete account right now.');
+        } finally {
+            setDeleteLoading(false);
+        }
     };
 
     return (
@@ -151,8 +222,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     </View>
                 </View>
             </LinearGradient>
+
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                {/* Profile Card with gradient */}
                 <View style={styles.profileCard}>
                     <LinearGradient
                         colors={[customerColors.primaryLight, '#FFFFFF']}
@@ -183,7 +254,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     </LinearGradient>
                 </View>
 
-                {/* Referral Code Card */}
                 <TouchableOpacity style={styles.referralCard} onPress={handleCopyReferral} activeOpacity={0.7}>
                     <View style={styles.referralAccent} />
                     <View style={styles.referralInner}>
@@ -194,7 +264,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                         <View style={styles.codeContainer}>
                             <Text style={styles.referralCode}>{referralCode || '...'}</Text>
                             <View style={styles.copyIcon}>
-                                <Ionicons name="copy-outline" size={16} color={'#7FA650'} />
+                                <Ionicons name="copy-outline" size={16} color="#7FA650" />
                             </View>
                         </View>
                     </View>
@@ -236,8 +306,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                         <MenuItem
                             icon="trash-outline"
                             title="Delete Account"
-                            subtitle="Permanently remove access to your account"
-                            onPress={handleDeleteAccount}
+                            subtitle="Permanently remove your profile with email OTP confirmation"
+                            onPress={openDeleteModal}
                             danger
                         />
                         <MenuItem icon="log-out-outline" title="Logout" onPress={handleLogout} danger />
@@ -246,6 +316,124 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
                 <Text style={styles.version}>Version 1.0.0</Text>
             </ScrollView>
+
+            <Modal visible={deleteModalVisible} transparent animationType="slide" onRequestClose={closeDeleteModal}>
+                <View style={styles.deleteModalOverlay}>
+                    <View style={styles.deleteModalCard}>
+                        <View style={styles.deleteHandle} />
+                        <View style={styles.deleteHeader}>
+                            <View style={styles.deleteHeaderIcon}>
+                                <Ionicons
+                                    name={deleteStep === 'success' ? 'checkmark-circle' : 'warning-outline'}
+                                    size={26}
+                                    color={deleteStep === 'success' ? customerColors.success : colors.error}
+                                />
+                            </View>
+                            <View style={styles.deleteHeaderContent}>
+                                <Text style={styles.deleteTitle}>
+                                    {deleteStep === 'success' ? 'Account Deleted' : 'Delete Account'}
+                                </Text>
+                                <Text style={styles.deleteSubtitle}>
+                                    {deleteStep === 'intro'
+                                        ? 'This permanently removes your profile access from the app.'
+                                        : deleteStep === 'otp'
+                                            ? `Enter the OTP sent to ${deleteSession?.maskedEmail || user?.email || 'your email'}.`
+                                            : 'Your profile has been removed successfully.'}
+                                </Text>
+                            </View>
+                            {deleteStep !== 'success' ? (
+                                <TouchableOpacity onPress={closeDeleteModal} disabled={deleteLoading}>
+                                    <Ionicons name="close" size={24} color={colors.textMuted} />
+                                </TouchableOpacity>
+                            ) : null}
+                        </View>
+
+                        {deleteStep === 'intro' ? (
+                            <View>
+                                <View style={styles.deleteWarningBox}>
+                                    <Text style={styles.deleteWarningTitle}>Before you continue</Text>
+                                    <Text style={styles.deleteWarningText}>You will lose access to your profile, saved addresses, order history view, and future app access with this account.</Text>
+                                    <Text style={styles.deleteWarningText}>For security, we will send a verification OTP to your registered email before deletion.</Text>
+                                </View>
+
+                                {deleteError ? <Text style={styles.deleteErrorText}>{deleteError}</Text> : null}
+
+                                <TouchableOpacity
+                                    style={[styles.deletePrimaryButton, deleteLoading && styles.deletePrimaryButtonDisabled]}
+                                    onPress={handleStartDeleteFlow}
+                                    disabled={deleteLoading}
+                                    activeOpacity={0.85}
+                                >
+                                    {deleteLoading ? (
+                                        <ActivityIndicator color="#FFFFFF" />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="mail-outline" size={18} color="#FFFFFF" />
+                                            <Text style={styles.deletePrimaryButtonText}>Send Email OTP</Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        ) : deleteStep === 'otp' ? (
+                            <View>
+                                <View style={styles.deleteOtpBox}>
+                                    <Text style={styles.deleteOtpLabel}>Email OTP</Text>
+                                    <TextInput
+                                        style={styles.deleteOtpInput}
+                                        value={deleteOtp}
+                                        onChangeText={(text) => {
+                                            setDeleteOtp(text.replace(/\D/g, '').slice(0, 6));
+                                            if (deleteError) {
+                                                setDeleteError('');
+                                            }
+                                        }}
+                                        placeholder="Enter 6-digit OTP"
+                                        placeholderTextColor={colors.textMuted}
+                                        keyboardType="number-pad"
+                                        maxLength={6}
+                                        editable={!deleteLoading}
+                                    />
+                                </View>
+
+                                {deleteInfo ? <Text style={styles.deleteInfoText}>{deleteInfo}</Text> : null}
+                                {deleteError ? <Text style={styles.deleteErrorText}>{deleteError}</Text> : null}
+
+                                <TouchableOpacity
+                                    style={[styles.deletePrimaryButton, deleteLoading && styles.deletePrimaryButtonDisabled]}
+                                    onPress={handleConfirmDelete}
+                                    disabled={deleteLoading}
+                                    activeOpacity={0.85}
+                                >
+                                    {deleteLoading ? (
+                                        <ActivityIndicator color="#FFFFFF" />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                                            <Text style={styles.deletePrimaryButtonText}>Verify & Delete</Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.deleteSecondaryButton}
+                                    onPress={handleResendDeleteOtp}
+                                    disabled={deleteLoading || deleteResendTimer > 0}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.deleteSecondaryButtonText}>
+                                        {deleteResendTimer > 0 ? `Resend OTP in ${deleteResendTimer}s` : 'Resend OTP'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <View style={styles.deleteSuccessBox}>
+                                <Ionicons name="checkmark-circle" size={56} color={customerColors.success} />
+                                <Text style={styles.deleteSuccessText}>{deleteInfo}</Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -474,8 +662,148 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: colors.textMuted,
         textAlign: 'center',
-        marginTop: spacing.xl,
-        marginBottom: spacing.lg,
+        marginVertical: spacing.xl,
         fontWeight: '500',
+    },
+    deleteModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.42)',
+        justifyContent: 'flex-end',
+    },
+    deleteModalCard: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
+        paddingBottom: spacing.xl,
+    },
+    deleteHandle: {
+        alignSelf: 'center',
+        width: 44,
+        height: 5,
+        borderRadius: 999,
+        backgroundColor: colors.border,
+        marginBottom: spacing.md,
+    },
+    deleteHeader: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginBottom: spacing.lg,
+    },
+    deleteHeaderIcon: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.error + '12',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: spacing.sm,
+    },
+    deleteHeaderContent: {
+        flex: 1,
+    },
+    deleteTitle: {
+        ...typography.h3,
+        color: colors.text,
+        marginBottom: 4,
+    },
+    deleteSubtitle: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        lineHeight: 20,
+    },
+    deleteWarningBox: {
+        backgroundColor: '#FFF5F5',
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.error + '20',
+        marginBottom: spacing.lg,
+    },
+    deleteWarningTitle: {
+        ...typography.body,
+        color: colors.text,
+        fontWeight: '700',
+        marginBottom: spacing.xs,
+    },
+    deleteWarningText: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        lineHeight: 20,
+        marginBottom: spacing.xs,
+    },
+    deletePrimaryButton: {
+        backgroundColor: colors.error,
+        borderRadius: borderRadius.lg,
+        minHeight: 52,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+    },
+    deletePrimaryButtonDisabled: {
+        opacity: 0.75,
+    },
+    deletePrimaryButtonText: {
+        ...typography.body,
+        color: '#FFFFFF',
+        fontWeight: '700',
+    },
+    deleteOtpBox: {
+        marginBottom: spacing.md,
+    },
+    deleteOtpLabel: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        marginBottom: spacing.xs,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: 0.6,
+    },
+    deleteOtpInput: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.lg,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md,
+        fontSize: 22,
+        fontWeight: '700',
+        color: colors.text,
+        backgroundColor: '#FFFFFF',
+        textAlign: 'center',
+        letterSpacing: 6,
+    },
+    deleteInfoText: {
+        ...typography.bodySmall,
+        color: customerColors.primary,
+        marginBottom: spacing.sm,
+    },
+    deleteErrorText: {
+        ...typography.bodySmall,
+        color: colors.error,
+        marginBottom: spacing.sm,
+    },
+    deleteSecondaryButton: {
+        alignSelf: 'center',
+        marginTop: spacing.md,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+    },
+    deleteSecondaryButtonText: {
+        ...typography.bodySmall,
+        color: customerColors.primary,
+        fontWeight: '700',
+    },
+    deleteSuccessBox: {
+        alignItems: 'center',
+        paddingVertical: spacing.lg,
+        gap: spacing.md,
+    },
+    deleteSuccessText: {
+        ...typography.body,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        lineHeight: 22,
     },
 });

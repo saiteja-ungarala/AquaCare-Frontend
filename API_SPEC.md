@@ -28,7 +28,7 @@ POST /auth/login
 {
   "email": "customer@test.com",
   "password": "password123",
-  "role": "customer" | "agent" | "dealer"
+  "role": "customer" | "technician"
 }
 ```
 

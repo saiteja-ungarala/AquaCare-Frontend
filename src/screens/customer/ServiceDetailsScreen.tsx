@@ -1,7 +1,7 @@
 // Service Details Screen — with Address Selection + Booking
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -32,7 +32,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
     const [createdBookingId, setCreatedBookingId] = useState<number | null>(null);
     const createBooking = useBookingsStore((s) => s.createBooking);
 
-    // When user adds an address and returns, re-open picker with fresh list
     const shouldReopenModal = useRef(false);
 
     useFocusEffect(
@@ -44,7 +43,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
         }, [])
     );
 
-    // Generate next 5 days
     const dates = Array.from({ length: 5 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() + i);
@@ -61,42 +59,49 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
     ];
 
     const timeLabels: Record<string, string> = {
-        '09:00': '9:00 AM', '10:00': '10:00 AM', '11:00': '11:00 AM', '12:00': '12:00 PM',
-        '14:00': '2:00 PM', '15:00': '3:00 PM', '16:00': '4:00 PM', '17:00': '5:00 PM',
+        '09:00': '9:00 AM',
+        '10:00': '10:00 AM',
+        '11:00': '11:00 AM',
+        '12:00': '12:00 PM',
+        '14:00': '2:00 PM',
+        '15:00': '3:00 PM',
+        '16:00': '4:00 PM',
+        '17:00': '5:00 PM',
     };
 
-    // Fetch addresses when address picker opens
     const openAddressPicker = async () => {
         setShowAddressPicker(true);
         setLoadingAddresses(true);
         try {
             const list = await profileService.getAddresses();
             setAddresses(list);
-            // Pre-select default address if none selected
             if (!selectedAddress) {
                 const def = list.find((a) => a.is_default);
                 if (def) setSelectedAddress(def);
             }
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
         } finally {
             setLoadingAddresses(false);
         }
     };
 
-    // Get icon based on category
     const getIcon = (): keyof typeof Ionicons.glyphMap => {
         switch (service.category) {
-            case 'water_purifier': return 'water';
-            case 'ro_plant': return 'filter';
-            case 'water_softener': return 'beaker';
-            case 'ionizer': return 'flash';
-            default: return 'construct';
+            case 'water_purifier':
+                return 'water';
+            case 'ro_plant':
+                return 'filter';
+            case 'water_softener':
+                return 'beaker';
+            case 'ionizer':
+                return 'flash';
+            default:
+                return 'construct';
         }
     };
 
     const handleBookService = async () => {
-        // Validate required fields
         if (!selectedDate || !selectedTime) {
             setBookingError('Please select a date and time for your service');
             setTimeout(() => setBookingError(null), 3000);
@@ -111,11 +116,22 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
         setBooking(true);
         setBookingError(null);
         try {
+            // Re-fetch addresses to confirm the selected address still belongs to this user
+            const freshAddresses = await profileService.getAddresses();
+            const freshAddress = freshAddresses.find((a) => a.id === selectedAddress.id);
+            if (!freshAddress) {
+                setSelectedAddress(null);
+                setBookingError('The selected address is no longer available. Please choose another.');
+                setTimeout(() => setBookingError(null), 4000);
+                setBooking(false);
+                return;
+            }
+
             const newBooking = await createBooking({
                 service_id: Number(service.id),
-                address_id: Number(selectedAddress.id),
+                address_id: Number(freshAddress.id),
                 scheduled_date: selectedDate,
-                scheduled_time: selectedTime + ':00',
+                scheduled_time: `${selectedTime}:00`,
                 notes: undefined,
             });
 
@@ -123,15 +139,13 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
             setCreatedBookingId(bookingId > 0 ? bookingId : null);
 
             setBookingSuccess(true);
-                // Paid booking — go to payment screen
-                setTimeout(() => {
-                    if (bookingId > 0) {
-                        navigation.replace('BookingDetail', { bookingId });
-                        return;
-                    }
-                    navigation.goBack();
-                }, 1800);
-                // First Service Free — show success overlay
+            setTimeout(() => {
+                if (bookingId > 0) {
+                    navigation.replace('BookingDetail', { bookingId });
+                    return;
+                }
+                navigation.goBack();
+            }, 1800);
         } catch (error: any) {
             console.error('[Booking] Error:', error);
             setBookingError(error.message || 'Booking failed. Please try again.');
@@ -140,12 +154,12 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
             setBooking(false);
         }
     };
+
     const insets = useSafeAreaInsets();
 
     return (
         <View style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header */}
                 <LinearGradient
                     colors={[customerColors.primary, customerColors.primaryDark]}
                     start={{ x: 0, y: 0 }}
@@ -167,9 +181,7 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                     </View>
                 </LinearGradient>
 
-                {/* Content */}
                 <View style={styles.content}>
-                    {/* Price Card */}
                     <View style={styles.priceCard}>
                         <View>
                             <Text style={styles.priceLabel}>Service Price</Text>
@@ -177,17 +189,15 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                         </View>
                         <View style={styles.priceNote}>
                             <Ionicons name="information-circle" size={18} color={customerColors.info} />
-                            <Text style={styles.priceNoteText}>Includes all materials</Text>
+                            <Text style={styles.priceNoteText}>Cash on Delivery only for now</Text>
                         </View>
                     </View>
 
-                    {/* Description */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>About this service</Text>
                         <Text style={styles.description}>{service.description}</Text>
                     </View>
 
-                    {/* What's Included */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>What's Included</Text>
                         <View style={styles.includesList}>
@@ -210,7 +220,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                         </View>
                     </View>
 
-                    {/* Select Date */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Select Date</Text>
                         <ScrollView
@@ -248,7 +257,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                         </ScrollView>
                     </View>
 
-                    {/* Select Time */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Select Time</Text>
                         <View style={styles.timeGrid}>
@@ -274,7 +282,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                         </View>
                     </View>
 
-                    {/* Select Address */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Service Address</Text>
                         <TouchableOpacity style={styles.addressSelector} onPress={openAddressPicker}>
@@ -294,13 +301,12 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                 </View>
             </ScrollView>
 
-            {/* Booking Success Overlay */}
             {bookingSuccess && (
                 <View style={styles.successOverlay}>
                     <Ionicons name="checkmark-circle" size={64} color={customerColors.success} />
-                    <Text style={styles.successTitle}>Booked Successfully! ✅</Text>
+                    <Text style={styles.successTitle}>Booked Successfully!</Text>
                     <Text style={styles.successDesc}>
-                        {service.name} scheduled for {selectedTime ? (timeLabels[selectedTime] || selectedTime) : ''} on {selectedDate}
+                        {service.name} scheduled for {selectedTime ? (timeLabels[selectedTime] || selectedTime) : ''} on {selectedDate}. Pay cash when the technician arrives.
                     </Text>
                     <Text style={styles.successSubtext}>Payment for this booking is currently Cash on Delivery.</Text>
                     {createdBookingId ? (
@@ -309,7 +315,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                 </View>
             )}
 
-            {/* Error Banner */}
             {bookingError && (
                 <View style={styles.errorBanner}>
                     <Ionicons name="alert-circle" size={20} color={customerColors.error} />
@@ -317,7 +322,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                 </View>
             )}
 
-            {/* Bottom Bar */}
             <View style={styles.bottomBar}>
                 <View>
                     <Text style={styles.bottomTotal}>Total</Text>
@@ -331,7 +335,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                 />
             </View>
 
-            {/* Address Picker Modal */}
             <Modal visible={showAddressPicker} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
@@ -381,11 +384,11 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                                             <View style={{ flex: 1, marginLeft: spacing.sm }}>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                                                     <Text style={styles.addrLabel}>{addr.label || 'Address'}</Text>
-                                                    {addr.is_default && (
+                                                    {addr.is_default ? (
                                                         <View style={styles.defaultBadge}>
                                                             <Text style={styles.defaultBadgeText}>Default</Text>
                                                         </View>
-                                                    )}
+                                                    ) : null}
                                                 </View>
                                                 <Text style={styles.addrLine}>{addr.line1}</Text>
                                                 <Text style={styles.addrCity}>
@@ -395,7 +398,6 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                                         </TouchableOpacity>
                                     );
                                 })}
-                                {/* Always-visible Add Address button */}
                                 <TouchableOpacity
                                     style={styles.addMoreAddrBtn}
                                     onPress={() => {
@@ -457,7 +459,16 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     content: { padding: spacing.md },
-    priceCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: customerColors.surface, padding: spacing.md, borderRadius: borderRadius.lg, ...shadows.md, marginBottom: spacing.lg },
+    priceCard: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: customerColors.surface,
+        padding: spacing.md,
+        borderRadius: borderRadius.lg,
+        ...shadows.md,
+        marginBottom: spacing.lg,
+    },
     priceLabel: { ...typography.bodySmall, color: customerColors.textSecondary },
     priceValue: { ...typography.h2, color: customerColors.primary, fontWeight: '700' },
     priceNote: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
@@ -469,53 +480,127 @@ const styles = StyleSheet.create({
     includeItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     includeText: { ...typography.body, color: customerColors.text },
     dateList: { gap: spacing.sm },
-    dateCard: { paddingVertical: spacing.md, paddingHorizontal: spacing.lg, backgroundColor: customerColors.surface, borderRadius: borderRadius.md, alignItems: 'center', borderWidth: 1, borderColor: customerColors.border, marginRight: spacing.sm },
+    dateCard: {
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        backgroundColor: customerColors.surface,
+        borderRadius: borderRadius.md,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: customerColors.border,
+        marginRight: spacing.sm,
+    },
     dateCardSelected: { backgroundColor: customerColors.primary, borderColor: customerColors.primary },
     dateDay: { ...typography.caption, color: customerColors.textSecondary },
     dateDaySelected: { color: customerColors.textOnPrimary },
     dateNum: { ...typography.h3, color: customerColors.text },
     dateNumSelected: { color: customerColors.textOnPrimary },
     timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-    timeSlot: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, backgroundColor: customerColors.surface, borderRadius: borderRadius.md, borderWidth: 1, borderColor: customerColors.border },
+    timeSlot: {
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        backgroundColor: customerColors.surface,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: customerColors.border,
+    },
     timeSlotSelected: { backgroundColor: customerColors.primary, borderColor: customerColors.primary },
     timeText: { ...typography.bodySmall, color: customerColors.text },
     timeTextSelected: { color: customerColors.textOnPrimary },
-    // Address selector
-    addressSelector: { flexDirection: 'row', alignItems: 'center', backgroundColor: customerColors.surface, borderRadius: borderRadius.lg, padding: spacing.md, borderWidth: 1, borderColor: customerColors.border },
+    addressSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: customerColors.surface,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: customerColors.border,
+    },
     addressMain: { ...typography.body, fontWeight: '600', color: customerColors.text },
     addressSub: { ...typography.caption, color: customerColors.textSecondary, marginTop: 2 },
     addressPlaceholder: { ...typography.body, color: customerColors.textMuted, flex: 1 },
-    // Bottom
-    bottomBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, backgroundColor: customerColors.surface, borderTopWidth: 1, borderTopColor: customerColors.border },
+    bottomBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: spacing.md,
+        backgroundColor: customerColors.surface,
+        borderTopWidth: 1,
+        borderTopColor: customerColors.border,
+    },
     bottomTotal: { ...typography.caption, color: customerColors.textSecondary },
     bottomPrice: { ...typography.h3, color: customerColors.text, fontWeight: '700' },
     bookButton: { paddingHorizontal: spacing.xl, backgroundColor: customerColors.primary },
-    // Modal
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: customerColors.surface, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, padding: spacing.lg, maxHeight: '70%' },
+    modalContent: {
+        backgroundColor: customerColors.surface,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+        padding: spacing.lg,
+        maxHeight: '70%',
+    },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
     modalTitle: { ...typography.h2, fontSize: 18, color: customerColors.text },
     emptyAddr: { alignItems: 'center', padding: spacing.xl },
     emptyAddrText: { ...typography.body, color: customerColors.text, fontWeight: '600', marginTop: spacing.md },
     emptyAddrSub: { ...typography.caption, color: customerColors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg },
-    addAddrBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: customerColors.primary, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.xl, borderRadius: borderRadius.lg },
+    addAddrBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        backgroundColor: customerColors.primary,
+        paddingVertical: spacing.sm + 2,
+        paddingHorizontal: spacing.xl,
+        borderRadius: borderRadius.lg,
+    },
     addAddrBtnText: { ...typography.body, color: customerColors.textOnPrimary, fontWeight: '700' },
-    addMoreAddrBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.md, marginTop: spacing.xs, borderTopWidth: 1, borderTopColor: customerColors.border },
+    addMoreAddrBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        paddingVertical: spacing.md,
+        marginTop: spacing.xs,
+        borderTopWidth: 1,
+        borderTopColor: customerColors.border,
+    },
     addMoreAddrText: { ...typography.body, color: customerColors.primary, fontWeight: '600' },
-    addrItem: { flexDirection: 'row', alignItems: 'flex-start', borderBottomWidth: 1, borderBottomColor: customerColors.border, paddingVertical: spacing.md },
+    addrItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        borderBottomWidth: 1,
+        borderBottomColor: customerColors.border,
+        paddingVertical: spacing.md,
+    },
     addrItemSelected: { backgroundColor: customerColors.primaryLight, borderRadius: borderRadius.md, paddingHorizontal: spacing.sm },
     addrLabel: { ...typography.body, fontWeight: '700', color: customerColors.text },
     addrLine: { ...typography.bodySmall, color: customerColors.textSecondary, marginTop: 2 },
     addrCity: { ...typography.caption, color: customerColors.textSecondary, marginTop: 2 },
     defaultBadge: { backgroundColor: customerColors.primary + '20', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 },
     defaultBadgeText: { ...typography.caption, fontSize: 10, color: customerColors.primary, fontWeight: '700' },
-    // Success Overlay
-    successOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.95)', alignItems: 'center', justifyContent: 'center', zIndex: 10, padding: spacing.xl },
+    successOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+        padding: spacing.xl,
+    },
     successTitle: { ...typography.h2, color: customerColors.success, marginTop: spacing.md, textAlign: 'center' },
     successDesc: { ...typography.body, color: customerColors.textSecondary, marginTop: spacing.sm, textAlign: 'center' },
     successSubtext: { ...typography.bodySmall, color: customerColors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
-    // Error Banner
-    errorBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: customerColors.error + '15', padding: spacing.md, gap: spacing.sm, borderTopWidth: 1, borderTopColor: customerColors.error + '30' },
+    errorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: customerColors.error + '15',
+        padding: spacing.md,
+        gap: spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: customerColors.error + '30',
+    },
     errorBannerText: { ...typography.bodySmall, color: customerColors.error, flex: 1, fontWeight: '600' },
-
 });
