@@ -1,118 +1,110 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+// TechnicianEarnScreen — Premium dashboard with levels + progress
+// Amber/dark theme, glass cards, animated progress bar
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    RefreshControl,
-    ScrollView,
-    Share,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+    Animated, Dimensions, Easing, RefreshControl,
+    ScrollView, Share, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TechnicianCampaign, TechnicianProductCommissionPreview, RootStackParamList } from '../../models/types';
 import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
-import { technicianTheme } from '../../theme/technicianTheme';
+import { technicianTheme as T } from '../../theme/technicianTheme';
 import { useTechnicianEarnStore, useTechnicianStore } from '../../store';
 import { showTechnicianToast } from '../../utils/technicianToast';
 
-type TechnicianEarnScreenProps = {
-    navigation: NativeStackNavigationProp<RootStackParamList, 'TechnicianEarn'>;
-};
+const { width: W } = Dimensions.get('window');
 
-const formatCurrency = (amount: number): string => {
-    return `Rs ${Number(amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
-};
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'TechnicianEarn'> };
 
-const getDaysLeft = (endAt?: string): number | null => {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fmt = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+
+const daysLeft = (endAt?: string): number | null => {
     if (!endAt) return null;
-    const endDate = new Date(endAt);
-    if (Number.isNaN(endDate.getTime())) return null;
-    const diffMs = endDate.getTime() - Date.now();
-    if (diffMs <= 0) return 0;
-    return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    const d = new Date(endAt);
+    if (isNaN(d.getTime())) return null;
+    const diff = d.getTime() - Date.now();
+    return diff <= 0 ? 0 : Math.ceil(diff / 86_400_000);
 };
 
-const getWhySellText = (item: TechnicianProductCommissionPreview): string => {
-    if ((item.commissionAmount || 0) >= 200) return 'High commission potential';
-    if ((item.price || 0) <= 4000) return 'Budget-friendly for most customers';
-    if (item.commissionType === 'percent') return 'Better earnings on premium sales';
-    return 'Popular add-on for service visits';
+const getActiveCampaign = (campaigns: TechnicianCampaign[], id: number | null) =>
+    (id ? campaigns.find((c) => c.id === id) : null) ?? campaigns[0] ?? null;
+
+const commissionText = (item: TechnicianProductCommissionPreview) => {
+    if (!item.commissionType || item.commissionValue === null) return 'Details soon';
+    if (item.commissionType === 'flat') return `${fmt(item.commissionValue)} / unit`;
+    const hint = item.commissionAmount !== null ? ` (~${fmt(item.commissionAmount)})` : '';
+    return `${item.commissionValue}%${hint}`;
 };
 
-const getCommissionText = (item: TechnicianProductCommissionPreview): string => {
-    if (!item.commissionType || item.commissionValue === null) {
-        return 'Commission details available soon';
-    }
+// ── Level config ──────────────────────────────────────────────────────────────
+const LEVELS = [
+    { label: 'Starter',   min: 0,   max: 5,   color: '#78909C', icon: 'leaf'          as const },
+    { label: 'Rising',    min: 5,   max: 15,  color: '#26A69A', icon: 'trending-up'   as const },
+    { label: 'Pro',       min: 15,  max: 30,  color: '#0077B6', icon: 'star'          as const },
+    { label: 'Elite',     min: 30,  max: 50,  color: '#7C3AED', icon: 'diamond'       as const },
+    { label: 'Champion',  min: 50,  max: 9999, color: '#FFB000', icon: 'trophy'       as const },
+];
 
-    if (item.commissionType === 'flat') {
-        return `${formatCurrency(item.commissionValue)} per unit`;
-    }
+const getLevel = (sold: number) =>
+    LEVELS.find((l) => sold >= l.min && sold < l.max) ?? LEVELS[LEVELS.length - 1];
 
-    const amountHint = item.commissionAmount !== null ? ` (~${formatCurrency(item.commissionAmount)})` : '';
-    return `${item.commissionValue}%${amountHint}`;
+// ── Animated progress bar ─────────────────────────────────────────────────────
+const ProgressBar: React.FC<{ pct: number; color: string }> = ({ pct, color }) => {
+    const anim = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        Animated.timing(anim, {
+            toValue: Math.min(pct, 1),
+            duration: 900,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+        }).start();
+    }, [pct]);
+
+    return (
+        <View style={pb.track}>
+            <Animated.View style={[pb.fill, { width: anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), backgroundColor: color }]} />
+        </View>
+    );
 };
+const pb = StyleSheet.create({
+    track: { height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' },
+    fill:  { height: '100%', borderRadius: 5 },
+});
 
-const getActiveCampaign = (
-    campaigns: TechnicianCampaign[],
-    activeCampaignId: number | null
-): TechnicianCampaign | null => {
-    if (activeCampaignId) {
-        const matched = campaigns.find((campaign) => campaign.id === activeCampaignId);
-        if (matched) return matched;
-    }
-
-    return campaigns[0] || null;
-};
-
-export const TechnicianEarnScreen: React.FC<TechnicianEarnScreenProps> = ({ navigation }) => {
+// ── Main screen ───────────────────────────────────────────────────────────────
+export const TechnicianEarnScreen: React.FC<Props> = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
-
     const {
-        referralCode,
-        summary,
-        campaigns,
-        activeCampaignId,
-        progress,
-        productsWithCommissionPreview,
-        loading,
-        error,
-        refreshAll,
-        fetchSummary,
-        clearError,
+        referralCode, summary, campaigns, activeCampaignId,
+        progress, productsWithCommissionPreview, loading, error,
+        refreshAll, fetchSummary, clearError,
     } = useTechnicianEarnStore();
     const { isOnline } = useTechnicianStore();
 
-    const activeCampaign = useMemo(
-        () => getActiveCampaign(campaigns, activeCampaignId),
-        [campaigns, activeCampaignId]
-    );
+    const activeCampaign = useMemo(() => getActiveCampaign(campaigns, activeCampaignId), [campaigns, activeCampaignId]);
+    const sold = progress?.soldQty ?? 0;
+    const level = getLevel(sold);
+    const nextThreshold = progress?.nextThreshold ?? null;
+    const progressPct = nextThreshold && nextThreshold > 0 ? sold / nextThreshold : 1;
 
-    useFocusEffect(
-        useCallback(() => {
-            void refreshAll();
-        }, [refreshAll])
-    );
-
-    useFocusEffect(
-        useCallback(() => {
-            if (!isOnline) return;
-
-            const interval = setInterval(() => {
-                void fetchSummary();
-            }, 60000);
-
-            return () => clearInterval(interval);
-        }, [isOnline, fetchSummary])
-    );
+    useFocusEffect(useCallback(() => { void refreshAll(); }, [refreshAll]));
+    useFocusEffect(useCallback(() => {
+        if (!isOnline) return;
+        const id = setInterval(() => void fetchSummary(), 60_000);
+        return () => clearInterval(id);
+    }, [isOnline, fetchSummary]));
 
     useEffect(() => {
         if (!error) return;
         showTechnicianToast(error);
         clearError();
-    }, [clearError, error]);
+    }, [error, clearError]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -120,59 +112,23 @@ export const TechnicianEarnScreen: React.FC<TechnicianEarnScreenProps> = ({ navi
         setRefreshing(false);
     }, [refreshAll]);
 
-    const daysLeft = getDaysLeft(activeCampaign?.endAt);
-
-    const nextTier = useMemo(() => {
-        if (!activeCampaign || !progress || progress.nextThreshold === null) {
-            return null;
-        }
-
-        return activeCampaign.tiers.find((tier) => tier.thresholdQty === progress.nextThreshold) || null;
-    }, [activeCampaign, progress]);
-
-    const campaignMessage = useMemo(() => {
-        if (!activeCampaign || !progress) {
-            return 'No active campaign right now. Keep sharing your referral code.';
-        }
-
-        if (progress.nextThreshold !== null && nextTier) {
-            return `Sell ${progress.remainingToNextThreshold} more products to unlock ${formatCurrency(nextTier.bonusAmount)} bonus`;
-        }
-
-        return `Campaign milestone unlocked. Total bonuses earned: ${formatCurrency(progress.bonusesEarned)}`;
-    }, [activeCampaign, progress, nextTier]);
-
-    const shareReferral = async () => {
-        if (!referralCode) {
-            showTechnicianToast('Referral code not available yet.');
-            return;
-        }
-
-        await Share.share({
-            message: `Get IONORA CARE products - use my technician code ${referralCode} at checkout.`,
-        });
-    };
-
-    const shareProduct = async (item: TechnicianProductCommissionPreview) => {
-        if (!referralCode) {
-            showTechnicianToast('Referral code not available yet.');
-            return;
-        }
-
-        await Share.share({
-            message: `Recommended: ${item.name}. Use my technician code ${referralCode} to support me.`,
-        });
-    };
-
     const copyCode = async () => {
-        if (!referralCode) {
-            showTechnicianToast('Referral code not available yet.');
-            return;
-        }
-
+        if (!referralCode) { showTechnicianToast('Code not available yet.'); return; }
         await Clipboard.setStringAsync(referralCode);
         showTechnicianToast('Referral code copied');
     };
+
+    const shareCode = async () => {
+        if (!referralCode) { showTechnicianToast('Code not available yet.'); return; }
+        await Share.share({ message: `Get IONORA CARE products — use my code ${referralCode} at checkout.` });
+    };
+
+    const shareProduct = async (item: TechnicianProductCommissionPreview) => {
+        if (!referralCode) { showTechnicianToast('Code not available yet.'); return; }
+        await Share.share({ message: `Recommended: ${item.name}. Use my code ${referralCode} to support me.` });
+    };
+
+    const days = daysLeft(activeCampaign?.endAt);
 
     return (
         <TechnicianScreen>
@@ -182,286 +138,293 @@ export const TechnicianEarnScreen: React.FC<TechnicianEarnScreenProps> = ({ navi
                     <RefreshControl
                         refreshing={refreshing || loading.refresh}
                         onRefresh={onRefresh}
-                        tintColor={technicianTheme.colors.agentPrimary}
+                        tintColor={T.colors.agentPrimary}
                     />
                 }
             >
-                <TechnicianSectionHeader title="Earn" subtitle="Referral commissions and campaign bonuses" />
+                {/* ── Hero earnings card ── */}
+                <LinearGradient
+                    colors={['#031930', '#0A2745', '#0D3460']}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={styles.heroCard}
+                >
+                    <View style={styles.heroRing} />
 
-                <TechnicianCard>
-                    <View style={styles.summaryHeaderRow}>
-                        <View>
-                            <Text style={styles.summaryTitle}>Your Earnings</Text>
-                            <Text style={styles.referralLabel}>Referral code</Text>
-                        </View>
-                        <TechnicianChip label={referralCode || 'Loading'} tone="default" />
+                    {/* Level badge */}
+                    <View style={[styles.levelBadge, { backgroundColor: level.color + '22', borderColor: level.color + '55' }]}>
+                        <Ionicons name={level.icon} size={14} color={level.color} />
+                        <Text style={[styles.levelBadgeText, { color: level.color }]}>{level.label}</Text>
                     </View>
 
-                    <View style={styles.summaryGrid}>
-                        <View style={styles.summaryPill}>
-                            <Text style={styles.pillLabel}>Pending</Text>
-                            <Text style={styles.pillValue}>{formatCurrency(summary.totalsPending)}</Text>
-                        </View>
-                        <View style={styles.summaryPill}>
-                            <Text style={styles.pillLabel}>Approved</Text>
-                            <Text style={styles.pillValue}>{formatCurrency(summary.totalsApproved)}</Text>
-                        </View>
-                        <View style={styles.summaryPill}>
-                            <Text style={styles.pillLabel}>Paid</Text>
-                            <Text style={styles.pillValue}>{formatCurrency(summary.totalsPaid)}</Text>
-                        </View>
+                    <Text style={styles.heroLabel}>Total Earnings</Text>
+                    <Text style={styles.heroAmount}>{fmt(summary.totalsPaid + summary.totalsApproved)}</Text>
+
+                    {/* Stats row */}
+                    <View style={styles.statsRow}>
+                        {[
+                            { label: 'Pending',  value: fmt(summary.totalsPending),  color: '#FFD166' },
+                            { label: 'Approved', value: fmt(summary.totalsApproved), color: '#06D6A0' },
+                            { label: 'Paid',     value: fmt(summary.totalsPaid),     color: '#90E0EF' },
+                        ].map((s) => (
+                            <View key={s.label} style={styles.statPill}>
+                                <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
+                                <Text style={styles.statLabel}>{s.label}</Text>
+                            </View>
+                        ))}
                     </View>
 
-                    <View style={styles.bonusRow}>
-                        <Text style={styles.bonusText}>Bonuses pending: {formatCurrency(summary.bonusPending)}</Text>
-                        <Text style={styles.bonusText}>Bonuses paid: {formatCurrency(summary.bonusPaid)}</Text>
-                    </View>
-
-                    <View style={styles.inlineActions}>
-                        <TouchableOpacity onPress={copyCode}>
-                            <Text style={styles.inlineActionText}>Copy code</Text>
+                    {/* Referral code row */}
+                    <View style={styles.codeRow}>
+                        <View style={styles.codePill}>
+                            <Text style={styles.codeText}>{referralCode || '—'}</Text>
+                        </View>
+                        <TouchableOpacity style={styles.codeAction} onPress={copyCode}>
+                            <Ionicons name="copy-outline" size={16} color={T.colors.agentPrimary} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={shareReferral}>
-                            <Text style={styles.inlineActionText}>Share code</Text>
+                        <TouchableOpacity style={styles.codeAction} onPress={shareCode}>
+                            <Ionicons name="share-social-outline" size={16} color={T.colors.agentPrimary} />
                         </TouchableOpacity>
                     </View>
-                </TechnicianCard>
+                </LinearGradient>
 
-                <TechnicianCard>
-                    <View style={styles.campaignTopRow}>
-                        <View style={styles.campaignTextWrap}>
-                            <Text style={styles.summaryTitle}>{activeCampaign?.name || 'Campaign'}</Text>
-                            <Text style={styles.campaignMeta}>
-                                {daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : 'No date window available'}
+                {/* ── Level progress card ── */}
+                <View style={styles.levelCard}>
+                    <View style={styles.levelHeader}>
+                        <View style={[styles.levelIconWrap, { backgroundColor: level.color + '18' }]}>
+                            <Ionicons name={level.icon} size={20} color={level.color} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.levelTitle}>{level.label} Level</Text>
+                            <Text style={styles.levelSub}>
+                                {nextThreshold !== null
+                                    ? `${sold} / ${nextThreshold} products sold`
+                                    : `${sold} products sold — Champion!`}
                             </Text>
                         </View>
-                        <Ionicons name="gift-outline" size={22} color={technicianTheme.colors.agentPrimaryDark} />
+                        {nextThreshold !== null && (
+                            <Text style={styles.levelRemaining}>
+                                {nextThreshold - sold} to next
+                            </Text>
+                        )}
                     </View>
 
-                    <Text style={styles.campaignMessage}>{campaignMessage}</Text>
-
-                    <View style={styles.progressWrap}>
-                        <View style={styles.progressTrack}>
-                            <View
-                                style={[
-                                    styles.progressFill,
-                                    {
-                                        width:
-                                            progress?.nextThreshold && progress.nextThreshold > 0
-                                                ? `${Math.min(100, (progress.soldQty / progress.nextThreshold) * 100)}%`
-                                                : '100%',
-                                    },
-                                ]}
-                            />
-                        </View>
-                        <View style={styles.progressMeta}>
-                            <Text style={styles.progressMetaText}>Sold: {progress?.soldQty ?? 0}</Text>
-                            <Text style={styles.progressMetaText}>Next: {progress?.nextThreshold ?? '-'}</Text>
-                        </View>
+                    {/* Level track */}
+                    <View style={styles.levelTrack}>
+                        {LEVELS.slice(0, -1).map((l, i) => {
+                            const active = sold >= l.min;
+                            return (
+                                <React.Fragment key={l.label}>
+                                    <View style={[styles.levelDot, { backgroundColor: active ? l.color : T.colors.border }]}>
+                                        {active && <Ionicons name="checkmark" size={10} color="#fff" />}
+                                    </View>
+                                    {i < LEVELS.length - 2 && (
+                                        <View style={[styles.levelConnector, { backgroundColor: sold >= LEVELS[i + 1].min ? LEVELS[i + 1].color : T.colors.border }]} />
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
                     </View>
 
-                    <TechnicianButton
-                        title="View milestones"
-                        variant="secondary"
-                        onPress={() => {
-                            if (!activeCampaign) return;
-                            navigation.navigate('TechnicianCampaignMilestones', { campaignId: activeCampaign.id });
-                        }}
-                    />
-                </TechnicianCard>
+                    <View style={styles.levelLabels}>
+                        {LEVELS.slice(0, -1).map((l) => (
+                            <Text key={l.label} style={[styles.levelDotLabel, sold >= l.min && { color: l.color }]}>{l.label}</Text>
+                        ))}
+                    </View>
 
-                <TechnicianSectionHeader title="Top Products to Sell" subtitle={`${productsWithCommissionPreview.length} products`} />
+                    {/* Withdrawal unlock */}
+                    <View style={styles.withdrawRow}>
+                        <Ionicons name="lock-closed" size={14} color={sold >= 20 ? T.colors.success : T.colors.agentMuted} />
+                        <Text style={[styles.withdrawText, sold >= 20 && { color: T.colors.success }]}>
+                            {sold >= 20
+                                ? 'Withdrawal unlocked this month'
+                                : `Complete ${20 - Math.min(sold, 20)} more services to unlock withdrawal`}
+                        </Text>
+                    </View>
+                </View>
 
-                {productsWithCommissionPreview.map((item) => (
-                    <TechnicianCard key={item.id} style={styles.productCard}>
-                        <View style={styles.productTop}>
-                            <View style={styles.productTextWrap}>
-                                <Text style={styles.productName}>{item.name}</Text>
-                                <Text style={styles.productPrice}>{formatCurrency(item.price)}</Text>
+                {/* ── Campaign card ── */}
+                {activeCampaign && (
+                    <View style={styles.campaignCard}>
+                        <View style={styles.campaignHeader}>
+                            <View>
+                                <Text style={styles.campaignName}>{activeCampaign.name}</Text>
+                                <Text style={styles.campaignMeta}>
+                                    {days !== null ? `${days} day${days === 1 ? '' : 's'} left` : 'Ongoing'}
+                                </Text>
                             </View>
-                            <TechnicianChip
-                                label={item.commissionType ? getCommissionText(item) : 'No active rule'}
-                                tone={item.commissionType ? 'success' : 'dark'}
-                            />
+                            <View style={styles.campaignBadge}>
+                                <Ionicons name="gift-outline" size={18} color={T.colors.agentPrimary} />
+                                <Text style={styles.campaignBadgeText}>Active</Text>
+                            </View>
                         </View>
 
-                        <Text style={styles.whySell}>Why sell: {getWhySellText(item)}</Text>
+                        <LinearGradient
+                            colors={['#031930', '#0A2745']}
+                            style={styles.campaignProgress}
+                        >
+                            <View style={styles.campaignProgressHeader}>
+                                <Text style={styles.campaignProgressLabel}>Campaign Progress</Text>
+                                <Text style={styles.campaignProgressPct}>
+                                    {nextThreshold ? `${Math.round(progressPct * 100)}%` : '100%'}
+                                </Text>
+                            </View>
+                            <ProgressBar pct={progressPct} color={T.colors.agentPrimary} />
+                            <View style={styles.campaignProgressMeta}>
+                                <Text style={styles.campaignMetaText}>Sold: {sold}</Text>
+                                <Text style={styles.campaignMetaText}>Next: {nextThreshold ?? '—'}</Text>
+                            </View>
+                        </LinearGradient>
 
-                        <View style={styles.actionsRow}>
-                            <TechnicianButton
-                                title="Share"
-                                variant="secondary"
-                                style={styles.actionButton}
-                                onPress={() => {
-                                    void shareProduct(item);
-                                }}
-                            />
-                            <TechnicianButton
-                                title="Copy Code"
-                                style={styles.actionButton}
-                                onPress={() => {
-                                    void copyCode();
-                                }}
-                            />
+                        <View style={styles.bonusRow}>
+                            <Text style={styles.bonusText}>Bonuses pending: {fmt(summary.bonusPending)}</Text>
+                            <Text style={styles.bonusText}>Bonuses paid: {fmt(summary.bonusPaid)}</Text>
                         </View>
-                    </TechnicianCard>
-                ))}
+
+                        <TechnicianButton
+                            title="View milestones"
+                            variant="secondary"
+                            onPress={() => {
+                                if (!activeCampaign) return;
+                                navigation.navigate('TechnicianCampaignMilestones', { campaignId: activeCampaign.id });
+                            }}
+                        />
+                    </View>
+                )}
+
+                {/* ── Products ── */}
+                <TechnicianSectionHeader
+                    title="Top Products to Sell"
+                    subtitle={`${productsWithCommissionPreview.length} products`}
+                />
 
                 {productsWithCommissionPreview.length === 0 ? (
                     <TechnicianCard>
-                        <Text style={styles.emptyTitle}>No products available right now</Text>
-                        <Text style={styles.emptySubtitle}>Pull to refresh and check the latest commission previews.</Text>
+                        <Text style={styles.emptyTitle}>No products right now</Text>
+                        <Text style={styles.emptySub}>Pull to refresh for the latest commission previews.</Text>
                     </TechnicianCard>
-                ) : null}
+                ) : (
+                    productsWithCommissionPreview.map((item) => (
+                        <TechnicianCard key={item.id} style={styles.productCard}>
+                            <View style={styles.productTop}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.productName}>{item.name}</Text>
+                                    <Text style={styles.productPrice}>{fmt(item.price)}</Text>
+                                </View>
+                                <TechnicianChip
+                                    label={item.commissionType ? commissionText(item) : 'No rule'}
+                                    tone={item.commissionType ? 'success' : 'dark'}
+                                />
+                            </View>
+                            <View style={styles.productActions}>
+                                <TechnicianButton title="Share" variant="secondary" style={{ flex: 1 }} onPress={() => void shareProduct(item)} />
+                                <TechnicianButton title="Copy Code" style={{ flex: 1 }} onPress={() => void copyCode()} />
+                            </View>
+                        </TechnicianCard>
+                    ))
+                )}
             </ScrollView>
         </TechnicianScreen>
     );
 };
 
 const styles = StyleSheet.create({
-    content: {
-        padding: technicianTheme.spacing.lg,
-        gap: technicianTheme.spacing.md,
-        paddingBottom: technicianTheme.spacing.xxl,
+    content: { padding: T.spacing.lg, gap: T.spacing.md, paddingBottom: T.spacing.xxl },
+
+    // Hero
+    heroCard: {
+        borderRadius: T.radius.lg, padding: T.spacing.lg,
+        overflow: 'hidden', ...T.shadows.card,
     },
-    summaryHeaderRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: technicianTheme.spacing.sm,
+    heroRing: {
+        position: 'absolute', width: 240, height: 240, borderRadius: 120,
+        borderWidth: 40, borderColor: 'rgba(255,255,255,0.04)', top: -80, right: -60,
     },
-    summaryTitle: {
-        ...technicianTheme.typography.h2,
-        color: technicianTheme.colors.textPrimary,
+    levelBadge: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        alignSelf: 'flex-start', borderRadius: T.radius.full,
+        borderWidth: 1, paddingHorizontal: T.spacing.sm, paddingVertical: 4,
+        marginBottom: T.spacing.sm,
     },
-    referralLabel: {
-        ...technicianTheme.typography.caption,
-        color: technicianTheme.colors.textSecondary,
-        marginTop: 4,
+    levelBadgeText: { fontSize: 12, fontWeight: '700' },
+    heroLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 4 },
+    heroAmount: { fontSize: 40, fontWeight: '900', color: '#fff', letterSpacing: -1, marginBottom: T.spacing.md },
+    statsRow: { flexDirection: 'row', gap: T.spacing.sm, marginBottom: T.spacing.md },
+    statPill: {
+        flex: 1, backgroundColor: 'rgba(255,255,255,0.08)',
+        borderRadius: T.radius.md, padding: T.spacing.sm, alignItems: 'center',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
     },
-    summaryGrid: {
-        flexDirection: 'row',
-        gap: technicianTheme.spacing.sm,
-        marginTop: technicianTheme.spacing.md,
+    statValue: { fontSize: 14, fontWeight: '800', marginBottom: 2 },
+    statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '600' },
+    codeRow: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm },
+    codePill: {
+        flex: 1, backgroundColor: 'rgba(255,176,0,0.12)',
+        borderRadius: T.radius.md, paddingVertical: T.spacing.sm,
+        paddingHorizontal: T.spacing.md, borderWidth: 1, borderColor: 'rgba(255,176,0,0.3)',
     },
-    summaryPill: {
-        flex: 1,
-        borderRadius: technicianTheme.radius.md,
-        borderWidth: 1,
-        borderColor: '#F0E1B8',
-        backgroundColor: '#FFF6E1',
-        padding: technicianTheme.spacing.sm,
+    codeText: { fontSize: 15, fontWeight: '800', color: T.colors.agentPrimary, letterSpacing: 2 },
+    codeAction: {
+        width: 40, height: 40, borderRadius: T.radius.md,
+        backgroundColor: 'rgba(255,176,0,0.1)', alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: 'rgba(255,176,0,0.2)',
     },
-    pillLabel: {
-        ...technicianTheme.typography.caption,
-        color: '#7D5A0A',
+
+    // Level card
+    levelCard: {
+        backgroundColor: '#fff', borderRadius: T.radius.lg,
+        padding: T.spacing.lg, ...T.shadows.card,
     },
-    pillValue: {
-        ...technicianTheme.typography.body,
-        color: technicianTheme.colors.textPrimary,
-        marginTop: 4,
+    levelHeader: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.md, marginBottom: T.spacing.lg },
+    levelIconWrap: { width: 44, height: 44, borderRadius: T.radius.md, alignItems: 'center', justifyContent: 'center' },
+    levelTitle: { fontSize: 16, fontWeight: '700', color: T.colors.textPrimary },
+    levelSub: { fontSize: 12, color: T.colors.textSecondary, marginTop: 2 },
+    levelRemaining: { fontSize: 12, fontWeight: '700', color: T.colors.agentPrimary },
+    levelTrack: { flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing.xs },
+    levelDot: {
+        width: 24, height: 24, borderRadius: 12,
+        alignItems: 'center', justifyContent: 'center',
     },
-    bonusRow: {
-        marginTop: technicianTheme.spacing.md,
-        gap: 4,
+    levelConnector: { flex: 1, height: 3, borderRadius: 2 },
+    levelLabels: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing.md },
+    levelDotLabel: { fontSize: 10, fontWeight: '600', color: T.colors.agentMuted, textAlign: 'center', flex: 1 },
+    withdrawRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: '#F7F4EE', borderRadius: T.radius.md, padding: T.spacing.sm,
     },
-    bonusText: {
-        ...technicianTheme.typography.bodySmall,
-        color: technicianTheme.colors.textSecondary,
+    withdrawText: { fontSize: 12, color: T.colors.textSecondary, fontWeight: '600', flex: 1 },
+
+    // Campaign
+    campaignCard: {
+        backgroundColor: '#fff', borderRadius: T.radius.lg,
+        padding: T.spacing.lg, gap: T.spacing.md, ...T.shadows.card,
     },
-    inlineActions: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: technicianTheme.spacing.sm,
+    campaignHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    campaignName: { fontSize: 16, fontWeight: '700', color: T.colors.textPrimary },
+    campaignMeta: { fontSize: 12, color: T.colors.textSecondary, marginTop: 2 },
+    campaignBadge: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        backgroundColor: T.colors.agentPrimary + '18', borderRadius: T.radius.full,
+        paddingHorizontal: T.spacing.sm, paddingVertical: 4,
+        borderWidth: 1, borderColor: T.colors.agentPrimary + '40',
     },
-    inlineActionText: {
-        ...technicianTheme.typography.caption,
-        color: technicianTheme.colors.agentPrimaryDark,
-    },
-    campaignTopRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: technicianTheme.spacing.md,
-    },
-    campaignTextWrap: {
-        flex: 1,
-    },
-    campaignMeta: {
-        ...technicianTheme.typography.bodySmall,
-        color: technicianTheme.colors.textSecondary,
-        marginTop: 4,
-    },
-    campaignMessage: {
-        ...technicianTheme.typography.body,
-        color: technicianTheme.colors.textPrimary,
-        marginTop: technicianTheme.spacing.md,
-    },
-    progressWrap: {
-        marginTop: technicianTheme.spacing.md,
-        marginBottom: technicianTheme.spacing.md,
-    },
-    progressTrack: {
-        height: 10,
-        borderRadius: technicianTheme.radius.full,
-        backgroundColor: '#E7EBEF',
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        backgroundColor: technicianTheme.colors.agentPrimary,
-    },
-    progressMeta: {
-        marginTop: 8,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    progressMetaText: {
-        ...technicianTheme.typography.caption,
-        color: technicianTheme.colors.textSecondary,
-    },
-    productCard: {
-        gap: technicianTheme.spacing.sm,
-    },
-    productTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        gap: technicianTheme.spacing.sm,
-    },
-    productTextWrap: {
-        flex: 1,
-    },
-    productName: {
-        ...technicianTheme.typography.h2,
-        color: technicianTheme.colors.textPrimary,
-    },
-    productPrice: {
-        ...technicianTheme.typography.bodySmall,
-        color: technicianTheme.colors.textSecondary,
-        marginTop: 2,
-    },
-    whySell: {
-        ...technicianTheme.typography.bodySmall,
-        color: technicianTheme.colors.textSecondary,
-    },
-    actionsRow: {
-        flexDirection: 'row',
-        gap: technicianTheme.spacing.sm,
-        marginTop: 4,
-    },
-    actionButton: {
-        flex: 1,
-    },
-    emptyTitle: {
-        ...technicianTheme.typography.h2,
-        color: technicianTheme.colors.textPrimary,
-        textAlign: 'center',
-    },
-    emptySubtitle: {
-        ...technicianTheme.typography.bodySmall,
-        color: technicianTheme.colors.textSecondary,
-        textAlign: 'center',
-        marginTop: 6,
-    },
+    campaignBadgeText: { fontSize: 12, fontWeight: '700', color: T.colors.agentPrimary },
+    campaignProgress: { borderRadius: T.radius.md, padding: T.spacing.md },
+    campaignProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing.sm },
+    campaignProgressLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
+    campaignProgressPct: { fontSize: 12, fontWeight: '800', color: T.colors.agentPrimary },
+    campaignProgressMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: T.spacing.sm },
+    campaignMetaText: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '600' },
+    bonusRow: { gap: 4 },
+    bonusText: { fontSize: 13, color: T.colors.textSecondary },
+
+    // Products
+    productCard: { gap: T.spacing.sm },
+    productTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: T.spacing.sm },
+    productName: { ...T.typography.h2, color: T.colors.textPrimary },
+    productPrice: { ...T.typography.bodySmall, color: T.colors.textSecondary, marginTop: 2 },
+    productActions: { flexDirection: 'row', gap: T.spacing.sm, marginTop: 4 },
+
+    // Empty
+    emptyTitle: { ...T.typography.h2, color: T.colors.textPrimary, textAlign: 'center' },
+    emptySub: { ...T.typography.bodySmall, color: T.colors.textSecondary, textAlign: 'center', marginTop: 6 },
 });

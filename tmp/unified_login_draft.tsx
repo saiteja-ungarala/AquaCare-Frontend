@@ -12,20 +12,18 @@ import {
     ImageBackground,
     StatusBar,
     Image,
-    Easing,
-    StyleProp,
-    ViewStyle
+    Easing
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
-import { customerColors } from '../../theme/customerTheme';
+import { colors, spacing, typography, borderRadius, shadows } from '../src/theme/theme';
+import { customerColors } from '../src/theme/customerTheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../store';
-import { UserRole } from '../../models/types';
-import { AuthErrorBanner, Button, Input, FadeInView } from '../../components';
-import { isValidEmail } from '../../utils/errorMapper';
+import { useAuthStore } from '../src/store';
+import { UserRole } from '../src/models/types';
+import { AuthErrorBanner, Button, Input, FadeInView } from '../src/components';
+import { isValidEmail } from '../src/utils/errorMapper';
 
 const { width } = Dimensions.get('window');
 
@@ -49,6 +47,8 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
     const [password, setPassword] = useState('');
     const [clientFieldErrors, setClientFieldErrors] = useState<Record<string, string>>({});
     const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null);
+    const [isSignupVisible, setIsSignupVisible] = useState(false);
+    const signupAnim = useRef(new Animated.Value(0)).current;
 
     const {
         login,
@@ -65,21 +65,6 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
     const currentRole = selectedRole || 'customer';
 
     const shiftAnim = useRef(new Animated.Value(currentRole === 'customer' ? 0 : 1)).current;
-    const pageAnim = useRef(new Animated.Value(1)).current;
-
-    const navigateAnimated = (route: string) => {
-        blurWebActiveElement();
-        Animated.timing(pageAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: false,
-        }).start(() => {
-            navigation.navigate(route);
-            setTimeout(() => {
-                pageAnim.setValue(1);
-            }, 600);
-        });
-    };
 
     useEffect(() => {
         clearError();
@@ -93,6 +78,25 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
             useNativeDriver: false,
         }).start();
     }, [currentRole, shiftAnim]);
+
+    const handleSignupPress = () => {
+        setIsSignupVisible(true);
+        Animated.timing(signupAnim, {
+            toValue: 1,
+            duration: 700,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+        }).start();
+    };
+
+    const handleCloseSignup = () => {
+        Animated.timing(signupAnim, {
+            toValue: 0,
+            duration: 600,
+            easing: Easing.in(Easing.exp),
+            useNativeDriver: false,
+        }).start(() => setIsSignupVisible(false));
+    };
 
     const handleRoleSelect = (role: UserRole) => {
         if (role === currentRole) return;
@@ -165,16 +169,19 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
     const customerTextTranslateX = shiftAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -width * 0.3] });
     const technicianTextTranslateX = shiftAnim.interpolate({ inputRange: [0, 1], outputRange: [width * 0.3, 0] });
 
+    const signupTranslateY = signupAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [Dimensions.get('window').height, 0],
+    });
+
     const cardBorderColor = shiftAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: ['rgba(0, 194, 179, 0.5)', 'rgba(255, 176, 0, 0.5)'],
-        extrapolate: 'clamp'
+        outputRange: ['rgba(0, 194, 179, 0.5)', 'rgba(255, 176, 0, 0.5)']
     });
 
     const cardScale = shiftAnim.interpolate({
         inputRange: [0, 0.5, 1],
-        outputRange: [1, 0.98, 1],
-        extrapolate: 'clamp'
+        outputRange: [1, 0.98, 1] // Slight dip during transition
     });
 
     return (
@@ -183,7 +190,7 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
             
             {/* Backgrounds */}
             <Animated.View style={[StyleSheet.absoluteFill, { opacity: customerBgOp }]}>
-                <ImageBackground source={require('../../../assets/customer-login.png')} style={styles.bgImage} resizeMode="cover">
+                <ImageBackground source={require('../assets/customer-login.png')} style={styles.bgImage} resizeMode="cover">
                     <LinearGradient
                         colors={['rgba(3, 10, 15, 0.65)', 'rgba(2, 28, 34, 0.75)', 'rgba(3, 20, 25, 0.96)']}
                         locations={[0, 0.4, 1]}
@@ -193,7 +200,7 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
             </Animated.View>
 
             <Animated.View style={[StyleSheet.absoluteFill, { opacity: technicianBgOp }]}>
-                <ImageBackground source={require('../../../assets/technicain-login.jpg')} style={styles.bgImage} resizeMode="cover">
+                <ImageBackground source={require('../assets/technicain-login.jpg')} style={styles.bgImage} resizeMode="cover">
                     <LinearGradient
                         colors={['rgba(15, 10, 0, 0.65)', 'rgba(34, 25, 2, 0.82)', 'rgba(25, 20, 3, 0.98)']}
                         locations={[0, 0.4, 1]}
@@ -204,7 +211,7 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
 
             <SafeAreaView style={styles.safeArea}>
                 <View style={styles.topBar}>
-                    <Image source={require('../../../assets/icon.png')} style={styles.smallLogo} resizeMode="contain" />
+                    <Image source={require('../assets/icon.png')} style={styles.smallLogo} resizeMode="contain" />
                     
                     <View style={styles.roleSwitcher}>
                         <TouchableOpacity 
@@ -234,22 +241,10 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
                         keyboardShouldPersistTaps="handled"
                         showsVerticalScrollIndicator={false}
                     >
-                            <Animated.View 
-                                style={[
-                                    styles.glassContent, 
-                                    { 
-                                        borderColor: cardBorderColor, 
-                                        opacity: pageAnim,
-                                        transform: [
-                                            { scale: pageAnim },
-                                            { scale: cardScale }
-                                        ] 
-                                    } as any as StyleProp<ViewStyle>
-                                ]}
-                            >
+                        <Animated.View style={[styles.glassContent, { borderColor: cardBorderColor, transform: [{ scale: cardScale }] }]}>
                             <View style={styles.titleWrapper}>
                                 <Animated.View style={[StyleSheet.absoluteFill, { opacity: customerCardOp, transform: [{ translateX: customerTextTranslateX }] }]} pointerEvents="none">
-                                    <Text style={[styles.title, { color: '#FFFFFF' }]}>Welcome Back</Text>
+                                    <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
                                     <Text style={styles.subtitle}>
                                         Login as <Text style={{ color: customerColors.primary, fontWeight: '700' }}>Customer</Text>
                                     </Text>
@@ -272,7 +267,7 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
                                     label="Email"
                                     placeholder="Enter your email"
                                     value={email}
-                                    onChangeText={(value: string) => {
+                                    onChangeText={(value) => {
                                         setEmail(value);
                                         clearFieldState('email');
                                     }}
@@ -280,10 +275,8 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
                                     autoCapitalize="none"
                                     leftIcon="mail-outline"
                                     inputContainerStyle={styles.transparentInput}
-                                    labelStyle={{ color: '#FFFFFF' }}
-                                    style={{ color: '#FFFFFF' }}
-                                    iconColor="#FFFFFF"
-                                    placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                                    labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                    placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                     error={clientFieldErrors.email || fieldErrors.email}
                                 />
 
@@ -291,23 +284,21 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
                                     label="Password"
                                     placeholder="Enter your password"
                                     value={password}
-                                    onChangeText={(value: string) => {
+                                    onChangeText={(value) => {
                                         setPassword(value);
                                         clearFieldState('password');
                                     }}
                                     secureTextEntry
                                     leftIcon="lock-closed-outline"
                                     inputContainerStyle={styles.transparentInput}
-                                    labelStyle={{ color: '#FFFFFF' }}
-                                    style={{ color: '#FFFFFF' }}
-                                    iconColor="#FFFFFF"
-                                    placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                                    labelStyle={isTechnician ? { color: colors.surface } : undefined}
+                                    placeholderTextColor={isTechnician ? 'rgba(255, 255, 255, 0.6)' : undefined}
                                     error={clientFieldErrors.password || fieldErrors.password}
                                 />
 
                                 <TouchableOpacity
                                     style={styles.forgotPassword}
-                                    onPress={() => navigateAnimated('ForgotPassword')}
+                                    onPress={() => navigateWithBlur(() => navigation.navigate('ForgotPassword'))}
                                 >
                                     <Text style={[styles.forgotPasswordText, { color: activeThemeColor }]}>Forgot Password?</Text>
                                 </TouchableOpacity>
@@ -323,7 +314,7 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
                             
                             <View style={styles.footerRow}>
                                 <Text style={[styles.footerText, isTechnician && { color: 'rgba(255, 255, 255, 0.6)' }]}>Don't have an account? </Text>
-                                <TouchableOpacity onPress={() => navigateWithBlur(() => navigation.navigate('Signup'))}>
+                                <TouchableOpacity onPress={() => navigateWithBlur(handleSignupPress)}>
                                     <Text style={[styles.footerLink, { color: activeThemeColor }]}>Sign Up</Text>
                                 </TouchableOpacity>
                             </View>
@@ -331,6 +322,46 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
+
+            {/* Sign Up Curtain Overlay */}
+            {isSignupVisible && (
+                <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ translateY: signupTranslateY }], zIndex: 100 }]}>
+                    <ImageBackground source={isTechnician ? require('../assets/technicain-login.jpg') : require('../assets/customer-login.png')} style={styles.bgImage} resizeMode="cover">
+                        <LinearGradient
+                            colors={['rgba(3, 10, 15, 0.3)', 'rgba(3, 20, 25, 0.85)']}
+                            locations={[0, 1]}
+                            style={StyleSheet.absoluteFill}
+                        />
+                        <SafeAreaView style={styles.safeArea}>
+                            <View style={styles.topBar}>
+                                <TouchableOpacity onPress={handleCloseSignup} style={[styles.roleSwitchBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                                    <Ionicons name="close" size={24} color="#FFFFFF" />
+                                </TouchableOpacity>
+                            </View>
+                            <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                                <ScrollView contentContainerStyle={styles.scrollContent}>
+                                    <View style={[styles.glassContent, { borderColor: isTechnician ? 'rgba(255, 176, 0, 0.5)' : 'rgba(0, 194, 179, 0.5)' }]}>
+                                        <Text style={[styles.title, { color: colors.text, marginBottom: spacing.xs }]}>Create Account</Text>
+                                        <Text style={[styles.subtitle, { marginBottom: spacing.xl }]}>
+                                            Join the IonCare family today.
+                                        </Text>
+
+                                        <Button 
+                                            title="Complete Sign Up" 
+                                            onPress={() => {
+                                                handleCloseSignup();
+                                                setTimeout(() => navigation.navigate('Signup'), 600);
+                                            }} 
+                                            style={{ backgroundColor: activeThemeColor, borderRadius: borderRadius.full }} 
+                                            fullWidth
+                                        />
+                                    </View>
+                                </ScrollView>
+                            </KeyboardAvoidingView>
+                        </SafeAreaView>
+                    </ImageBackground>
+                </Animated.View>
+            )}
         </View>
     );
 };
@@ -357,8 +388,9 @@ const styles = StyleSheet.create({
         paddingBottom: spacing.md,
     },
     smallLogo: {
-        width: 140,
-        height: 48,
+        width: 44,
+        height: 44,
+        borderRadius: 12,
     },
     roleSwitcher: {
         flexDirection: 'row',
@@ -401,25 +433,24 @@ const styles = StyleSheet.create({
     },
     titleWrapper: {
         height: 80,
-        marginBottom: spacing.lg,
+        marginBottom: spacing.xs,
         justifyContent: 'center',
     },
     title: {
         ...typography.h1,
         fontSize: 32,
-        color: '#FFFFFF',
         marginBottom: spacing.xs,
     },
     subtitle: {
         ...typography.body,
         fontSize: 16,
-        color: 'rgba(255,255,255,0.7)',
+        color: colors.textSecondary,
     },
     formContainer: {
         marginTop: spacing.sm,
     },
     transparentInput: {
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
         borderColor: 'rgba(255, 255, 255, 0.4)',
         borderWidth: 1,
         borderRadius: 16,
@@ -440,7 +471,7 @@ const styles = StyleSheet.create({
     },
     footerText: {
         ...typography.body,
-        color: 'rgba(255, 255, 255, 0.7)',
+        color: colors.textSecondary,
     },
     footerLink: {
         ...typography.body,

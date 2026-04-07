@@ -9,7 +9,10 @@ import {
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
-    ImageBackground
+    ImageBackground,
+    Animated,
+    Dimensions,
+    Easing
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -40,6 +43,17 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         clearFieldError,
         selectedRole,
     } = useAuthStore();
+
+    const slideAnim = React.useRef(new Animated.Value(Dimensions.get('window').height)).current;
+    
+    React.useEffect(() => {
+        Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 700,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: true,
+        }).start();
+    }, []);
 
     const clearFieldState = (field: string) => {
         if (errorMessage) {
@@ -177,9 +191,10 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
 
-                        <View style={[
+                        <Animated.View style={[
                             styles.content,
                             isCustomSignup && styles.bottomContent,
+                            { transform: [{ translateY: slideAnim }] }
                         ]}>
                             <View style={isCustomSignup ? styles.glassContent : undefined}>
                                 <Text style={[styles.title, isTechnician ? { color: colors.surface } : null]}>Create Account</Text>
@@ -282,7 +297,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                                     </View>
                                 </View>
                             </View>
-                        </View>
+                        </Animated.View>
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>

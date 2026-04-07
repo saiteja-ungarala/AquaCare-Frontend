@@ -336,22 +336,42 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     </View>
 
                     {/* Referral Banner */}
-                    <TouchableOpacity style={styles.referralBanner} activeOpacity={0.8} onPress={() => navigation.navigate('Profile')}>
+                    <TouchableOpacity style={styles.referralBanner} activeOpacity={0.8} onPress={() => navigation.navigate('Referral')}>
                         <LinearGradient
-                            colors={['#E8F5E9', '#F1F8E9']}
+                            colors={['#03045E', '#0077B6']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.referralGradient}
                         >
                             <View style={styles.referralIconWrap}>
-                                <Ionicons name="gift" size={24} color={'#7FA650'} />
+                                <Ionicons name="people" size={22} color={'#90E0EF'} />
                             </View>
                             <View style={styles.referralContent}>
-                                <Text style={styles.referralTitle}>Refer & Earn ₹500</Text>
-                                <Text style={styles.referralDesc}>Invite friends to IONORA CARE</Text>
+                                <Text style={[styles.referralTitle, { color: '#fff' }]}>Refer & Earn ₹5,000</Text>
+                                <Text style={[styles.referralDesc, { color: 'rgba(255,255,255,0.75)' }]}>Invite friends · Earn on every order</Text>
                             </View>
-                            <View style={styles.referralArrow}>
-                                <Ionicons name="arrow-forward" size={18} color={'#7FA650'} />
+                            <View style={[styles.referralArrow, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+                                <Ionicons name="arrow-forward" size={18} color={'#90E0EF'} />
+                            </View>
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    {/* Wallet + Bonus highlight */}
+                    <TouchableOpacity style={styles.walletBanner} activeOpacity={0.88} onPress={() => navigation.navigate('Wallet')}>
+                        <LinearGradient
+                            colors={['#D8F3DC', '#B7E4C7']}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                            style={styles.walletGradient}
+                        >
+                            <View style={styles.walletIconWrap}>
+                                <Ionicons name="gift" size={22} color="#1B4332" />
+                            </View>
+                            <View style={styles.referralContent}>
+                                <Text style={[styles.referralTitle, { color: '#1B4332' }]}>₹10,000 Welcome Bonus</Text>
+                                <Text style={[styles.referralDesc, { color: '#2D6A4F' }]}>Use on Ionizers above ₹4,00,000</Text>
+                            </View>
+                            <View style={[styles.referralArrow, { backgroundColor: 'rgba(27,67,50,0.1)' }]}>
+                                <Ionicons name="wallet" size={18} color="#1B4332" />
                             </View>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -679,6 +699,31 @@ const styles = StyleSheet.create({
         height: 36,
         borderRadius: 12,
         backgroundColor: 'rgba(127, 166, 80, 0.12)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    walletBanner: {
+        marginHorizontal: GRID_PAD,
+        marginTop: spacing.sm,
+        borderRadius: 16,
+        overflow: 'hidden',
+        shadowColor: 'rgba(27, 67, 50, 0.15)',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 1,
+        shadowRadius: 12,
+        elevation: 3,
+    },
+    walletGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.md,
+        gap: spacing.md,
+    },
+    walletIconWrap: {
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        backgroundColor: 'rgba(27, 67, 50, 0.12)',
         alignItems: 'center',
         justifyContent: 'center',
     },

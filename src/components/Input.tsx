@@ -23,6 +23,7 @@ interface InputProps extends TextInputProps {
     containerStyle?: ViewStyle;
     inputContainerStyle?: ViewStyle;
     labelStyle?: TextStyle;
+    iconColor?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -35,6 +36,8 @@ export const Input: React.FC<InputProps> = ({
     inputContainerStyle,
     labelStyle,
     secureTextEntry,
+    iconColor,
+    style, // Extract style to apply strictly to TextInput
     ...props
 }) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -57,12 +60,12 @@ export const Input: React.FC<InputProps> = ({
                     <Ionicons
                         name={leftIcon}
                         size={20}
-                        color={colors.textSecondary}
+                        color={iconColor || colors.textSecondary}
                         style={styles.leftIcon}
                     />
                 )}
                 <TextInput
-                    style={[styles.input, leftIcon && styles.inputWithLeftIcon]}
+                    style={[styles.input, leftIcon && styles.inputWithLeftIcon, style as any]}
                     placeholderTextColor={colors.textMuted}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
@@ -77,7 +80,7 @@ export const Input: React.FC<InputProps> = ({
                         <Ionicons
                             name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
                             size={20}
-                            color={colors.textSecondary}
+                            color={iconColor || colors.textSecondary}
                         />
                     </TouchableOpacity>
                 ) : rightIcon ? (
@@ -85,7 +88,7 @@ export const Input: React.FC<InputProps> = ({
                         onPress={onRightIconPress}
                         style={styles.rightIconButton}
                     >
-                        <Ionicons name={rightIcon} size={20} color={colors.textSecondary} />
+                        <Ionicons name={rightIcon} size={20} color={iconColor || colors.textSecondary} />
                     </TouchableOpacity>
                 ) : null}
             </View>

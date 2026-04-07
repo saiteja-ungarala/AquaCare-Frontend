@@ -1,37 +1,58 @@
-// Wallet Screen
+// WalletScreen — Premium glassmorphism redesign
+// Water + technology theme: blue/teal gradient, glass cards, smooth layout
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
+    ActivityIndicator, RefreshControl, Dimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { customerColors } from '../../theme/customerTheme';
-import { useWalletStore, useAuthStore, REFERRAL_CONSTANTS } from '../../store';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useWalletStore, useAuthStore } from '../../store';
 
+const { width: W } = Dimensions.get('window');
+
+// ── Source label map ──────────────────────────────────────────────────────────
+const SOURCE_META: Record<string, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+    referral_bonus:   { label: 'Referral Reward',   icon: 'people',          color: '#7C3AED' },
+    join_bonus:       { label: 'Welcome Bonus',      icon: 'gift',            color: '#059669' },
+    join_bonus_usage: { label: 'Bonus Used',         icon: 'cart',            color: '#D97706' },
+    refund:           { label: 'Refund',             icon: 'refresh-circle',  color: '#0284C7' },
+    order_payment:    { label: 'Order Payment',      icon: 'bag-handle',      color: '#DC2626' },
+    welcome_bonus:    { label: 'Welcome Bonus',      icon: 'star',            color: '#059669' },
+    commission:       { label: 'Commission',         icon: 'trending-up',     color: '#7C3AED' },
+};
+
+const getSourceMeta = (source: string, type: string) => {
+    const meta = SOURCE_META[source];
+    if (meta) return meta;
+    return type === 'credit'
+        ? { label: 'Credit',  icon: 'arrow-down-circle' as const, color: '#059669' }
+        : { label: 'Debit',   icon: 'arrow-up-circle'   as const, color: '#DC2626' };
+};
+
+const formatDate = (raw: string) => {
+    if (!raw) return '';
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw;
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
 export const WalletScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const insets = useSafeAreaInsets();
-    const {
-        balance,
-        transactions,
-        isLoading,
-        error,
-        fetchWallet,
-        fetchTransactions,
-    } = useWalletStore();
-    const user = useAuthStore((state) => state.user);
+    const { balance, transactions, isLoading, error, fetchWallet, fetchTransactions } = useWalletStore();
+    const user = useAuthStore((s) => s.user);
     const [refreshing, setRefreshing] = React.useState(false);
 
-    useFocusEffect(
-        React.useCallback(() => {
-            const loadWalletData = async () => {
-                await Promise.all([fetchWallet(), fetchTransactions()]);
-            };
-            loadWalletData();
-        }, [fetchWallet, fetchTransactions])
-    );
+    useFocusEffect(React.useCallback(() => {
+        void Promise.all([fetchWallet(), fetchTransactions()]);
+    }, [fetchWallet, fetchTransactions]));
 
     const onRefresh = React.useCallback(async () => {
         setRefreshing(true);
@@ -39,199 +60,264 @@ export const WalletScreen: React.FC = () => {
         setRefreshing(false);
     }, [fetchWallet, fetchTransactions]);
 
-    const handleShare = async () => {
-        try {
-            await Share.share({
-                message: `Join IONORA CARE and get your first service FREE! Use my referral code: ${user?.referralCode || 'ION100'}`,
-                title: 'Refer & Earn',
-            });
-        } catch (error) { }
-    };
-
     return (
-        <View style={styles.container}>
+        <View style={styles.root}>
+            {/* ── Hero gradient header ── */}
             <LinearGradient
-                colors={[customerColors.primary, customerColors.primaryDark]}
+                colors={['#0077B6', '#00B4D8', '#48CAE4']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[styles.header, { paddingTop: insets.top + spacing.md }]}
+                style={[styles.hero, { paddingTop: insets.top + spacing.sm }]}
             >
-                <Ionicons name="wallet" size={120} color="rgba(255,255,255,0.1)" style={styles.headerIconBg} />
-                <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={28} color={colors.textOnPrimary} />
+                {/* decorative water rings */}
+                <View style={styles.ring1} />
+                <View style={styles.ring2} />
+
+                <View style={styles.heroNav}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <Ionicons name="chevron-back" size={26} color="#fff" />
                     </TouchableOpacity>
-                    <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitle}>My Wallet</Text>
-                        <Text style={styles.headerSubtitle}>Balance, Earnings & History</Text>
+                    <Text style={styles.heroTitle}>My Wallet</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+
+                {/* Glass balance card */}
+                <View style={styles.balanceGlass}>
+                    <Text style={styles.balanceLabel}>Available Balance</Text>
+                    <Text style={styles.balanceAmount}>
+                        ₹{Number(balance).toLocaleString('en-IN')}
+                    </Text>
+                    <View style={styles.balanceDivider} />
+                    <View style={styles.balanceRow}>
+                        <View style={styles.balanceStat}>
+                            <Ionicons name="arrow-down-circle" size={16} color="#90E0EF" />
+                            <Text style={styles.balanceStatLabel}>Credits</Text>
+                        </View>
+                        <View style={styles.balanceStat}>
+                            <Ionicons name="arrow-up-circle" size={16} color="#FFB4A2" />
+                            <Text style={styles.balanceStatLabel}>Debits</Text>
+                        </View>
+                        <View style={styles.balanceStat}>
+                            <Ionicons name="gift" size={16} color="#B5EAD7" />
+                            <Text style={styles.balanceStatLabel}>Bonuses</Text>
+                        </View>
                     </View>
                 </View>
             </LinearGradient>
-            {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={styles.loadingText}>Loading wallet...</Text>
+
+            {isLoading && !refreshing ? (
+                <View style={styles.loader}>
+                    <ActivityIndicator size="large" color={customerColors.primary} />
                 </View>
             ) : (
                 <ScrollView
-                    style={styles.scrollView}
+                    style={styles.scroll}
+                    contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={[customerColors.primary]}
-                            tintColor={customerColors.primary}
-                        />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
+                            colors={[customerColors.primary]} tintColor={customerColors.primary} />
                     }
                 >
                     {error ? (
-                        <View style={styles.errorCard}>
-                            <Ionicons name="alert-circle-outline" size={20} color={colors.error} />
+                        <View style={styles.errorBanner}>
+                            <Ionicons name="alert-circle" size={16} color={colors.error} />
                             <Text style={styles.errorText}>{error}</Text>
                         </View>
                     ) : null}
-                    <LinearGradient colors={[customerColors.primary, customerColors.primaryDark]} style={styles.balanceCard}>
-                        <Text style={styles.balanceLabel}>Available Balance</Text>
-                        <Text style={styles.balanceAmount}>₹{balance}</Text>
-                        <View style={styles.balanceActions}>
-                            <TouchableOpacity style={styles.balanceAction}>
-                                <Ionicons name="add-circle-outline" size={20} color={colors.textOnPrimary} />
-                                <Text style={styles.balanceActionText}>Add Money</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.balanceAction}>
-                                <Ionicons name="arrow-down-circle-outline" size={20} color={colors.textOnPrimary} />
-                                <Text style={styles.balanceActionText}>Withdraw</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </LinearGradient>
 
-                    <LinearGradient
-                        colors={[customerColors.primary, customerColors.primaryDark]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
+                    {/* ── Referral card ── */}
+                    <TouchableOpacity
+                        activeOpacity={0.88}
+                        onPress={() => navigation.navigate('Profile')}
                         style={styles.referralCard}
                     >
-                        <View style={styles.referralHeader}>
-                            <Ionicons name="gift" size={32} color={colors.textOnPrimary} />
-                            <View style={styles.referralContent}>
-                                <Text style={styles.referralTitle}>Refer & Earn</Text>
-                                <Text style={styles.referralDesc}>Get ₹{REFERRAL_CONSTANTS.REFERRER_JOINING_BONUS} for each friend who joins</Text>
+                        <LinearGradient
+                            colors={['#023E8A', '#0077B6']}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                            style={styles.referralGradient}
+                        >
+                            <View style={styles.referralLeft}>
+                                <View style={styles.referralIconWrap}>
+                                    <Ionicons name="people" size={22} color="#90E0EF" />
+                                </View>
+                                <View>
+                                    <Text style={styles.referralTitle}>Refer & Earn</Text>
+                                    <Text style={styles.referralSub}>₹5,000 per referral</Text>
+                                </View>
                             </View>
-                        </View>
-                        <View style={styles.referralCodeBox}>
-                            <Text style={styles.referralCodeLabel}>Your Referral Code</Text>
-                            <Text style={styles.referralCode}>{user?.referralCode || 'AQUA100'}</Text>
-                        </View>
-                        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-                            <Ionicons name="share-social" size={20} color={customerColors.primary} />
-                            <Text style={styles.shareButtonText}>Share with Friends</Text>
-                        </TouchableOpacity>
-                    </LinearGradient>
+                            <View style={styles.referralCodePill}>
+                                <Text style={styles.referralCodeText}>{user?.referralCode || '—'}</Text>
+                            </View>
+                        </LinearGradient>
+                    </TouchableOpacity>
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Transaction History</Text>
-                        {transactions.length === 0 ? (
+                    {/* ── Join bonus banner ── */}
+                    <View style={styles.bonusBanner}>
+                        <LinearGradient
+                            colors={['#D8F3DC', '#B7E4C7']}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                            style={styles.bonusGradient}
+                        >
+                            <Ionicons name="gift" size={28} color="#1B4332" />
+                            <View style={styles.bonusText}>
+                                <Text style={styles.bonusTitle}>₹10,000 Welcome Bonus</Text>
+                                <Text style={styles.bonusSub}>Use on Ionizers above ₹4,00,000</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#1B4332" />
+                        </LinearGradient>
+                    </View>
+
+                    {/* ── Transaction history ── */}
+                    <Text style={styles.sectionTitle}>Transaction History</Text>
+
+                    {transactions.length === 0 ? (
+                        <View style={styles.emptyState}>
+                            <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
                             <Text style={styles.emptyText}>No transactions yet</Text>
-                        ) : (
-                            transactions.map((txn) => (
-                                <View key={txn.id} style={styles.txnItem}>
-                                    <View style={[styles.txnIcon, { backgroundColor: txn.type === 'credit' ? colors.success + '20' : colors.error + '20' }]}>
-                                        <Ionicons name={txn.type === 'credit' ? 'arrow-down' : 'arrow-up'} size={20} color={txn.type === 'credit' ? colors.success : colors.error} />
+                        </View>
+                    ) : (
+                        transactions.map((txn) => {
+                            const meta = getSourceMeta(txn.source, txn.type);
+                            const isCredit = txn.type === 'credit';
+                            return (
+                                <View key={txn.id} style={styles.txnCard}>
+                                    <View style={[styles.txnIconWrap, { backgroundColor: meta.color + '18' }]}>
+                                        <Ionicons name={meta.icon} size={20} color={meta.color} />
                                     </View>
-                                    <View style={styles.txnContent}>
-                                        <Text style={styles.txnDesc}>{txn.description}</Text>
-                                        <Text style={styles.txnDate}>{txn.date}</Text>
+                                    <View style={styles.txnBody}>
+                                        <Text style={styles.txnLabel}>{meta.label}</Text>
+                                        <Text style={styles.txnDesc} numberOfLines={1}>{txn.description || meta.label}</Text>
+                                        <Text style={styles.txnDate}>{formatDate(txn.date)}</Text>
                                     </View>
-                                    <Text style={[styles.txnAmount, { color: txn.type === 'credit' ? colors.success : colors.error }]}>
-                                        {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
+                                    <Text style={[styles.txnAmount, { color: isCredit ? '#059669' : '#DC2626' }]}>
+                                        {isCredit ? '+' : '−'}₹{Number(txn.amount).toLocaleString('en-IN')}
                                     </Text>
                                 </View>
-                            ))
-                        )}
-                    </View>
+                            );
+                        })
+                    )}
                 </ScrollView>
             )}
         </View>
     );
 };
 
+const GLASS_BG = 'rgba(255,255,255,0.14)';
+const GLASS_BORDER = 'rgba(255,255,255,0.28)';
+
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFFFFF' },
-    header: {
+    root: { flex: 1, backgroundColor: '#F0F7FF' },
+
+    // Hero
+    hero: {
         paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.xxxl,
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
+        paddingBottom: spacing.xl + 8,
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
         overflow: 'hidden',
-        position: 'relative',
     },
-    headerIconBg: {
-        position: 'absolute',
-        right: -20,
-        bottom: -20,
+    ring1: {
+        position: 'absolute', width: 260, height: 260, borderRadius: 130,
+        borderWidth: 40, borderColor: 'rgba(255,255,255,0.06)',
+        top: -80, right: -80,
     },
-    headerTop: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    ring2: {
+        position: 'absolute', width: 160, height: 160, borderRadius: 80,
+        borderWidth: 28, borderColor: 'rgba(255,255,255,0.05)',
+        bottom: 20, left: -50,
     },
-    backButton: {
-        width: 32,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: spacing.xs,
-        marginLeft: -spacing.sm,
+    heroNav: {
+        flexDirection: 'row', alignItems: 'center',
+        justifyContent: 'space-between', marginBottom: spacing.lg,
     },
-    headerTitleContainer: {
-        flex: 1,
+    backBtn: {
+        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: GLASS_BG, alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: GLASS_BORDER,
     },
-    headerTitle: {
-        ...typography.headerTitle,
-        color: colors.textOnPrimary,
+    heroTitle: { ...typography.h2, color: '#fff', fontWeight: '700' },
+
+    // Balance glass card
+    balanceGlass: {
+        backgroundColor: GLASS_BG,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: GLASS_BORDER,
+        padding: spacing.lg,
     },
-    headerSubtitle: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.8)',
-        fontWeight: '600',
-        marginTop: 2,
-    },
-    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    loadingText: { ...typography.bodySmall, color: colors.textSecondary, marginTop: spacing.sm },
-    scrollView: { flex: 1, padding: spacing.md },
-    errorCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-        backgroundColor: colors.error + '12',
-        borderRadius: borderRadius.md,
-        padding: spacing.sm,
-        marginBottom: spacing.md,
+    balanceLabel: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: '600', marginBottom: 4 },
+    balanceAmount: { fontSize: 38, fontWeight: '800', color: '#fff', letterSpacing: -1 },
+    balanceDivider: { height: 1, backgroundColor: GLASS_BORDER, marginVertical: spacing.md },
+    balanceRow: { flexDirection: 'row', justifyContent: 'space-around' },
+    balanceStat: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    balanceStatLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
+
+    // Scroll
+    scroll: { flex: 1 },
+    scrollContent: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+    loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+    errorBanner: {
+        flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+        backgroundColor: colors.error + '12', borderRadius: borderRadius.md,
+        padding: spacing.sm, marginBottom: spacing.md,
     },
     errorText: { ...typography.caption, color: colors.error, flex: 1 },
-    balanceCard: { borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.md },
-    balanceLabel: { ...typography.body, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
-    balanceAmount: { ...typography.h1, color: '#E0F7FA', fontWeight: '800', marginVertical: spacing.sm },
-    balanceActions: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
-    balanceAction: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    balanceActionText: { ...typography.bodySmall, color: colors.textOnPrimary, fontWeight: '600' },
-    referralCard: { borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md },
-    referralHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
-    referralContent: { flex: 1 },
-    referralTitle: { ...typography.body, fontWeight: '700', color: colors.textOnPrimary },
-    referralDesc: { ...typography.caption, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
-    referralCodeBox: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: borderRadius.md, padding: spacing.md, alignItems: 'center', marginBottom: spacing.md },
-    referralCodeLabel: { ...typography.caption, color: 'rgba(255,255,255,0.7)' },
-    referralCode: { ...typography.h2, color: colors.textOnPrimary, fontWeight: '800', letterSpacing: 2 },
-    shareButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderRadius: borderRadius.md, padding: spacing.md, gap: spacing.sm },
-    shareButtonText: { ...typography.body, fontWeight: '700', color: customerColors.primary },
-    section: { marginBottom: spacing.xl },
+
+    // Referral card
+    referralCard: { borderRadius: 20, overflow: 'hidden', marginBottom: spacing.md, ...shadows.md },
+    referralGradient: {
+        flexDirection: 'row', alignItems: 'center',
+        justifyContent: 'space-between', padding: spacing.md + 4,
+    },
+    referralLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    referralIconWrap: {
+        width: 44, height: 44, borderRadius: 14,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+    },
+    referralTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
+    referralSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+    referralCodePill: {
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 10, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+    },
+    referralCodeText: { fontSize: 13, fontWeight: '800', color: '#fff', letterSpacing: 1.5 },
+
+    // Bonus banner
+    bonusBanner: { borderRadius: 16, overflow: 'hidden', marginBottom: spacing.lg, ...shadows.sm },
+    bonusGradient: {
+        flexDirection: 'row', alignItems: 'center',
+        padding: spacing.md, gap: spacing.md,
+    },
+    bonusText: { flex: 1 },
+    bonusTitle: { fontSize: 14, fontWeight: '700', color: '#1B4332' },
+    bonusSub: { fontSize: 12, color: '#2D6A4F', marginTop: 2 },
+
+    // Section
     sectionTitle: { ...typography.h3, color: colors.text, marginBottom: spacing.md },
-    emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
-    txnItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: borderRadius.md, padding: spacing.md, marginBottom: spacing.sm, ...shadows.sm },
-    txnIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-    txnContent: { flex: 1, marginLeft: spacing.md },
-    txnDesc: { ...typography.bodySmall, color: colors.text },
-    txnDate: { ...typography.caption, color: colors.textSecondary },
-    txnAmount: { ...typography.body, fontWeight: '700' },
+
+    // Empty
+    emptyState: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },
+    emptyText: { ...typography.body, color: colors.textMuted },
+
+    // Transaction card
+    txnCard: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: '#fff', borderRadius: 16,
+        padding: spacing.md, marginBottom: spacing.sm,
+        ...shadows.sm,
+    },
+    txnIconWrap: {
+        width: 44, height: 44, borderRadius: 14,
+        alignItems: 'center', justifyContent: 'center', marginRight: spacing.md,
+    },
+    txnBody: { flex: 1 },
+    txnLabel: { fontSize: 13, fontWeight: '700', color: colors.text },
+    txnDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+    txnDate: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+    txnAmount: { fontSize: 15, fontWeight: '800' },
 });

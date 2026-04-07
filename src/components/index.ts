@@ -16,6 +16,7 @@ export { AnimatedPressable } from './AnimatedPressable';
 export { PulseIcon } from './PulseIcon';
 export { FadeInView } from './FadeInView';
 export { BubbleCelebration } from './BubbleCelebration';
+export { JoinBonusPopup } from './JoinBonusPopup';
 
 // Polish Components - Loading, Empty, and Error States
 export { Skeleton, SkeletonCard, SkeletonProductCard, SkeletonList } from './Skeleton';
