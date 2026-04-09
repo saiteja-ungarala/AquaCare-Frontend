@@ -66,6 +66,7 @@ export const bookingService = {
         address_id: number;
         scheduled_date: string;
         scheduled_time: string;
+        payment_method?: 'cod' | 'online';
         notes?: string;
     }): Promise<Booking | null> {
         try {

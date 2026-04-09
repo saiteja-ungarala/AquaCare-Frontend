@@ -7,29 +7,114 @@ import {
     Modal,
     Platform,
     ScrollView,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Constants from 'expo-constants';
 import { RootStackScreenProps } from '../../models/types';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme/theme';
 import { customerColors } from '../../theme/customerTheme';
 import { useAuthStore } from '../../store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { paymentService } from '../../services/paymentService';
 
 type PaymentScreenProps = RootStackScreenProps<'PaymentScreen'>;
 const TEAL = customerColors.primary;
 
 export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route }) => {
     const insets = useSafeAreaInsets();
-    const { amount, entityType, description } = route.params;
+    const { amount, entityType, entityId, description } = route.params;
     const user = useAuthStore((s) => s.user);
 
     const [errorMsg, setErrorMsg] = useState('');
     const [showRetryModal, setShowRetryModal] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
-    const handlePayNow = () => {
-        setErrorMsg('Online payments are coming soon. For now, please use Cash on Delivery or wallet-supported checkout paths.');
-        setShowRetryModal(true);
+    const navigateAfterSuccess = () => {
+        if (entityType === 'order') {
+            navigation.replace('OrderDetails', { orderId: entityId });
+            return;
+        }
+        navigation.replace('BookingDetail', { bookingId: entityId });
+    };
+
+    const getPaymentErrorMessage = (error: any): string => {
+        return (
+            error?.response?.data?.message ||
+            error?.error?.description ||
+            error?.description ||
+            error?.message ||
+            'Payment could not be completed. Please try again.'
+        );
+    };
+
+    const openRazorpay = async (options: Record<string, unknown>): Promise<any> => {
+        let RazorpayModule: any;
+        try {
+            RazorpayModule = require('react-native-razorpay');
+        } catch {
+            throw new Error('Razorpay SDK is not available in this app build. Please install a fresh dev/production build and try again.');
+        }
+
+        const RazorpayCheckout = RazorpayModule?.default ?? RazorpayModule;
+        if (!RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
+            const appOwnership = (Constants as any)?.appOwnership;
+            if (appOwnership === 'expo') {
+                throw new Error('Razorpay is not supported in Expo Go. Please use a development or production app build.');
+            }
+            throw new Error('Razorpay native module is missing in this installed app. Rebuild and reinstall the app, then retry.');
+        }
+
+        return RazorpayCheckout.open(options);
+    };
+
+    const handlePayNow = async () => {
+        if (isProcessing) return;
+
+        if (Platform.OS === 'web') {
+            setErrorMsg('Online payment is currently supported on mobile app builds.');
+            setShowRetryModal(true);
+            return;
+        }
+
+        setIsProcessing(true);
+        setErrorMsg('');
+
+        try {
+            const razorpayOrder = await paymentService.createOrder(amount, entityType, entityId);
+
+            const checkoutResponse = await openRazorpay({
+                key: razorpayOrder.key,
+                amount: razorpayOrder.amount,
+                currency: razorpayOrder.currency,
+                name: 'IONORA CARE',
+                description,
+                order_id: razorpayOrder.razorpay_order_id,
+                prefill: {
+                    name: user?.name || '',
+                    email: user?.email || '',
+                    contact: user?.phone || '',
+                },
+                theme: { color: customerColors.primary },
+            });
+
+            await paymentService.verifyPayment(
+                checkoutResponse?.razorpay_order_id || razorpayOrder.razorpay_order_id,
+                checkoutResponse?.razorpay_payment_id,
+                checkoutResponse?.razorpay_signature
+            );
+
+            Alert.alert('Payment Successful', 'Your payment was verified successfully.', [
+                { text: 'Continue', onPress: navigateAfterSuccess },
+            ]);
+        } catch (error: any) {
+            setErrorMsg(getPaymentErrorMessage(error));
+            setShowRetryModal(true);
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     return (
@@ -45,12 +130,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() => navigation.goBack()}
+                        disabled={isProcessing}
                     >
                         <Ionicons name="chevron-back" size={28} color={colors.textOnPrimary} />
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
                         <Text style={styles.headerTitle}>Online Payments</Text>
-                        <Text style={styles.headerSubtitle}>Online checkout is rolling out soon</Text>
+                        <Text style={styles.headerSubtitle}>Pay securely with Razorpay</Text>
                     </View>
                 </View>
             </LinearGradient>
@@ -64,10 +150,10 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
                         style={styles.amountHeroGradient}
                     >
                         <Text style={styles.amountHeroLabel}>Total Amount</Text>
-                        <Text style={styles.amountHeroValue}>₹{amount.toLocaleString('en-IN')}</Text>
+                        <Text style={styles.amountHeroValue}>Rs {amount.toLocaleString('en-IN')}</Text>
                         <View style={styles.amountHeroBadge}>
-                            <Ionicons name="time-outline" size={14} color={customerColors.primaryDark} />
-                            <Text style={styles.amountHeroBadgeText}>Online payments launching shortly</Text>
+                            <Ionicons name="shield-checkmark-outline" size={14} color={customerColors.primaryDark} />
+                            <Text style={styles.amountHeroBadgeText}>Secure Razorpay checkout</Text>
                         </View>
                     </LinearGradient>
                 </View>
@@ -99,7 +185,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
                         </View>
                         <View style={styles.detailContent}>
                             <Text style={styles.detailLabel}>Amount</Text>
-                            <Text style={styles.detailValue}>₹{amount.toLocaleString('en-IN')}</Text>
+                            <Text style={styles.detailValue}>Rs {amount.toLocaleString('en-IN')}</Text>
                         </View>
                     </View>
 
@@ -120,39 +206,27 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
                     <Text style={styles.methodsTitle}>Payment Methods</Text>
                     <View style={styles.methodRow}>
                         <View style={[styles.methodIconWrap, { backgroundColor: '#DCFCE7' }]}>
-                            <Ionicons name="cash-outline" size={20} color="#16A34A" />
+                            <Ionicons name="card-outline" size={20} color="#16A34A" />
                         </View>
                         <View style={styles.methodTextWrap}>
-                            <Text style={styles.methodAvailLabel}>Cash on Delivery</Text>
-                            <Text style={styles.methodAvailSub}>Pay when your order arrives</Text>
+                            <Text style={styles.methodAvailLabel}>Online Payment</Text>
+                            <Text style={styles.methodAvailSub}>UPI - Cards - Net Banking</Text>
                         </View>
                         <Ionicons name="checkmark-circle" size={20} color="#16A34A" />
-                    </View>
-
-                    <View style={[styles.methodRow, { marginTop: spacing.sm }]}>
-                        <View style={[styles.methodIconWrap, { backgroundColor: '#F3F4F6' }]}>
-                            <Ionicons name="card-outline" size={20} color="#9CA3AF" />
-                        </View>
-                        <View style={styles.methodTextWrap}>
-                            <Text style={styles.methodUnavailLabel}>Online Payments</Text>
-                            <Text style={styles.methodAvailSub}>UPI · Cards · Net Banking</Text>
-                        </View>
-                        <View style={styles.comingSoonBadge}>
-                            <Text style={styles.comingSoonText}>Soon</Text>
-                        </View>
                     </View>
                 </View>
 
                 <View style={styles.securityRow}>
-                    <Ionicons name="information-circle-outline" size={14} color={colors.textMuted} />
-                    <Text style={styles.securityText}>Tap below to see the rollout status for online checkout.</Text>
+                    <Ionicons name="lock-closed-outline" size={14} color={colors.textMuted} />
+                    <Text style={styles.securityText}>Payments are processed securely via Razorpay.</Text>
                 </View>
             </ScrollView>
 
             <View style={styles.footer}>
                 <TouchableOpacity
-                    style={styles.payButton}
+                    style={[styles.payButton, isProcessing && styles.payButtonDisabled]}
                     onPress={handlePayNow}
+                    disabled={isProcessing}
                     activeOpacity={0.85}
                 >
                     <LinearGradient
@@ -162,8 +236,14 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
                         style={styles.payButtonGradient}
                     >
                         <View style={styles.payButtonInner}>
-                            <Ionicons name="time-outline" size={20} color="#FFFFFF" />
-                            <Text style={styles.payButtonText}>Payment Coming Soon</Text>
+                            {isProcessing ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <>
+                                    <Ionicons name="card-outline" size={20} color="#FFFFFF" />
+                                    <Text style={styles.payButtonText}>Pay Now</Text>
+                                </>
+                            )}
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -173,21 +253,27 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation, route 
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
                         <View style={[styles.modalIconWrap, { backgroundColor: TEAL + '15' }]}>
-                            <Ionicons name="time-outline" size={56} color={TEAL} />
+                            <Ionicons name="alert-circle-outline" size={56} color={TEAL} />
                         </View>
-                        <Text style={styles.modalTitle}>Coming Soon</Text>
+                        <Text style={styles.modalTitle}>Payment Incomplete</Text>
                         <Text style={styles.modalMessage}>
-                            {errorMsg || 'Online payment checkout is coming soon.'}
+                            {errorMsg || 'Payment could not be completed.'}
                         </Text>
                         <View style={styles.modalButtons}>
                             <TouchableOpacity
                                 style={[styles.modalBtn, { backgroundColor: TEAL }]}
                                 onPress={() => {
                                     setShowRetryModal(false);
-                                    navigation.goBack();
+                                    handlePayNow();
                                 }}
                             >
-                                <Text style={[styles.modalBtnText, { color: '#fff' }]}>Got it</Text>
+                                <Text style={[styles.modalBtnText, { color: '#fff' }]}>Retry</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnCancel]}
+                                onPress={() => setShowRetryModal(false)}
+                            >
+                                <Text style={[styles.modalBtnText, { color: colors.textSecondary }]}>Close</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -370,27 +456,10 @@ const styles = StyleSheet.create({
         color: colors.text,
         marginBottom: 2,
     },
-    methodUnavailLabel: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#9CA3AF',
-        marginBottom: 2,
-    },
     methodAvailSub: {
         fontSize: 12,
         color: colors.textSecondary,
         fontWeight: '500',
-    },
-    comingSoonBadge: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 3,
-        borderRadius: 20,
-        backgroundColor: '#F3F4F6',
-    },
-    comingSoonText: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: '#9CA3AF',
     },
     securityRow: {
         flexDirection: 'row',
@@ -419,6 +488,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 12,
         elevation: 6,
+    },
+    payButtonDisabled: {
+        opacity: 0.7,
     },
     payButtonGradient: {
         height: 56,
@@ -484,6 +556,9 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    modalBtnCancel: {
+        backgroundColor: '#F3F4F6',
     },
     modalBtnText: {
         fontSize: 15,

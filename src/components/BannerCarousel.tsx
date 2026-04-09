@@ -39,6 +39,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({
     const BANNER_HEIGHT = 200;
 
     const [activeIndex, setActiveIndex] = useState(0);
+    const [failedBannerIds, setFailedBannerIds] = useState<Record<string, boolean>>({});
     const flatListRef = useRef<FlatList>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const isInteracting = useRef(false);
@@ -78,11 +79,19 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({
             onPress={() => onBannerPress?.(item)}
             style={[styles.itemContainer, { width: screenWidth }]}
         >
-            {item.image ? (
+            {item.image && !failedBannerIds[item.id] ? (
                 <ImageBackground
                     source={item.image}
                     style={[styles.card, { width: CARD_WIDTH, height: BANNER_HEIGHT, marginHorizontal: CARD_MARGIN }]}
                     imageStyle={styles.cardImage}
+                    onError={() => {
+                        setFailedBannerIds((prev) => {
+                            if (prev[item.id]) {
+                                return prev;
+                            }
+                            return { ...prev, [item.id]: true };
+                        });
+                    }}
                 >
                     <View style={styles.imageOverlay} />
                 </ImageBackground>

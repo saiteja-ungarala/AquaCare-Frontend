@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { User, UserRole, LoginCredentials, SignupData, OtpChannel, OtpSessionPayload } from '../models/types';
 import { authService } from '../services/authService';
+import api from '../services/api';
 import { FieldErrors, getApiErrorMessage } from '../utils/errorMessage';
 
 interface AuthState {
@@ -16,6 +17,7 @@ interface AuthState {
     errorMessage: string | null;
     fieldErrors: FieldErrors;
     showLoginCelebration: boolean;
+    showJoinBonusPopup: boolean;
 }
 
 interface AuthActions {
@@ -44,9 +46,25 @@ interface AuthActions {
     clearError: () => void;
     clearFieldError: (field: string) => void;
     setShowLoginCelebration: (show: boolean) => void;
+    setShowJoinBonusPopup: (show: boolean) => void;
 }
 
 type AuthStore = AuthState & AuthActions;
+
+const shouldShowJoinBonusPopup = async (role: UserRole): Promise<boolean> => {
+    if (role !== 'customer') {
+        return false;
+    }
+
+    try {
+        const response = await api.get('/join-bonus/status');
+        const data = response?.data?.data ?? response?.data ?? {};
+        return Boolean(data.bonusGiven) && !Boolean(data.popupShown);
+    } catch (error) {
+        console.warn('[Auth] Failed to fetch join bonus popup status:', error);
+        return false;
+    }
+};
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
     // Initial state
@@ -60,6 +78,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     errorMessage: null,
     fieldErrors: {},
     showLoginCelebration: false,
+    showJoinBonusPopup: false,
 
     // Actions
     setSelectedRole: (role: UserRole) => {
@@ -67,9 +86,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     },
 
     login: async (credentials: LoginCredentials) => {
-        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {}, showJoinBonusPopup: false });
         try {
             const { user, token, refreshToken } = await authService.login(credentials);
+            const showJoinBonusPopup = await shouldShowJoinBonusPopup(user.role);
             set({
                 user,
                 token,
@@ -80,6 +100,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 error: null,
                 errorMessage: null,
                 fieldErrors: {},
+                showJoinBonusPopup,
             });
             return true;
         } catch (error: unknown) {
@@ -95,9 +116,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     },
 
     signup: async (data: SignupData) => {
-        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {}, showJoinBonusPopup: false });
         try {
             const { user, token, refreshToken } = await authService.signup(data);
+            const showJoinBonusPopup = await shouldShowJoinBonusPopup(user.role);
             set({
                 user,
                 token,
@@ -108,6 +130,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 error: null,
                 errorMessage: null,
                 fieldErrors: {},
+                showJoinBonusPopup,
             });
             return true;
         } catch (error: unknown) {
@@ -146,7 +169,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     },
 
     verifySignupOtp: async (sessionToken, channel, otp, role) => {
-        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {}, showJoinBonusPopup: false });
         try {
             const result = await authService.verifySignupOtp(sessionToken, channel, otp, role);
 
@@ -163,6 +186,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 };
             }
 
+            const showJoinBonusPopup = await shouldShowJoinBonusPopup(result.user.role);
             set({
                 user: result.user,
                 token: result.token,
@@ -173,6 +197,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 error: null,
                 errorMessage: null,
                 fieldErrors: {},
+                showJoinBonusPopup,
             });
 
             return { completed: true };
@@ -294,9 +319,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     },
 
     verifyOTP: async (phone: string, otp: string, role: UserRole) => {
-        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {}, showJoinBonusPopup: false });
         try {
             const { user, token } = await authService.verifyOTP(phone, otp, role);
+            const showJoinBonusPopup = await shouldShowJoinBonusPopup(user.role);
             set({
                 user,
                 token,
@@ -306,6 +332,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 error: null,
                 errorMessage: null,
                 fieldErrors: {},
+                showJoinBonusPopup,
             });
             return true;
         } catch (error: unknown) {
@@ -321,9 +348,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     },
 
     verifyLoginOtp: async (sessionToken: string, channel: OtpChannel, otp: string, role: UserRole) => {
-        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {} });
+        set({ isLoading: true, error: null, errorMessage: null, fieldErrors: {}, showJoinBonusPopup: false });
         try {
             const { user, token, refreshToken } = await authService.verifyLoginOtp(sessionToken, channel, otp, role);
+            const showJoinBonusPopup = await shouldShowJoinBonusPopup(user.role);
             set({
                 user,
                 token,
@@ -334,6 +362,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 error: null,
                 errorMessage: null,
                 fieldErrors: {},
+                showJoinBonusPopup,
             });
             return true;
         } catch (error: unknown) {
@@ -364,6 +393,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 errorMessage: null,
                 fieldErrors: {},
                 showLoginCelebration: false,
+                showJoinBonusPopup: false,
             });
         }
     },
@@ -378,6 +408,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                     token: auth.token,
                     isAuthenticated: true,
                     selectedRole: auth.user.role,
+                    showJoinBonusPopup: false,
                 });
             } else {
                 // Token was invalid/expired — ensure clean unauthenticated state
@@ -387,6 +418,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                     refreshToken: null,
                     isAuthenticated: false,
                     selectedRole: null,
+                    showJoinBonusPopup: false,
                 });
             }
         } catch (error) {
@@ -397,6 +429,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 refreshToken: null,
                 isAuthenticated: false,
                 selectedRole: null,
+                showJoinBonusPopup: false,
             });
         } finally {
             set({ isLoading: false });
@@ -422,5 +455,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     setShowLoginCelebration: (show: boolean) => {
         set({ showLoginCelebration: show });
+    },
+
+    setShowJoinBonusPopup: (show: boolean) => {
+        set({ showJoinBonusPopup: show });
     },
 }));

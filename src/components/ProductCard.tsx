@@ -60,7 +60,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                         source={getProductImageSource((product as any).image_url)}
                         style={styles.productImage}
                         resizeMode="contain"
-                        onError={() => setImageError(true)}
+                        onError={() => setImageError((prev) => (prev ? prev : true))}
                     />
                 ) : (
                     <View style={styles.iconCircle}>

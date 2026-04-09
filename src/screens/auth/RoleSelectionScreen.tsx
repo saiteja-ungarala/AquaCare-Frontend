@@ -204,7 +204,9 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
 
             <SafeAreaView style={styles.safeArea}>
                 <View style={styles.topBar}>
-                    <Image source={require('../../../assets/icon.png')} style={styles.smallLogo} resizeMode="contain" />
+                    <View style={styles.logoContainer}>
+                        <Image source={require('../../../assets/icon.png')} style={styles.smallLogo} resizeMode="contain" />
+                    </View>
                     
                     <View style={styles.roleSwitcher}>
                         <TouchableOpacity 
@@ -353,12 +355,19 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.lg,
-        paddingTop: spacing.sm,
-        paddingBottom: spacing.md,
+        paddingTop: spacing.md,
+        paddingBottom: spacing.sm,
+    },
+    logoContainer: {
+        width: 80,
+        height: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     smallLogo: {
-        width: 140,
-        height: 48,
+        width: 140,   // reduced from 160
+        height: 140,
+        marginTop: 12, // shift graphic downward
     },
     roleSwitcher: {
         flexDirection: 'row',

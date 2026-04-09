@@ -306,6 +306,9 @@ export interface SignupData {
     phone: string;
     password: string;
     role: UserRole;
+    designation: 'doctor' | 'yoga' | 'gym' | 'other';
+    designation_custom?: string | null;
+    referral_code?: string | null;
     referralCode?: string;
 }
 
@@ -342,6 +345,7 @@ export type RootStackParamList = {
     BookingDetail: { bookingId: number };
     BookingUpdate: { bookingId: number };
     CustomerTabs: undefined;
+    Referral: undefined;
     Search: undefined;
     ServiceDetails: { service: Service };
     ProductDetails: { productId: number };

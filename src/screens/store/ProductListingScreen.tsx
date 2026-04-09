@@ -181,7 +181,14 @@ export function ProductListingScreen({ route, navigation }: any) {
                             source={imageSource}
                             style={styles.productImage}
                             resizeMode="contain"
-                            onError={() => setFailedImages(prev => ({ ...prev, [item.id]: true }))}
+                            onError={() => {
+                                setFailedImages((prev) => {
+                                    if (prev[item.id]) {
+                                        return prev;
+                                    }
+                                    return { ...prev, [item.id]: true };
+                                });
+                            }}
                         />
                     ) : (
                         <View style={styles.imageFallback}>

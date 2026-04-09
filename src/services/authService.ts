@@ -130,6 +130,9 @@ export const authService = {
                 password: data.password,
                 phone: data.phone,
                 role: data.role,
+                designation: data.designation,
+                designation_custom: data.designation_custom ?? null,
+                referral_code: data.referral_code ?? data.referralCode ?? null,
             });
 
             return await persistAuthSession(extractResponseData(response), data.role);
@@ -146,6 +149,9 @@ export const authService = {
                 password: data.password,
                 phone: data.phone,
                 role: data.role,
+                designation: data.designation,
+                designation_custom: data.designation_custom ?? null,
+                referral_code: data.referral_code ?? data.referralCode ?? null,
             });
 
             return extractResponseData(response) as OtpSessionPayload;

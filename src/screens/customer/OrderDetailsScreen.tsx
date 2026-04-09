@@ -237,7 +237,7 @@ export const OrderDetailsScreen: React.FC<OrderDetailsScreenProps> = ({ navigati
                         })}
                     >
                         <Ionicons name="card-outline" size={18} color="#FFFFFF" />
-                        <Text style={styles.retryPaymentBtnText}>Online Payment Coming Soon</Text>
+                        <Text style={styles.retryPaymentBtnText}>Retry Payment</Text>
                     </TouchableOpacity>
                 )}
 

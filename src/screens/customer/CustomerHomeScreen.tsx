@@ -27,6 +27,7 @@ import {
     FadeInView,
     BubbleCelebration,
     BannerCarousel,
+    JoinBonusPopup,
     type CategoryItem,
     type BannerItem,
 } from '../../components';
@@ -107,7 +108,12 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
     const [products, setProducts] = useState<Product[]>([]);
     const [banners, setBanners] = useState<BannerItem[]>(homeBanners);
     const [refreshing, setRefreshing] = useState(false);
-    const { showLoginCelebration, setShowLoginCelebration } = useAuthStore();
+    const {
+        showLoginCelebration,
+        setShowLoginCelebration,
+        showJoinBonusPopup,
+        setShowJoinBonusPopup,
+    } = useAuthStore();
     const { items: cartItems } = useCartStore();
     const { locationName, loadCached, fetchAndSet } = useLocationStore();
 
@@ -218,6 +224,16 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
             initialSearchQuery: categoryId === 'all' ? '' : category?.name,
         });
     };
+
+    const handleCloseJoinBonusPopup = useCallback(async () => {
+        try {
+            await api.post('/join-bonus/popup-shown');
+        } catch (error) {
+            console.warn('[CustomerHome] Failed to mark join bonus popup as shown:', error);
+        } finally {
+            setShowJoinBonusPopup(false);
+        }
+    }, [setShowJoinBonusPopup]);
 
     return (
         <View style={styles.container}>
@@ -438,6 +454,13 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                 {showLoginCelebration && (
                     <BubbleCelebration
                         onComplete={() => setShowLoginCelebration(false)}
+                    />
+                )}
+
+                {showJoinBonusPopup && (
+                    <JoinBonusPopup
+                        visible={showJoinBonusPopup}
+                        onDismiss={() => void handleCloseJoinBonusPopup()}
                     />
                 )}
             </View>

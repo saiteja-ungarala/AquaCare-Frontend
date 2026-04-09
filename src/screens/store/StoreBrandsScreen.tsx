@@ -166,7 +166,14 @@ export function StoreBrandsScreen({ route, navigation }: any) {
                                     source={logoSource}
                                     style={styles.logo}
                                     resizeMode="contain"
-                                    onError={() => setFailedLogos(prev => ({ ...prev, [item.id]: true }))}
+                                    onError={() => {
+                                        setFailedLogos((prev) => {
+                                            if (prev[item.id]) {
+                                                return prev;
+                                            }
+                                            return { ...prev, [item.id]: true };
+                                        });
+                                    }}
                                 />
                             ) : (
                                 <Text style={[styles.logoFallback, { color: palette.stripText }]}>
@@ -188,7 +195,14 @@ export function StoreBrandsScreen({ route, navigation }: any) {
                                     source={bannerSource}
                                     style={styles.bannerThumb}
                                     resizeMode="cover"
-                                    onError={() => setFailedBanners(prev => ({ ...prev, [item.id]: true }))}
+                                    onError={() => {
+                                        setFailedBanners((prev) => {
+                                            if (prev[item.id]) {
+                                                return prev;
+                                            }
+                                            return { ...prev, [item.id]: true };
+                                        });
+                                    }}
                                 />
                             ) : (
                                 <View style={[styles.bannerPlaceholder, { borderColor: `${palette.chipBg}22` }]}>

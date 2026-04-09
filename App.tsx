@@ -25,6 +25,7 @@ import { HelpFAQScreen } from './src/screens/customer/HelpFAQScreen';
 import { ContactUsScreen } from './src/screens/customer/ContactUsScreen';
 import { TermsScreen } from './src/screens/customer/TermsScreen';
 import { PrivacyScreen } from './src/screens/customer/PrivacyScreen';
+import { ReferralScreen } from './src/screens/customer/ReferralScreen';
 
 import { StoreHomeScreen, StoreBrandsScreen, ProductListingScreen } from './src/screens/store';
 import {
@@ -246,6 +247,7 @@ function CustomerStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="CustomerTabs" component={CustomerTabs} />
+            <Stack.Screen name="Referral" component={ReferralScreen} />
             <Stack.Screen name="Search" component={SearchScreen} />
             <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
             <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />

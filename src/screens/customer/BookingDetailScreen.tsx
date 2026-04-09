@@ -175,6 +175,7 @@ export const BookingDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     };
 
     const canCancel = booking?.status === 'pending' || booking?.status === 'confirmed';
+    const canRetryPayment = booking?.status === 'pending' && Number(booking?.totalAmount || 0) > 0;
     const statusCfg = STATUS_CONFIG[booking?.status ?? ''] ?? { label: booking?.status ?? '', color: '#9CA3AF' };
 
     if (loading) {
@@ -399,9 +400,25 @@ export const BookingDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                 )}
 
                 {/* Cancel button — only for pending / confirmed */}
+                {canRetryPayment && (
+                    <TouchableOpacity
+                        style={styles.retryPaymentBtn}
+                        onPress={() => navigation.navigate('PaymentScreen', {
+                            amount: Number(booking.totalAmount || 0),
+                            entityType: 'booking',
+                            entityId: Number(booking.id),
+                            description: booking.service?.name || 'Service booking',
+                        })}
+                    >
+                        <Ionicons name="card-outline" size={18} color="#FFFFFF" />
+                        <Text style={styles.retryPaymentBtnText}>Retry Payment</Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* Cancel button — only for pending / confirmed */}
                 {canCancel && (
                     <TouchableOpacity
-                        style={styles.cancelBtn}
+                        style={[styles.cancelBtn, canRetryPayment && { marginTop: spacing.sm }]}
                         onPress={() => setCancelModal(true)}
                     >
                         <Ionicons name="close-circle-outline" size={18} color={colors.error} />
@@ -588,6 +605,17 @@ const styles = StyleSheet.create({
         backgroundColor: colors.error + '0D',
     },
     cancelBtnText: { ...typography.body, color: colors.error, fontWeight: '700' },
+    retryPaymentBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        marginTop: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.lg,
+        backgroundColor: customerColors.primary,
+    },
+    retryPaymentBtnText: { ...typography.body, color: '#FFFFFF', fontWeight: '700' },
 
     photoModal: {
         flex: 1,

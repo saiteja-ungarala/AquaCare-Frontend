@@ -61,6 +61,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
     const [checkoutError, setCheckoutError] = React.useState<string | null>(null);
     const [orderId, setOrderId] = React.useState<string | null>(null);
     const [referralCode, setReferralCode] = React.useState('');
+    const [paymentMethod, setPaymentMethod] = React.useState<'cod' | 'wallet' | 'online'>('cod');
 
     const isReferralCodeValid = referralCode.length === 0 || REFERRAL_CODE_REGEX.test(referralCode);
     const referralCodeError = referralCode.length > 0 && !isReferralCodeValid ? 'Invalid code format' : null;
@@ -117,6 +118,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
 
     const handleCheckoutButton = () => {
         if (cartItems.length === 0) return;
+        setPaymentMethod('cod');
         setCheckoutModalVisible(true);
     };
 
@@ -177,7 +179,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
 
             const result = await ordersService.checkout({
                 addressId,
-                paymentMethod: 'cod',
+                paymentMethod,
                 referralCode: validReferralCode,
             });
 
@@ -190,6 +192,17 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
             setCheckoutModalVisible(false);
             clearLocalCart();
             fetchCart();
+
+            if (paymentMethod === 'online') {
+                navigation.navigate('PaymentScreen', {
+                    amount: result.totalAmount,
+                    entityType: 'order',
+                    entityId: createdOrderId,
+                    description: `Order #${createdOrderId}`,
+                });
+                return;
+            }
+
             setCheckoutSuccess(true);
             setTimeout(() => navigation.navigate('OrderHistory'), 2500);
         } catch (error: any) {
@@ -356,9 +369,32 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                         <Text style={styles.confirmDesc}>
                             Items Subtotal: ₹{totalAmount.toLocaleString()}
                         </Text>
-                        <View style={styles.paymentMethod}>
-                            <Ionicons name="cash-outline" size={20} color={colors.textSecondary} />
-                            <Text style={styles.paymentText}>Cash on Delivery</Text>
+                        <View style={styles.paymentMethodsWrap}>
+                            <Text style={styles.paymentMethodTitle}>Payment Method</Text>
+
+                            <TouchableOpacity
+                                style={[styles.paymentMethod, paymentMethod === 'cod' && styles.paymentMethodActive]}
+                                onPress={() => setPaymentMethod('cod')}
+                            >
+                                <Ionicons name="cash-outline" size={20} color={colors.textSecondary} />
+                                <Text style={styles.paymentText}>Cash on Delivery</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.paymentMethod, paymentMethod === 'wallet' && styles.paymentMethodActive]}
+                                onPress={() => setPaymentMethod('wallet')}
+                            >
+                                <Ionicons name="wallet-outline" size={20} color={colors.textSecondary} />
+                                <Text style={styles.paymentText}>Wallet Balance</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.paymentMethod, paymentMethod === 'online' && styles.paymentMethodActive]}
+                                onPress={() => setPaymentMethod('online')}
+                            >
+                                <Ionicons name="card-outline" size={20} color={colors.textSecondary} />
+                                <Text style={styles.paymentText}>Online Payment</Text>
+                            </TouchableOpacity>
                         </View>
 
                         <View style={styles.referralSection}>
@@ -401,7 +437,9 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
                                 {isCheckingOut ? (
                                     <ActivityIndicator size="small" color={colors.textOnPrimary} />
                                 ) : (
-                                    <Text style={styles.modalBtnTextConfirm}>Place Order</Text>
+                                    <Text style={styles.modalBtnTextConfirm}>
+                                        {paymentMethod === 'online' ? 'Proceed to Pay' : 'Place Order'}
+                                    </Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -506,7 +544,10 @@ const styles = StyleSheet.create({
     confirmModal: { backgroundColor: colors.surface, width: '100%', maxWidth: 320, borderRadius: borderRadius.lg, padding: spacing.xl, alignItems: 'center', ...shadows.md },
     confirmTitle: { ...typography.h3, color: colors.text, marginTop: spacing.md, textAlign: 'center' },
     confirmDesc: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center', marginBottom: spacing.sm },
-    paymentMethod: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surfaceSecondary, padding: spacing.sm, borderRadius: borderRadius.md, marginBottom: spacing.xl },
+    paymentMethodsWrap: { width: '100%', marginBottom: spacing.lg, gap: spacing.sm },
+    paymentMethodTitle: { ...typography.bodySmall, color: colors.text, fontWeight: '600' },
+    paymentMethod: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surfaceSecondary, padding: spacing.sm, borderRadius: borderRadius.md },
+    paymentMethodActive: { borderWidth: 1.5, borderColor: customerColors.primaryDark },
     paymentText: { ...typography.body, color: colors.text },
     referralSection: { width: '100%', marginBottom: spacing.lg },
     referralHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },

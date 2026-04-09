@@ -7,7 +7,7 @@ export type OrderStatusBucket = 'active' | 'delivered' | 'cancelled';
 // Types
 export interface CheckoutRequest {
     addressId: number;
-    paymentMethod?: 'cod' | 'wallet';
+    paymentMethod?: 'cod' | 'wallet' | 'online';
     referralCode?: string;
 }
 

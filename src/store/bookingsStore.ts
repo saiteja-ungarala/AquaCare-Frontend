@@ -16,6 +16,7 @@ interface BookingsActions {
         address_id: number;
         scheduled_date: string;
         scheduled_time: string;
+        payment_method?: 'cod' | 'online';
         notes?: string;
     }) => Promise<Booking>;
     cancelBooking: (bookingId: string, reason: string) => Promise<void>;

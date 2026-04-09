@@ -27,6 +27,7 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
     const [showAddressPicker, setShowAddressPicker] = useState(false);
     const [loadingAddresses, setLoadingAddresses] = useState(false);
     const [booking, setBooking] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
     const [bookingSuccess, setBookingSuccess] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [createdBookingId, setCreatedBookingId] = useState<number | null>(null);
@@ -132,11 +133,22 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                 address_id: Number(freshAddress.id),
                 scheduled_date: selectedDate,
                 scheduled_time: `${selectedTime}:00`,
+                payment_method: paymentMethod,
                 notes: undefined,
             });
 
             const bookingId = newBooking ? Number(newBooking.id) : 0;
             setCreatedBookingId(bookingId > 0 ? bookingId : null);
+
+            if (paymentMethod === 'online' && bookingId > 0 && Number(newBooking?.totalAmount || 0) > 0) {
+                navigation.replace('PaymentScreen', {
+                    amount: Number(newBooking?.totalAmount || 0),
+                    entityType: 'booking',
+                    entityId: bookingId,
+                    description: `${service.name} booking`,
+                });
+                return;
+            }
 
             setBookingSuccess(true);
             setTimeout(() => {
@@ -189,7 +201,9 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                         </View>
                         <View style={styles.priceNote}>
                             <Ionicons name="information-circle" size={18} color={customerColors.info} />
-                            <Text style={styles.priceNoteText}>Cash on Delivery only for now</Text>
+                            <Text style={styles.priceNoteText}>
+                                {paymentMethod === 'online' ? 'Pay online to confirm booking instantly' : 'Cash on Delivery available'}
+                            </Text>
                         </View>
                     </View>
 
@@ -283,6 +297,26 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                     </View>
 
                     <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Payment Method</Text>
+                        <View style={styles.paymentMethodRow}>
+                            <TouchableOpacity
+                                style={[styles.paymentMethodCard, paymentMethod === 'cod' && styles.paymentMethodCardActive]}
+                                onPress={() => setPaymentMethod('cod')}
+                            >
+                                <Ionicons name="cash-outline" size={18} color={customerColors.textSecondary} />
+                                <Text style={styles.paymentMethodText}>Cash on Delivery</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.paymentMethodCard, paymentMethod === 'online' && styles.paymentMethodCardActive]}
+                                onPress={() => setPaymentMethod('online')}
+                            >
+                                <Ionicons name="card-outline" size={18} color={customerColors.textSecondary} />
+                                <Text style={styles.paymentMethodText}>Online Payment</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Service Address</Text>
                         <TouchableOpacity style={styles.addressSelector} onPress={openAddressPicker}>
                             {selectedAddress ? (
@@ -328,7 +362,7 @@ export const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
                     <Text style={styles.bottomPrice}>₹{service.price}</Text>
                 </View>
                 <Button
-                    title={booking ? 'Booking...' : 'Book Now'}
+                    title={booking ? 'Booking...' : paymentMethod === 'online' ? 'Proceed to Pay' : 'Book Now'}
                     onPress={handleBookService}
                     style={styles.bookButton}
                     disabled={booking || bookingSuccess}
@@ -507,6 +541,23 @@ const styles = StyleSheet.create({
     timeSlotSelected: { backgroundColor: customerColors.primary, borderColor: customerColors.primary },
     timeText: { ...typography.bodySmall, color: customerColors.text },
     timeTextSelected: { color: customerColors.textOnPrimary },
+    paymentMethodRow: { gap: spacing.sm },
+    paymentMethodCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        backgroundColor: customerColors.surface,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: customerColors.border,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+    },
+    paymentMethodCardActive: {
+        borderColor: customerColors.primary,
+        borderWidth: 1.5,
+    },
+    paymentMethodText: { ...typography.bodySmall, color: customerColors.text, fontWeight: '600' },
     addressSelector: {
         flexDirection: 'row',
         alignItems: 'center',
