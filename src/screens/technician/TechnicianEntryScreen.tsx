@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../../models/types';
 import { technicianTheme } from '../../theme/technicianTheme';
 import { TechnicianScreen } from '../../components/technician';
 import { useTechnicianStore } from '../../store';
+import { getTechnicianKycGateRoute } from '../../utils/technicianKyc';
 
 type TechnicianEntryScreenProps = {
     navigation: NativeStackNavigationProp<RootStackParamList, 'TechnicianEntry'>;
@@ -13,29 +15,19 @@ type TechnicianEntryScreenProps = {
 export const TechnicianEntryScreen: React.FC<TechnicianEntryScreenProps> = ({ navigation }) => {
     const { fetchMe } = useTechnicianStore();
 
-    useEffect(() => {
-        const bootstrap = async () => {
-            const payload = await fetchMe();
-            if (!payload) return;
+    useFocusEffect(
+        useCallback(() => {
+            const bootstrap = async () => {
+                const payload = await fetchMe();
+                if (!payload) return;
 
-            const status = payload.profile.verification_status;
+                const nextRoute = getTechnicianKycGateRoute(payload.profile.verification_status);
+                navigation.reset({ index: 0, routes: [{ name: nextRoute }] });
+            };
 
-            if (status === 'approved') {
-                navigation.reset({ index: 0, routes: [{ name: 'TechnicianTabs' }] });
-                return;
-            }
-
-            if (status === 'pending' || status === 'rejected' || status === 'suspended') {
-                navigation.reset({ index: 0, routes: [{ name: 'TechnicianKycPending' }] });
-                return;
-            }
-
-            // 'unverified' or unknown — go to upload
-            navigation.reset({ index: 0, routes: [{ name: 'TechnicianKycUpload' }] });
-        };
-
-        bootstrap();
-    }, [fetchMe, navigation]);
+            void bootstrap();
+        }, [fetchMe, navigation])
+    );
 
     return (
         <TechnicianScreen dark>

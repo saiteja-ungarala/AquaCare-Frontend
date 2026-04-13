@@ -16,6 +16,7 @@ import { technicianTheme } from '../../theme/technicianTheme';
 import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
 import { useTechnicianEarnStore, useTechnicianStore } from '../../store';
 import { showTechnicianToast } from '../../utils/technicianToast';
+import { getTechnicianKycGateRoute, isTechnicianKycApproved } from '../../utils/technicianKyc';
 
 type TechnicianJobsScreenProps = {
     navigation: NativeStackNavigationProp<RootStackParamList, 'TechnicianJobs'>;
@@ -66,7 +67,6 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
     const [retryAcceptJobId, setRetryAcceptJobId] = useState<string | null>(null);
 
     const {
-        me,
         isOnline,
         jobs,
         jobsMeta,
@@ -79,6 +79,7 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
         accept,
         reject,
         clearError,
+        kycStatus,
     } = useTechnicianStore();
     const {
         campaigns,
@@ -88,12 +89,16 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
         fetchCampaigns,
     } = useTechnicianEarnStore();
 
+    const isKycApproved = isTechnicianKycApproved(kycStatus);
+    const kycGateRoute = getTechnicianKycGateRoute(kycStatus);
+
     const loadData = useCallback(async () => {
         const profile = await fetchMe();
         if (!profile) return;
 
-        if (profile.profile.verification_status !== 'approved') {
-            navigation.reset({ index: 0, routes: [{ name: 'TechnicianEntry' }] });
+        if (!isTechnicianKycApproved(profile.profile.verification_status)) {
+            const nextRoute = getTechnicianKycGateRoute(profile.profile.verification_status);
+            navigation.reset({ index: 0, routes: [{ name: nextRoute }] });
             return;
         }
 
@@ -106,17 +111,16 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
             loadData();
         }, [loadData])
     );
-
     useFocusEffect(
         useCallback(() => {
-            if (!isOnline) return;
+            if (!isOnline || !isKycApproved) return;
 
             const interval = setInterval(() => {
                 fetchJobs();
             }, 50000);
 
             return () => clearInterval(interval);
-        }, [isOnline, fetchJobs])
+        }, [fetchJobs, isKycApproved, isOnline])
     );
 
     useEffect(() => {
@@ -214,6 +218,27 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
         void toggleOnline(nextValue);
     };
 
+    if (!isKycApproved) {
+        return (
+            <TechnicianScreen>
+                <View style={styles.lockWrap}>
+                    <TechnicianCard style={styles.lockCard}>
+                        <Ionicons name="lock-closed" size={26} color={technicianTheme.colors.agentPrimary} />
+                        <Text style={styles.lockTitle}>KYC approval required</Text>
+                        <Text style={styles.lockSubtitle}>
+                            Jobs will unlock after your KYC is approved.
+                        </Text>
+                        <TechnicianButton
+                            title="Complete KYC"
+                            onPress={() => navigation.navigate(kycGateRoute)}
+                            style={styles.lockBtn}
+                        />
+                    </TechnicianCard>
+                </View>
+            </TechnicianScreen>
+        );
+    }
+
     const renderJob = ({ item }: { item: TechnicianJob }) => {
         const location = [item.address_city, item.address_line1].filter(Boolean).join(', ');
 
@@ -249,15 +274,19 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
                         disabled={
                             loading.action ||
                             !isOnline ||
-                            hasActiveJob
+                            hasActiveJob ||
+                            !isKycApproved
                         }
                         style={styles.actionBtn}
                     />
                 </View>
-                {!isOnline && (
+                {!isKycApproved && (
+                    <Text style={styles.guardText}>KYC approval required to accept jobs.</Text>
+                )}
+                {!isOnline && isKycApproved && (
                     <Text style={styles.guardText}>Go online to accept this job.</Text>
                 )}
-                {hasActiveJob && item.status !== 'assigned' && item.status !== 'in_progress' && (
+                {hasActiveJob && item.status !== 'assigned' && item.status !== 'in_progress' && isKycApproved && (
                     <Text style={styles.guardText}>Finish your current active job before accepting another.</Text>
                 )}
             </TechnicianCard>
@@ -358,6 +387,29 @@ export const TechnicianJobsScreen: React.FC<TechnicianJobsScreenProps> = ({ navi
 };
 
 const styles = StyleSheet.create({
+    lockWrap: {
+        flex: 1,
+        padding: technicianTheme.spacing.lg,
+        justifyContent: 'center',
+    },
+    lockCard: {
+        alignItems: 'center',
+    },
+    lockTitle: {
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
+        marginTop: technicianTheme.spacing.sm,
+    },
+    lockSubtitle: {
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
+        marginTop: technicianTheme.spacing.xs,
+        textAlign: 'center',
+    },
+    lockBtn: {
+        marginTop: technicianTheme.spacing.md,
+        width: '100%',
+    },
     header: {
         backgroundColor: technicianTheme.colors.agentDark,
         paddingHorizontal: technicianTheme.spacing.lg,

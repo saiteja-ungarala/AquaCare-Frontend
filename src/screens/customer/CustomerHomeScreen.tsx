@@ -352,7 +352,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({
                     </View>
 
                     {/* Referral Banner */}
-                    <TouchableOpacity style={styles.referralBanner} activeOpacity={0.8} onPress={() => navigation.navigate('Referral')}>
+                    <TouchableOpacity style={styles.referralBanner} activeOpacity={0.8} onPress={() => navigation.navigate('Wallet')}>
                         <LinearGradient
                             colors={['#03045E', '#0077B6']}
                             start={{ x: 0, y: 0 }}

@@ -378,6 +378,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     },
 
     logout: async () => {
+        // Preserve the role so after logout the login screen shows the correct role context
+        const roleBeforeLogout = get().user?.role ?? get().selectedRole;
         set({ isLoading: true });
         try {
             await authService.logout();
@@ -388,7 +390,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 refreshToken: null,
                 isAuthenticated: false,
                 isLoading: false,
-                selectedRole: null,
+                // Keep the role so the login screen shows "Login as Technician" not generic
+                selectedRole: (roleBeforeLogout as UserRole) ?? null,
                 error: null,
                 errorMessage: null,
                 fieldErrors: {},

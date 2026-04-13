@@ -252,6 +252,10 @@ export const useTechnicianStore = create<TechnicianStore>((set, get) => ({
 
     acceptJob: async (bookingId: string) => {
         const snapshot = get();
+        if (snapshot.kycStatus !== 'approved') {
+            set({ error: 'KYC verification required to accept jobs.' });
+            return false;
+        }
         if (!snapshot.isOnline) {
             set({ error: 'Go online to accept jobs.' });
             return false;

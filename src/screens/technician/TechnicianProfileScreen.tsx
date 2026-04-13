@@ -14,6 +14,7 @@ import {
     getTechnicianSchemeProgress,
 } from '../../config/technicianEarningScheme';
 import { showTechnicianToast } from '../../utils/technicianToast';
+import { getTechnicianKycGateRoute, isTechnicianKycApproved } from '../../utils/technicianKyc';
 
 export const TechnicianProfileScreen: React.FC = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -113,7 +114,20 @@ export const TechnicianProfileScreen: React.FC = () => {
     const ratingCount = Number(me?.rating_count || 0);
     const completedJobs = Number(me?.completed_jobs || 0);
     const activeJobs = Number(me?.active_jobs || 0);
-    const kycLabel = me?.verification_status || 'pending';
+    const kycLabel = me?.verification_status ?? null;
+
+    // KYC status badge config — read directly from verification_status, no fallback
+    const kycBadgeConfig = (() => {
+        if (kycLabel === 'approved') return { label: 'KYC Approved', color: technicianTheme.colors.success, bg: '#E8F9F0' };
+        if (kycLabel === 'rejected') return { label: 'KYC Rejected', color: technicianTheme.colors.danger, bg: '#FFF0F0' };
+        if (kycLabel === 'suspended') return { label: 'Suspended', color: technicianTheme.colors.danger, bg: '#FFF0F0' };
+        if (kycLabel === 'pending') return { label: 'KYC Pending', color: technicianTheme.colors.warning, bg: '#FFF8E7' };
+        if (kycLabel === 'unverified') return { label: 'KYC Required', color: '#8A5D00', bg: '#FFF4D6' };
+        return { label: 'KYC Unknown', color: technicianTheme.colors.textSecondary, bg: '#F5F5F5' };
+    })();
+
+    const isKycApproved = isTechnicianKycApproved(kycLabel);
+    const kycGateRoute = getTechnicianKycGateRoute(kycLabel);
 
     return (
         <TechnicianScreen>
@@ -204,11 +218,20 @@ export const TechnicianProfileScreen: React.FC = () => {
                             <Ionicons name="cash-outline" size={18} color={technicianTheme.colors.agentPrimary} />
                         </View>
                         <Text style={styles.actionTitle}>View Earnings</Text>
-                        <Text style={styles.actionMeta}>Track commissions and milestones</Text>
+                        <Text style={styles.actionMeta}>
+                            {isKycApproved ? 'Track commissions and milestones' : 'Complete KYC to unlock earnings'}
+                        </Text>
                         <TechnicianButton
-                            title="Open"
+                            title={isKycApproved ? 'Open' : 'KYC Required'}
                             variant="secondary"
-                            onPress={() => navigation.navigate('TechnicianEarn')}
+                            onPress={() => {
+                                if (!isKycApproved) {
+                                    showTechnicianToast('Complete your KYC to access earnings.');
+                                    navigation.navigate(kycGateRoute);
+                                    return;
+                                }
+                                navigation.navigate('TechnicianEarn');
+                            }}
                             style={styles.actionButton}
                         />
                     </View>
@@ -218,11 +241,20 @@ export const TechnicianProfileScreen: React.FC = () => {
                             <Ionicons name="briefcase-outline" size={18} color={technicianTheme.colors.agentPrimary} />
                         </View>
                         <Text style={styles.actionTitle}>View Jobs</Text>
-                        <Text style={styles.actionMeta}>Check pending and active requests</Text>
+                        <Text style={styles.actionMeta}>
+                            {isKycApproved ? 'Check pending and active requests' : 'Complete KYC to unlock jobs'}
+                        </Text>
                         <TechnicianButton
-                            title="Open"
+                            title={isKycApproved ? 'Open' : 'KYC Required'}
                             variant="secondary"
-                            onPress={() => navigation.navigate('TechnicianJobs')}
+                            onPress={() => {
+                                if (!isKycApproved) {
+                                    showTechnicianToast('Complete your KYC to access jobs.');
+                                    navigation.navigate(kycGateRoute);
+                                    return;
+                                }
+                                navigation.navigate('TechnicianJobs');
+                            }}
                             style={styles.actionButton}
                         />
                     </View>
@@ -232,13 +264,20 @@ export const TechnicianProfileScreen: React.FC = () => {
                             <Ionicons name="shield-checkmark-outline" size={18} color={technicianTheme.colors.agentPrimary} />
                         </View>
                         <Text style={styles.actionTitle}>KYC Status</Text>
-                        <Text style={styles.actionMeta}>Current status: {kycLabel}</Text>
-                        <TechnicianButton
-                            title="Review"
-                            variant="secondary"
-                            onPress={() => navigation.navigate('TechnicianKycUpload')}
-                            style={styles.actionButton}
-                        />
+                        {/* Show actual status from API — no fallback default */}
+                        <View style={[styles.kycBadge, { backgroundColor: kycBadgeConfig.bg }]}>
+                            <Text style={[styles.kycBadgeText, { color: kycBadgeConfig.color }]}>
+                                {kycBadgeConfig.label}
+                            </Text>
+                        </View>
+                        {!isKycApproved && (
+                            <TechnicianButton
+                                title="Complete KYC"
+                                variant="secondary"
+                                onPress={() => navigation.navigate('TechnicianKycUpload')}
+                                style={styles.actionButton}
+                            />
+                        )}
                     </View>
                 </View>
 
@@ -431,6 +470,18 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         marginTop: technicianTheme.spacing.sm,
+    },
+    kycBadge: {
+        borderRadius: technicianTheme.radius.full,
+        paddingHorizontal: technicianTheme.spacing.sm,
+        paddingVertical: 3,
+        alignSelf: 'flex-start',
+        marginTop: technicianTheme.spacing.xs,
+        marginBottom: technicianTheme.spacing.xs,
+    },
+    kycBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
     },
     row: {
         flexDirection: 'row',

@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { TechnicianJob } from '../../models/types';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList, TechnicianJob } from '../../models/types';
+import { Ionicons } from '@expo/vector-icons';
 import { technicianTheme } from '../../theme/technicianTheme';
-import { TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
+import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
 import { useTechnicianStore } from '../../store';
+import { getTechnicianKycGateRoute, isTechnicianKycApproved } from '../../utils/technicianKyc';
 
 type HistoryTab = 'completed' | 'in_progress' | 'assigned';
 
@@ -19,13 +22,29 @@ const chipTone = (status: HistoryTab): 'success' | 'warning' => (status === 'com
 const formatSlot = (date: string, time: string) => `${date} ${time}`.trim();
 
 export const TechnicianHistoryScreen: React.FC = () => {
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [activeTab, setActiveTab] = useState<HistoryTab>('completed');
-    const { jobs, fetchJobs } = useTechnicianStore();
+    const { jobs, fetchJobs, fetchMe, kycStatus } = useTechnicianStore();
+    const isKycApproved = isTechnicianKycApproved(kycStatus);
+    const kycGateRoute = getTechnicianKycGateRoute(kycStatus);
 
     useFocusEffect(
         React.useCallback(() => {
-            fetchJobs();
-        }, [fetchJobs])
+            const loadData = async () => {
+                const profile = await fetchMe();
+                if (!profile) return;
+
+                if (!isTechnicianKycApproved(profile.profile.verification_status)) {
+                    const nextRoute = getTechnicianKycGateRoute(profile.profile.verification_status);
+                    navigation.reset({ index: 0, routes: [{ name: nextRoute }] });
+                    return;
+                }
+
+                await fetchJobs();
+            };
+
+            void loadData();
+        }, [fetchJobs, fetchMe, navigation])
     );
 
     const historyJobs = useMemo(() => jobs.filter((job) => job.status === activeTab), [activeTab, jobs]);
@@ -40,6 +59,27 @@ export const TechnicianHistoryScreen: React.FC = () => {
             <Text style={styles.line} numberOfLines={1}>{[item.address_city, item.address_line1].filter(Boolean).join(', ') || 'Address unavailable'}</Text>
         </TechnicianCard>
     );
+
+    if (!isKycApproved) {
+        return (
+            <TechnicianScreen>
+                <View style={styles.lockWrap}>
+                    <TechnicianCard style={styles.lockCard}>
+                        <Ionicons name="lock-closed" size={26} color={technicianTheme.colors.agentPrimary} />
+                        <Text style={styles.lockTitle}>KYC approval required</Text>
+                        <Text style={styles.lockSubtitle}>
+                            Job history is available only after your KYC is approved.
+                        </Text>
+                        <TechnicianButton
+                            title="Complete KYC"
+                            onPress={() => navigation.navigate(kycGateRoute)}
+                            style={styles.lockBtn}
+                        />
+                    </TechnicianCard>
+                </View>
+            </TechnicianScreen>
+        );
+    }
 
     return (
         <TechnicianScreen>
@@ -76,6 +116,29 @@ export const TechnicianHistoryScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+    lockWrap: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: technicianTheme.spacing.lg,
+    },
+    lockCard: {
+        alignItems: 'center',
+    },
+    lockTitle: {
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
+        marginTop: technicianTheme.spacing.sm,
+    },
+    lockSubtitle: {
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
+        marginTop: technicianTheme.spacing.xs,
+        textAlign: 'center',
+    },
+    lockBtn: {
+        marginTop: technicianTheme.spacing.md,
+        width: '100%',
+    },
     headerWrap: {
         paddingHorizontal: technicianTheme.spacing.lg,
         paddingTop: technicianTheme.spacing.lg,

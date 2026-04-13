@@ -243,6 +243,21 @@ function AuthStack() {
     );
 }
 
+function AuthStackWithRole({ initialRoute }: { initialRoute: 'RoleSelection' | 'Login' }) {
+    return (
+        <Stack.Navigator
+            screenOptions={{ headerShown: false }}
+            initialRouteName={initialRoute}
+        >
+            <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Signup" component={SignupScreen} options={{ animation: 'fade' }} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
+        </Stack.Navigator>
+    );
+}
+
 function CustomerStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -290,7 +305,7 @@ function TechnicianGateStack() {
 }
 
 export default function App() {
-    const { isAuthenticated, user, checkAuth } = useAuthStore();
+    const { isAuthenticated, user, checkAuth, selectedRole } = useAuthStore();
     const { fetchAndSet: fetchLocation, loadCached: loadCachedLocation } = useLocationStore();
     const [isReady, setIsReady] = React.useState(false);
 
@@ -434,7 +449,9 @@ export default function App() {
 
     const renderStack = () => {
         if (!isAuthenticated) {
-            return <AuthStack />;
+            // If a role was preserved from logout, go straight to Login (not RoleSelection)
+            const initialRoute = user === null && selectedRole ? 'Login' : 'RoleSelection';
+            return <AuthStackWithRole initialRoute={initialRoute} />;
         }
 
         if (user?.role === 'technician') {
@@ -445,10 +462,10 @@ export default function App() {
             return <CustomerStack />;
         }
 
-        return <AuthStack />;
+        return <AuthStackWithRole initialRoute="RoleSelection" />;
     };
 
-    const navigatorKey = isAuthenticated ? user?.role || 'auth' : 'auth';
+    const navigatorKey = isAuthenticated ? user?.role || 'auth' : `auth-${selectedRole ?? 'none'}`;
 
     return (
         <AppErrorBoundary>

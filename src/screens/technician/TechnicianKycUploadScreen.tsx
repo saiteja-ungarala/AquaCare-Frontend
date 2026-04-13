@@ -1,13 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { TechnicianKycDocType, RootStackParamList } from '../../models/types';
 import { technicianTheme } from '../../theme/technicianTheme';
 import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
-import { useTechnicianStore } from '../../store';
+import { useAuthStore, useTechnicianStore } from '../../store';
 import { technicianService } from '../../services/technicianService';
 import { showTechnicianToast } from '../../utils/technicianToast';
+import { Ionicons } from '@expo/vector-icons';
+import { getTechnicianKycGateRoute } from '../../utils/technicianKyc';
 
 type TechnicianKycUploadScreenProps = {
     navigation: NativeStackNavigationProp<RootStackParamList, 'TechnicianKycUpload'>;
@@ -73,9 +76,31 @@ export const TechnicianKycUploadScreen: React.FC<TechnicianKycUploadScreenProps>
     const [docType, setDocType] = useState<TechnicianKycDocType | null>(null);
     const [documents, setDocuments] = useState<DocumentPicker.DocumentPickerAsset[]>([]);
 
-    const { uploadKyc, loading, error } = useTechnicianStore();
+    const { uploadKyc, loading, error, fetchMe, reset } = useTechnicianStore();
+    const { logout, isLoading: authLoading } = useAuthStore();
     const supportedDocTypes = useMemo(() => technicianService.getSupportedDocTypes(), []);
     const step = documents.length > 0 ? 3 : docType ? 2 : 1;
+
+    const handleLogout = useCallback(async () => {
+        reset();
+        await logout();
+    }, [logout, reset]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const gate = async () => {
+                const payload = await fetchMe();
+                if (!payload) return;
+
+                const nextRoute = getTechnicianKycGateRoute(payload.profile.verification_status);
+                if (nextRoute !== 'TechnicianKycUpload') {
+                    navigation.reset({ index: 0, routes: [{ name: nextRoute }] });
+                }
+            };
+
+            void gate();
+        }, [fetchMe, navigation])
+    );
 
     const pickDocuments = async () => {
         if (!docType) {
@@ -147,6 +172,24 @@ export const TechnicianKycUploadScreen: React.FC<TechnicianKycUploadScreenProps>
     return (
         <TechnicianScreen dark>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                <View style={styles.navRow}>
+                    {navigation.canGoBack() ? (
+                        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                            <Ionicons name="chevron-back" size={20} color={technicianTheme.colors.agentPrimary} />
+                            <Text style={styles.backBtnText}>Back</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TechnicianButton
+                            title="Logout"
+                            variant="secondary"
+                            onPress={() => void handleLogout()}
+                            loading={authLoading}
+                            disabled={authLoading}
+                            style={styles.exitBtn}
+                        />
+                    )}
+                </View>
+
                 <Text style={styles.pageTitle}>KYC Verification</Text>
                 <Text style={styles.pageSubtitle}>Complete all 3 steps to activate your technician account.</Text>
 
@@ -222,6 +265,24 @@ const styles = StyleSheet.create({
     content: {
         padding: technicianTheme.spacing.lg,
         gap: technicianTheme.spacing.md,
+    },
+    navRow: {
+        marginBottom: technicianTheme.spacing.sm,
+    },
+    backBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        alignSelf: 'flex-start',
+    },
+    backBtnText: {
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.agentPrimary,
+        fontWeight: '600',
+    },
+    exitBtn: {
+        alignSelf: 'flex-start',
+        minWidth: 112,
     },
     pageTitle: {
         ...technicianTheme.typography.h1,
@@ -300,6 +361,7 @@ const styles = StyleSheet.create({
     errorText: {
         ...technicianTheme.typography.caption,
         color: technicianTheme.colors.danger,
+        marginTop: technicianTheme.spacing.sm,
         marginBottom: technicianTheme.spacing.sm,
     },
 });

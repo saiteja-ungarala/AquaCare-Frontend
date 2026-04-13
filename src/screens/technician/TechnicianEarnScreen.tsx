@@ -1,6 +1,3 @@
-// TechnicianEarnScreen — Premium dashboard with levels + progress
-// Amber/dark theme, glass cards, animated progress bar
-
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Animated, Dimensions, Easing, RefreshControl,
@@ -16,6 +13,7 @@ import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, Tec
 import { technicianTheme as T } from '../../theme/technicianTheme';
 import { useTechnicianEarnStore, useTechnicianStore } from '../../store';
 import { showTechnicianToast } from '../../utils/technicianToast';
+import { getTechnicianKycGateRoute, isTechnicianKycApproved } from '../../utils/technicianKyc';
 import {
     TECHNICIAN_EARNING_SCHEME,
     getTechnicianSchemeMotivation,
@@ -79,7 +77,11 @@ export const TechnicianEarnScreen: React.FC<Props> = ({ navigation }) => {
         progress, productsWithCommissionPreview, loading, error,
         refreshAll, fetchSummary, clearError,
     } = useTechnicianEarnStore();
-    const { isOnline } = useTechnicianStore();
+    const { isOnline, kycStatus, fetchMe } = useTechnicianStore();
+
+    // KYC gate — read directly from store field set by fetchMe(), no fallback default
+    const isKycApproved = isTechnicianKycApproved(kycStatus);
+    const kycGateRoute = getTechnicianKycGateRoute(kycStatus);
 
     const activeCampaign = useMemo(() => getActiveCampaign(campaigns, activeCampaignId), [campaigns, activeCampaignId]);
     const sold = progress?.soldQty ?? 0;
@@ -90,12 +92,29 @@ export const TechnicianEarnScreen: React.FC<Props> = ({ navigation }) => {
     const progressPct = schemeProgress.normalizedProgress;
     const motivationText = useMemo(() => getTechnicianSchemeMotivation(sold), [sold]);
 
-    useFocusEffect(useCallback(() => { void refreshAll(); }, [refreshAll]));
+    useFocusEffect(
+        useCallback(() => {
+            const loadData = async () => {
+                const profile = await fetchMe();
+                if (!profile) return;
+
+                if (!isTechnicianKycApproved(profile.profile.verification_status)) {
+                    const nextRoute = getTechnicianKycGateRoute(profile.profile.verification_status);
+                    navigation.reset({ index: 0, routes: [{ name: nextRoute }] });
+                    return;
+                }
+
+                await refreshAll();
+            };
+
+            void loadData();
+        }, [fetchMe, navigation, refreshAll])
+    );
     useFocusEffect(useCallback(() => {
-        if (!isOnline) return;
+        if (!isOnline || !isKycApproved) return;
         const id = setInterval(() => void fetchSummary(), 60_000);
         return () => clearInterval(id);
-    }, [isOnline, fetchSummary]));
+    }, [fetchSummary, isKycApproved, isOnline]));
 
     useEffect(() => {
         if (!error) return;
@@ -105,9 +124,15 @@ export const TechnicianEarnScreen: React.FC<Props> = ({ navigation }) => {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await refreshAll();
+        const profile = await fetchMe();
+        if (profile && isTechnicianKycApproved(profile.profile.verification_status)) {
+            await refreshAll();
+        } else if (profile) {
+            const nextRoute = getTechnicianKycGateRoute(profile.profile.verification_status);
+            navigation.reset({ index: 0, routes: [{ name: nextRoute }] });
+        }
         setRefreshing(false);
-    }, [refreshAll]);
+    }, [fetchMe, navigation, refreshAll]);
 
     const copyCode = async () => {
         if (!referralCode) { showTechnicianToast('Code not available yet.'); return; }
@@ -126,6 +151,27 @@ export const TechnicianEarnScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     const days = daysLeft(activeCampaign?.endAt);
+
+    if (!isKycApproved) {
+        return (
+            <TechnicianScreen>
+                <View style={styles.kycGate}>
+                    <View style={styles.kycGateIconWrap}>
+                        <Ionicons name="lock-closed" size={32} color={T.colors.agentPrimary} />
+                    </View>
+                    <Text style={styles.kycGateTitle}>Complete your KYC to unlock earnings</Text>
+                    <Text style={styles.kycGateBody}>
+                        Commission rates and payout details are available only after KYC approval.
+                    </Text>
+                    <TechnicianButton
+                        title="Complete KYC"
+                        onPress={() => navigation.navigate(kycGateRoute)}
+                        style={styles.kycGateBtn}
+                    />
+                </View>
+            </TechnicianScreen>
+        );
+    }
 
     return (
         <TechnicianScreen>
@@ -342,6 +388,44 @@ export const TechnicianEarnScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     content: { padding: T.spacing.lg, gap: T.spacing.md, paddingBottom: T.spacing.xxl },
+
+    // KYC gate banner
+    kycGate: {
+        margin: T.spacing.lg,
+        borderRadius: T.radius.lg,
+        backgroundColor: '#FFF8E7',
+        borderWidth: 1,
+        borderColor: '#F6D485',
+        padding: T.spacing.lg,
+        alignItems: 'center',
+        gap: T.spacing.sm,
+    },
+    kycGateIconWrap: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: 'rgba(255,176,0,0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,176,0,0.3)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: T.spacing.xs,
+    },
+    kycGateTitle: {
+        ...T.typography.h2,
+        color: T.colors.textPrimary,
+        textAlign: 'center',
+    },
+    kycGateBody: {
+        ...T.typography.bodySmall,
+        color: T.colors.textSecondary,
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    kycGateBtn: {
+        marginTop: T.spacing.sm,
+        width: '100%',
+    },
 
     // Hero
     heroCard: {

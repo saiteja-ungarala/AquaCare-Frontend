@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackScreenProps } from '../../models/types';
 import { TechnicianButton, TechnicianCard, TechnicianChip, TechnicianScreen, TechnicianSectionHeader } from '../../components/technician';
 import { technicianTheme } from '../../theme/technicianTheme';
-import { useTechnicianEarnStore } from '../../store';
+import { useTechnicianEarnStore, useTechnicianStore } from '../../store';
 import { showTechnicianToast } from '../../utils/technicianToast';
+import { getTechnicianKycGateRoute, isTechnicianKycApproved } from '../../utils/technicianKyc';
 
 type CampaignMilestonesScreenProps = RootStackScreenProps<'TechnicianCampaignMilestones'>;
 
@@ -17,6 +19,7 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
     const [refreshing, setRefreshing] = useState(false);
     const { campaignId } = route.params;
 
+    const { fetchMe, kycStatus } = useTechnicianStore();
     const {
         campaigns,
         progress,
@@ -26,12 +29,26 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
         fetchProgress,
         clearError,
     } = useTechnicianEarnStore();
+    const isKycApproved = isTechnicianKycApproved(kycStatus);
+    const kycGateRoute = getTechnicianKycGateRoute(kycStatus);
 
     useFocusEffect(
         useCallback(() => {
-            void fetchCampaigns();
-            void fetchProgress(campaignId);
-        }, [campaignId, fetchCampaigns, fetchProgress])
+            const loadData = async () => {
+                const profile = await fetchMe();
+                if (!profile) return;
+
+                if (!isTechnicianKycApproved(profile.profile.verification_status)) {
+                    const nextRoute = getTechnicianKycGateRoute(profile.profile.verification_status);
+                    navigation.reset({ index: 0, routes: [{ name: nextRoute }] });
+                    return;
+                }
+
+                await Promise.all([fetchCampaigns(), fetchProgress(campaignId)]);
+            };
+
+            void loadData();
+        }, [campaignId, fetchCampaigns, fetchMe, fetchProgress, navigation])
     );
 
     useEffect(() => {
@@ -42,9 +59,15 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([fetchCampaigns(), fetchProgress(campaignId)]);
+        const profile = await fetchMe();
+        if (profile && isTechnicianKycApproved(profile.profile.verification_status)) {
+            await Promise.all([fetchCampaigns(), fetchProgress(campaignId)]);
+        } else if (profile) {
+            const nextRoute = getTechnicianKycGateRoute(profile.profile.verification_status);
+            navigation.reset({ index: 0, routes: [{ name: nextRoute }] });
+        }
         setRefreshing(false);
-    }, [campaignId, fetchCampaigns, fetchProgress]);
+    }, [campaignId, fetchCampaigns, fetchMe, fetchProgress, navigation]);
 
     const campaign = useMemo(
         () => campaigns.find((item) => item.id === campaignId) || null,
@@ -56,6 +79,27 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
     }, [progress]);
 
     const hasMilestones = (campaign?.tiers || []).length > 0;
+
+    if (!isKycApproved) {
+        return (
+            <TechnicianScreen>
+                <View style={styles.lockWrap}>
+                    <TechnicianCard style={styles.lockCard}>
+                        <Ionicons name="lock-closed" size={26} color={technicianTheme.colors.agentPrimary} />
+                        <Text style={styles.lockTitle}>KYC approval required</Text>
+                        <Text style={styles.lockSubtitle}>
+                            Campaign bonuses are visible only after KYC approval.
+                        </Text>
+                        <TechnicianButton
+                            title="Complete KYC"
+                            onPress={() => navigation.navigate(kycGateRoute)}
+                            style={styles.lockBtn}
+                        />
+                    </TechnicianCard>
+                </View>
+            </TechnicianScreen>
+        );
+    }
 
     return (
         <TechnicianScreen>
@@ -121,6 +165,29 @@ export const CampaignMilestonesScreen: React.FC<CampaignMilestonesScreenProps> =
 };
 
 const styles = StyleSheet.create({
+    lockWrap: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: technicianTheme.spacing.lg,
+    },
+    lockCard: {
+        alignItems: 'center',
+    },
+    lockTitle: {
+        ...technicianTheme.typography.h2,
+        color: technicianTheme.colors.textPrimary,
+        marginTop: technicianTheme.spacing.sm,
+    },
+    lockSubtitle: {
+        ...technicianTheme.typography.bodySmall,
+        color: technicianTheme.colors.textSecondary,
+        marginTop: technicianTheme.spacing.xs,
+        textAlign: 'center',
+    },
+    lockBtn: {
+        marginTop: technicianTheme.spacing.md,
+        width: '100%',
+    },
     content: {
         padding: technicianTheme.spacing.lg,
         gap: technicianTheme.spacing.md,
