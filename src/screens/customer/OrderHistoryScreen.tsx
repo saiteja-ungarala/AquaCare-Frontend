@@ -160,11 +160,9 @@ export const OrderHistoryScreen: React.FC<OrderHistoryScreenProps> = ({ navigati
             >
                 <Ionicons name="receipt" size={120} color="rgba(255,255,255,0.1)" style={styles.headerIconBg} />
                 <View style={styles.headerTop}>
-                    {route.params?.enableBack && (
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                            <Ionicons name="chevron-back" size={28} color={colors.textOnPrimary} />
-                        </TouchableOpacity>
-                    )}
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={28} color={colors.textOnPrimary} />
+                    </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
                         <Text style={styles.headerTitle}>Order History</Text>
                         <Text style={styles.headerSubtitle}>Track your product purchases</Text>
